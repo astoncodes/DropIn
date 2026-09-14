@@ -91,6 +91,19 @@ const config: ExpoConfig = {
     'expo-secure-store',
     'expo-web-browser',
     'expo-video',
+    'expo-apple-authentication',
+    [
+      '@react-native-google-signin/google-signin',
+      {
+        // Reversed form of the iOS OAuth client ID, so Google's SDK can
+        // receive its redirect back into the app during native sign-in. The
+        // plugin throws on an empty string, so builds fall back to a
+        // placeholder until it's set — Google sign-in itself still fails
+        // cleanly at runtime via env.ts until the real client IDs are in .env.
+        iosUrlScheme:
+          read('EXPO_PUBLIC_GOOGLE_IOS_URL_SCHEME') || 'com.googleusercontent.apps.unconfigured',
+      },
+    ],
     [
       'expo-image-picker',
       {
@@ -136,6 +149,8 @@ const config: ExpoConfig = {
     supabaseAnonKey: read('EXPO_PUBLIC_SUPABASE_ANON_KEY'),
     geoapifyApiKey: read('EXPO_PUBLIC_GEOAPIFY_API_KEY'),
     mapboxAccessToken: read('EXPO_PUBLIC_MAPBOX_ACCESS_TOKEN'),
+    googleWebClientId: read('EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID'),
+    googleIosClientId: read('EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID'),
   },
 };
 

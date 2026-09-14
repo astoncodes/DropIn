@@ -5,6 +5,7 @@ import { ActivityIndicator, View } from 'react-native';
 import { AppText, Button } from '../../components/ui/primitives';
 import { supabase } from '../../lib/supabase';
 import { space, usePalette } from '../../theme';
+import { routeAfterSignIn } from './route-after-sign-in';
 
 export function AuthCallback() {
   const colors = usePalette();
@@ -26,9 +27,7 @@ export function AuthCallback() {
         if (!data.session) throw new Error('This sign-in link is missing or has expired.');
       }
 
-      const { data: profile, error: profileError } = await supabase.rpc('current_profile');
-      if (profileError) throw profileError;
-      router.replace(profile?.onboarding_completed_at ? '/profile' : '/onboarding');
+      await routeAfterSignIn(router);
     }
 
     void finishSignIn().catch((callbackError: Error) => setError(callbackError.message));
