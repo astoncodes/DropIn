@@ -62,7 +62,8 @@ const config: ExpoConfig = {
 
   ios: {
     supportsTablet: true,
-    bundleIdentifier: 'com.dropin.app',
+    bundleIdentifier: 'com.playdropin.app',
+    usesAppleSignIn: true,
   },
 
   android: {
