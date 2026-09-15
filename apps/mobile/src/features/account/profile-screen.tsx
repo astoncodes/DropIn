@@ -4,12 +4,12 @@ import { useState } from 'react';
 import { View } from 'react-native';
 
 import { Screen, Title } from '../../components/screen';
-import { BrandMark, SectionHeading } from '../../components/ui/brand';
+import { BrandMark } from '../../components/ui/brand';
 import { EmptyState, Skeleton } from '../../components/ui/activity';
-import { AppText, Button, Chip } from '../../components/ui/primitives';
+import { AppText, Button } from '../../components/ui/primitives';
 import { supabase } from '../../lib/supabase';
 import { useSession } from '../../providers/auth-context';
-import { radius, space, usePalette, useThemePreference, setThemePreference } from '../../theme';
+import { radius, space, usePalette } from '../../theme';
 import { useAccountProfile } from './api';
 import { ProfileForm } from './profile-form';
 import { DeleteAccount } from './delete-account';
@@ -18,7 +18,6 @@ import { PresenceCard } from '../presence/presence-card';
 export function ProfileAccountScreen() {
   const router = useRouter();
   const colors = usePalette();
-  const appearance = useThemePreference();
   const { session, isLoading } = useSession();
   const profile = useAccountProfile(session?.user.id);
   const [editing, setEditing] = useState(false);
@@ -110,36 +109,6 @@ export function ProfileAccountScreen() {
           />
         </>
       )}
-      <View
-        style={{
-          backgroundColor: colors.surface,
-          padding: space.lg,
-          borderRadius: radius.xl,
-          gap: space.md,
-          marginTop: space.md,
-          borderWidth: 1,
-          borderColor: colors.border,
-        }}
-      >
-        <SectionHeading title="Make it yours" subtitle="Choose how Drop In looks on your device." />
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.sm }}>
-          {(['system', 'light', 'dark'] as const).map((value) => (
-            <Chip
-              key={value}
-              label={value === 'system' ? 'System' : value === 'light' ? 'Light' : 'Dark'}
-              icon={
-                value === 'system'
-                  ? 'cellphone'
-                  : value === 'light'
-                    ? 'white-balance-sunny'
-                    : 'weather-night'
-              }
-              selected={appearance === value}
-              onPress={() => setThemePreference(value)}
-            />
-          ))}
-        </View>
-      </View>
       {session && (
         <>
           {signOutError && <AppText tone="alert">{signOutError}</AppText>}

@@ -80,6 +80,12 @@ export function RequiredLocation({ children }: { children: ReactNode }) {
     };
   }, [request]);
 
+  const mustUseSettings = state.status === 'denied' && !state.canAskAgain;
+  const openLocationSettings = () => {
+    setSettingsError(false);
+    void Linking.openSettings().catch(() => setSettingsError(true));
+  };
+
   if (state.status === 'granted') {
     return <RequiredLocationContext value={state.coords}>{children}</RequiredLocationContext>;
   }
@@ -110,19 +116,18 @@ export function RequiredLocation({ children }: { children: ReactNode }) {
               </AppText>
             )}
             <Button
-              label={state.status === 'denied' ? 'Enable location' : 'Try location again'}
+              label={
+                mustUseSettings
+                  ? 'Open location settings'
+                  : state.status === 'denied'
+                    ? 'Enable location'
+                    : 'Try location again'
+              }
               icon="crosshairs-gps"
-              onPress={() => void request()}
+              onPress={mustUseSettings ? openLocationSettings : () => void request()}
             />
-            {Platform.OS !== 'web' && (
-              <Button
-                label="Open settings"
-                variant="outline"
-                onPress={() => {
-                  setSettingsError(false);
-                  void Linking.openSettings().catch(() => setSettingsError(true));
-                }}
-              />
+            {Platform.OS !== 'web' && !mustUseSettings && (
+              <Button label="Open settings" variant="outline" onPress={openLocationSettings} />
             )}
             {settingsError && (
               <AppText tone="alert">

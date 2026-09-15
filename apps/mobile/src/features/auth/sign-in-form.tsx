@@ -10,16 +10,16 @@ import { signInWithGoogle } from './google-sign-in';
 import { authRedirectUrl } from './redirect';
 
 type Status =
-  | { kind: 'idle' }
-  | { kind: 'sending' }
-  | { kind: 'sent'; email: string }
-  | { kind: 'error'; message: string };
+  { kind: 'idle' } | { kind: 'sent'; email: string } | { kind: 'error'; message: string };
+
+type SignInMethod = 'email' | 'apple' | 'google';
 
 export function SignInForm() {
   const colors = usePalette();
   const isDark = useIsDark();
   const [email, setEmail] = useState('');
   const sending = useRef(false);
+  const [activeMethod, setActiveMethod] = useState<SignInMethod | null>(null);
   const [status, setStatus] = useState<Status>({ kind: 'idle' });
   const [appleAvailable, setAppleAvailable] = useState(false);
 
@@ -29,10 +29,15 @@ export function SignInForm() {
   }, []);
 
   /** Shared by email, Apple, and Google — only one sign-in attempt at a time. */
-  async function runSignIn(action: () => Promise<{ error: string | null }>, onSuccess: () => void) {
+  async function runSignIn(
+    method: SignInMethod,
+    action: () => Promise<{ error: string | null }>,
+    onSuccess: () => void,
+  ) {
     if (sending.current) return;
     sending.current = true;
-    setStatus({ kind: 'sending' });
+    setActiveMethod(method);
+    setStatus({ kind: 'idle' });
     try {
       const { error } = await action();
       if (error) setStatus({ kind: 'error', message: error });
@@ -44,6 +49,7 @@ export function SignInForm() {
       });
     } finally {
       sending.current = false;
+      setActiveMethod(null);
     }
   }
 
@@ -57,6 +63,7 @@ export function SignInForm() {
       return;
     }
     void runSignIn(
+      'email',
       () =>
         supabase.auth
           .signInWithOtp({
@@ -68,8 +75,10 @@ export function SignInForm() {
     );
   }
 
-  const handleApple = () => void runSignIn(signInWithApple, () => setStatus({ kind: 'idle' }));
-  const handleGoogle = () => void runSignIn(signInWithGoogle, () => setStatus({ kind: 'idle' }));
+  const handleApple = () =>
+    void runSignIn('apple', signInWithApple, () => setStatus({ kind: 'idle' }));
+  const handleGoogle = () =>
+    void runSignIn('google', signInWithGoogle, () => setStatus({ kind: 'idle' }));
 
   if (status.kind === 'sent') {
     return (
@@ -94,7 +103,7 @@ export function SignInForm() {
       <AppText variant="bodyStrong">Your email address</AppText>
       <TextInput
         value={email}
-        editable={status.kind !== 'sending'}
+        editable={activeMethod === null}
         onChangeText={setEmail}
         onSubmitEditing={sendLink}
         autoCapitalize="none"
@@ -115,8 +124,8 @@ export function SignInForm() {
         label="Continue with email"
         icon="email-fast-outline"
         onPress={sendLink}
-        loading={status.kind === 'sending'}
-        disabled={!email.trim()}
+        loading={activeMethod === 'email'}
+        disabled={activeMethod !== null || !email.trim()}
       />
       <AppText variant="caption" tone="faint">
         No password required. The link expires and can only be used to access your account.
@@ -149,8 +158,8 @@ export function SignInForm() {
         tone="neutral"
         variant="outline"
         onPress={handleGoogle}
-        loading={status.kind === 'sending'}
-        disabled={status.kind === 'sending'}
+        loading={activeMethod === 'google'}
+        disabled={activeMethod !== null}
       />
     </View>
   );

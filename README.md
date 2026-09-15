@@ -168,8 +168,8 @@ On the Live screen, **Create session/run** opens the existing session form.
 Location updates run in the foreground after permission is granted. The recenter
 button appears when the map center is more than 50 metres from the latest location;
 tapping it centers the map and hides the button. The distance threshold ignores
-small GPS fluctuations. Verify panning, recentering, permission denial, draggable
-meeting pins, and theme switching on a device with a configured Mapbox token.
+small GPS fluctuations. Verify panning, recentering, permission denial, and draggable
+meeting pins on a device with a configured Mapbox token.
 
 ## Optional admin and maintenance tools
 
