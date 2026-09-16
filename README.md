@@ -210,15 +210,27 @@ personal-device builds. Then `npm run ios` works normally. You need this anyway
 — Sign in with Apple cannot be exercised in a simulator, only on a signed
 device build.
 
-**Stopgap for simulator-only work**, which skips signing entirely:
+**Stopgap for UI work only**, which skips signing entirely:
 
 ```bash
 npm run ios:sim
 ```
 
 That builds with `CODE_SIGNING_ALLOWED=NO` and installs straight onto a
-simulator via `simctl`. Maps, check-ins, location gating and email sign-in all
-work; Apple and Google sign-in do not.
+simulator via `simctl`.
+
+**It cannot test authentication.** Disabling signing produces an ad-hoc binary
+with _no entitlements applied_ — check with
+`codesign -d --entitlements - <path-to.app>`. So:
+
+- Sign in with Apple fails (needs `com.apple.developer.applesignin`, and does
+  not work in a simulator anyway).
+- Google sign-in fails.
+- `expo-secure-store` cannot reach the keychain, so Supabase session
+  persistence throws `A required entitlement isn't present` and the auth
+  auto-refresh tick fails repeatedly.
+
+Use it for maps, layout and navigation. Everything else needs the Apple ID.
 
 Keep the Supabase URL as the hosted HTTPS URL. A native build uses the configured
 `dropin` auth callback scheme. Physical-device verification remains part of the

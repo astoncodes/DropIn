@@ -8,12 +8,22 @@
  * simulator builds too, so on a machine with no Apple ID in Xcode it fails with
  * "No code signing certificates are available to use" before compiling anything.
  *
- * Simulators do not actually verify signatures, so this builds with
- * CODE_SIGNING_ALLOWED=NO and installs the result directly.
+ * THIS BUILD CANNOT TEST AUTHENTICATION.
  *
- * This is a stopgap for simulator work. Sign in with Apple cannot be exercised
- * in a simulator at all, so testing that still needs an Apple ID in
- * Xcode > Settings > Accounts (a free account is enough) and a normal
+ * `CODE_SIGNING_ALLOWED=NO` produces an ad-hoc, linker-signed binary with **no
+ * entitlements applied at all** — verify with `codesign -d --entitlements -`.
+ * Everything that depends on one therefore fails:
+ *
+ *   - Sign in with Apple needs `com.apple.developer.applesignin`, and does not
+ *     work in a simulator regardless.
+ *   - expo-secure-store needs keychain access, so Supabase session persistence
+ *     throws "A required entitlement isn't present" and the auth auto-refresh
+ *     tick fails on a loop.
+ *   - Google sign-in fails for the same reason.
+ *
+ * Use this for maps, layout, navigation and other UI work only. Anything
+ * touching auth or secure storage needs a properly signed build: add an Apple
+ * ID in Xcode > Settings > Accounts (a free account is enough) and use
  * `npm run ios`.
  *
  *   npm run ios:sim
@@ -108,5 +118,10 @@ run('xcrun', ['simctl', 'launch', simulator.udid, bundleId]);
 console.log(
   `\nLaunched ${bundleId} on ${simulator.name}.\n` +
     'Start the bundler in another terminal if it is not already running:\n\n' +
-    '  npm run mobile\n',
+    '  npm run mobile\n\n' +
+    'NOTE: this build is unsigned and carries no entitlements, so authentication\n' +
+    'does not work. Expect "A required entitlement isn\'t present" from\n' +
+    'expo-secure-store and failures from Apple and Google sign-in. Use it for UI\n' +
+    'and map work; test auth with a signed build (`npm run ios`) after adding an\n' +
+    'Apple ID in Xcode > Settings > Accounts.\n',
 );
