@@ -45,6 +45,20 @@ function loadRootEnv(): Record<string, string> {
 
 const rootEnv = loadRootEnv();
 
+/**
+ * One identifier for both platforms.
+ *
+ * Sign in with Apple binds to the App ID and Google's iOS OAuth client binds to
+ * the bundle ID, so this string must match what is registered in the Apple
+ * Developer portal and in Google Cloud. It is defined once because a value that
+ * differs per platform is a mismatch nobody notices until sign-in fails with an
+ * error that never mentions the identifier.
+ *
+ * Changing it requires `npx expo prebuild --clean` — config plugins write it
+ * into the native project, and an existing ios/ directory keeps the old value.
+ */
+const APP_IDENTIFIER = 'com.playdropin.app';
+
 /** Real environment wins over the .env file, so CI can override without a file. */
 function read(name: string): string {
   return process.env[name] ?? rootEnv[name] ?? '';
@@ -57,17 +71,19 @@ const config: ExpoConfig = {
   orientation: 'portrait',
   icon: './assets/images/icon.png',
   scheme: 'dropin',
-  // The New Architecture is the default in SDK 57 and no longer configurable.
+  // Light-only: the dark palette and the appearance picker were removed, so
+  // honouring the system setting would leave dark-mode devices rendering a
+  // light palette against a dark chrome. See docs/product-rules.md §Appearance.
   userInterfaceStyle: 'light',
 
   ios: {
     supportsTablet: true,
-    bundleIdentifier: 'com.playdropin.app',
+    bundleIdentifier: APP_IDENTIFIER,
     usesAppleSignIn: true,
   },
 
   android: {
-    package: 'com.dropin.app',
+    package: APP_IDENTIFIER,
     adaptiveIcon: {
       backgroundColor: '#F7F7F2',
       foregroundImage: './assets/images/android-icon-foreground.png',

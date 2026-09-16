@@ -11,7 +11,7 @@ import { RequiredLocation } from '../src/features/location/required-location';
  * Root layout.
  *
  * Route files assemble screens; they hold no data access or business rules
- * (docs/architecture.md §Repository scaffold). Device location is required
+ * (CLAUDE.md §Keep routes thin). Device location is required
  * before opening app routes. Account authentication is separately required for
  * actions such as checking in, posting a run and submitting a venue.
  */

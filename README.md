@@ -155,10 +155,82 @@ upload also checks media storage. No additional backend process needs starting.
 
 ## Testing on a phone
 
-Mapbox requires a native build; Expo Go cannot load `@rnmapbox/maps`.
-From `apps/mobile`, build and launch with `npx expo run:ios` or
-`npx expo run:android` (Xcode or Android Studio is required). Rebuild after changing
-native plugins. See the [Mapbox Expo installation guide](https://github.com/rnmapbox/maps/blob/main/plugin/install.md).
+Mapbox requires a native build; Expo Go cannot load `@rnmapbox/maps`. Neither can
+Sign in with Apple or native Google sign-in.
+
+From the repository root:
+
+```bash
+npm run ios       # or: npm run android
+```
+
+Xcode or Android Studio is required. See the
+[Mapbox Expo installation guide](https://github.com/rnmapbox/maps/blob/main/plugin/install.md).
+
+**Regenerate the native project after changing `app.config.ts`:**
+
+```bash
+npx expo prebuild --clean -p ios
+```
+
+Config plugins write entitlements, URL schemes and the bundle identifier at
+prebuild time, not at bundle time. `apps/mobile/ios/` is gitignored, so editing
+`app.config.ts` or `.env` and reloading Metro leaves an existing native project
+untouched — and nothing in `git status` will tell you. That is how Sign in with
+Apple and Google sign-in were both silently broken. `npm test` includes a check
+that fails when the generated project has drifted.
+
+### "No code signing certificates are available to use"
+
+**Cause: Sign in with Apple, plus no Apple ID in Xcode.** The Expo CLI keeps a
+list of entitlements that force a signing check even for simulator builds
+(`@expo/cli/.../codeSigning/simulatorCodeSigning.js`):
+
+```js
+const ENTITLEMENTS_THAT_REQUIRE_CODE_SIGNING = [
+  'com.apple.developer.associated-domains',
+  'com.apple.developer.applesignin',
+];
+```
+
+`usesAppleSignIn: true` in `app.config.ts` puts `com.apple.developer.applesignin`
+into the generated entitlements, so `expo run:ios` now demands a development
+team and stops before compiling if the machine has none. This is not a device
+selection problem, and passing `--device` does not avoid it.
+
+Check whether you have an identity:
+
+```bash
+security find-identity -v -p codesigning     # "0 valid identities found" = none
+```
+
+**The fix is one-time:** Xcode → Settings → Accounts → add your Apple ID. A free
+account gives you a Personal Team, which is enough for simulator and
+personal-device builds. Then `npm run ios` works normally. You need this anyway
+— Sign in with Apple cannot be exercised in a simulator, only on a signed
+device build.
+
+**Stopgap for UI work only**, which skips signing entirely:
+
+```bash
+npm run ios:sim
+```
+
+That builds with `CODE_SIGNING_ALLOWED=NO` and installs straight onto a
+simulator via `simctl`.
+
+**It cannot test authentication.** Disabling signing produces an ad-hoc binary
+with _no entitlements applied_ — check with
+`codesign -d --entitlements - <path-to.app>`. So:
+
+- Sign in with Apple fails (needs `com.apple.developer.applesignin`, and does
+  not work in a simulator anyway).
+- Google sign-in fails.
+- `expo-secure-store` cannot reach the keychain, so Supabase session
+  persistence throws `A required entitlement isn't present` and the auth
+  auto-refresh tick fails repeatedly.
+
+Use it for maps, layout and navigation. Everything else needs the Apple ID.
 
 Keep the Supabase URL as the hosted HTTPS URL. A native build uses the configured
 `dropin` auth callback scheme. Physical-device verification remains part of the

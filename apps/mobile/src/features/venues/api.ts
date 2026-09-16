@@ -2,6 +2,8 @@ import type { FunctionReturns, Tables } from '@dropin/database-types';
 import { useQuery } from '@tanstack/react-query';
 
 import { supabase } from '../../lib/supabase';
+import { runWindowDays } from './run-window';
+import type { RunWindow } from './run-window';
 
 /**
  * Read access for venues and live activity.
@@ -117,19 +119,22 @@ export function useUpcomingRuns(params: {
   sportIds?: number[];
   venueId?: string;
   days?: number;
+  /** Which bound applies. Defaults to the public discovery window. */
+  window?: RunWindow;
   enabled?: boolean;
 }) {
-  const { sportIds = [], venueId, days = 14, enabled = true } = params;
+  const { sportIds = [], venueId, days, window = 'discovery', enabled = true } = params;
+  const boundedDays = runWindowDays(window, days);
 
   return useQuery({
-    queryKey: ['upcoming-runs', venueId ?? 'all', [...sportIds].sort().join(','), days],
+    queryKey: ['upcoming-runs', venueId ?? 'all', [...sportIds].sort().join(','), boundedDays],
     enabled,
     staleTime: 5 * 60 * 1000,
     queryFn: async (): Promise<UpcomingRun[]> => {
       const { data, error } = await supabase.rpc('upcoming_runs', {
         p_sport_ids: sportIds.length > 0 ? sportIds : undefined,
         p_venue_id: venueId,
-        p_days: days,
+        p_days: boundedDays,
       });
       if (error) throw error;
       return data ?? [];

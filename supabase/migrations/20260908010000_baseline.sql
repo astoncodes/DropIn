@@ -2,6 +2,23 @@
 -- Original SQL is preserved in execution order, including reference data and storage policies.
 -- Existing linked databases record this baseline as applied; do not replay it there.
 -- Fresh databases apply this file normally, then supabase/seed.sql for development fixtures.
+--
+-- READING THIS FILE
+--
+-- Because execution order is preserved verbatim, several functions are defined
+-- more than once and only the LAST definition is live. Searching for a name and
+-- reading the first hit will show you superseded code.
+--
+--   public.upcoming_runs      defined 3x  — later versions add pin-located sessions
+--   public.join_run_session   defined 3x
+--   public.handle_new_user    defined 2x
+--
+-- Every repeat is a `create or replace` with an identical signature and return
+-- type, so applying this file to a fresh database converges on the last one.
+-- Collapsing them to a single definition is worthwhile but must not be done
+-- until `npm run db:test` has a project to run against — see TODO.md.
+--
+-- `grep -n 'function public.<name>' <this file> | tail -1` finds the live one.
 
 -- Source: 20260817120000_extensions.sql
 -- Extensions and shared helper routines.
@@ -969,9 +986,13 @@ create policy run_exceptions_select_public
 
 grant select on public.run_exceptions to anon, authenticated;
 
--- Writes go through upsert_run_series() / cancel_run_occurrence() so the
+-- Writes go through create_run() / create_run_at_pin() to open a series, and
+-- edit_run_session() / cancel_run_session() to change one occurrence, so the
 -- 12-week limit, timezone validity and organiser ownership are checked in one
 -- place rather than in each client.
+--
+-- There is no renewal RPC yet: a series stops appearing once valid_until
+-- passes, and the organiser's only route back is to create a new one.
 
 -- Source: 20260818100300_discovery.sql
 -- Read-side RPCs powering discovery.
@@ -1268,8 +1289,13 @@ security definer
 set search_path = ''
 as $$
   -- Follow one merge hop so an old link resolves to the surviving venue
-  -- instead of 404ing. Merge chains are prevented by merge_venues(), so a
-  -- single hop is sufficient.
+  -- instead of 404ing.
+  --
+  -- One hop is sufficient only while nothing can build a merge chain. Today
+  -- nothing writes venues.merged_into_venue_id at all: admin_review_candidate()
+  -- merges a *candidate* into a venue, and there is no venue-to-venue merge
+  -- RPC. Whatever adds one must reject cycles and chains, or this has to
+  -- become a recursive walk.
   with requested as (
     select v.id, v.merged_into_venue_id from public.venues v where v.id = p_venue_id
   ),

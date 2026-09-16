@@ -57,6 +57,12 @@ export function RequiredLocation({ children }: { children: ReactNode }) {
       if (next === 'active') void checkPermission();
     });
     const timer = setInterval(() => {
+      // Polling exists to catch permission being granted while this screen is
+      // up. Once granted, it can only be revoked from outside the app, which
+      // always comes back through the AppState listener above or, on web, the
+      // permissions change event below — so stop making two native calls every
+      // five seconds for the remaining life of the app.
+      if (currentState.current.status === 'granted') return;
       if (AppState.currentState === 'active' || AppState.currentState == null)
         void checkPermission();
     }, 5000);

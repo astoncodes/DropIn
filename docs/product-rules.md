@@ -67,6 +67,45 @@ Client timers also remove a check-in from the UI at `expires_at` even if no data
 
 ---
 
+## Arrival intents — "I'm on my way"
+
+A weaker, unverified signal that sits beside check-ins without ever being mixed into them.
+
+- Any signed-in player may declare they are heading to an active venue for a sport it supports.
+- ETA is **15, 30 or 60 minutes**. The intent expires at that time.
+- One open intent per player, enforced by a partial unique index the same way check-ins are.
+- Checking in at that venue **fulfils** the intent; checking in anywhere else cancels it.
+- **Never added to the here-now count.** A check-in is location-gated and an intent is one tap, so
+  a venue shows "2 here now · 3 heading there" and never "5". Summing them would make the stronger
+  signal worthless, which is the whole reason the weaker one is safe to offer.
+
+## Venue conditions and pulse — read paths only, not yet reportable
+
+Both are fully specified in the schema, read by the discovery RPCs and rendered by the app, and
+**neither can currently be created.** They are listed here so the gap is recorded rather than
+rediscovered.
+
+**Conditions** are short-lived, player-reported facts about a venue: `lights_on`, `lights_off`,
+`wet_surface`, `locked`, `crowded`, `equipment_issue`.
+
+- `lights_off`, `wet_surface`, `locked` and `equipment_issue` are **blocking** — "do not travel".
+  `lights_on` and `crowded` are merely useful. The UI must keep that distinction visible.
+- Readable by anyone, signed in or not, while live. `reported_by` is withheld by column grant, so a
+  condition is never attributable in public — it is retained only for abuse handling.
+- Expiry uses the same `expires_at > now()` predicate check-ins use, so no cleanup job is
+  load-bearing.
+- _Missing:_ there is no insert policy, no insert grant and no reporting RPC. Adding one must also
+  fix `venue_conditions_one_per_kind_per_reporter`, whose predicate `expires_at > '-infinity'`
+  matches every row — so it currently means "one report per kind per reporter **ever**", not the
+  "one _live_ report" its comment claims. A player could never re-report a wet surface.
+
+**Pulse** is a closed vocabulary a player attaches to their own check-in — `need_players`,
+`game_on`, `full_next_game`, `wrapping_up` — deliberately not free text, so it aggregates. A venue
+shows the most recent live check-in's pulse.
+
+- _Missing:_ `create_check_in()` takes no pulse argument, so `check_ins.pulse` is always null and
+  the chip never renders. Adding the parameter is the whole fix.
+
 ## Location gating and privacy
 
 - Foreground location only. Requested when needed, never in the background.
@@ -93,9 +132,14 @@ Weekly series only in v1 — not arbitrary recurrence rules.
 - Charlottetown defaults to `America/Halifax`.
 - **Store local recurrence values, not one UTC instant.** A 7pm run must stay at 7pm across a
   daylight-saving change rather than quietly becoming 6pm.
-- Organizers may edit, cancel, renew, or deactivate. A small exceptions table records a cancelled
-  or time-shifted occurrence.
-- Public queries return a bounded window — initially the next 14 days.
+- Organizers may edit or cancel a single occurrence; a small exceptions table records a cancelled
+  or time-shifted one. **Renewing or deactivating a whole series is not built yet** — see the open
+  decisions table.
+- Public discovery queries return a bounded window — the next **14 days**.
+- A player's **own** schedule may look ahead **84 days**, the longest a series can legally run,
+  because those occurrences are ones they already host or joined. Both bounds live in
+  `RUN_SERIES` in `packages/shared` and are applied by `runWindowDays()` in the mobile client.
+  `upcoming_runs()` itself does not yet cap `p_days`.
 
 Runs go stale the same way check-ins do. A weekly run from an organizer who lost interest misleads
 people for months, so a series must be renewed rather than living forever.
@@ -190,19 +234,33 @@ Do not optimize growth features until this loop is measurably used.
 
 Agents and contributors must **stop and ask** rather than silently choosing.
 
-| Decision                     | Recommended default                                                               | Needed by            |
-| ---------------------------- | --------------------------------------------------------------------------------- | -------------------- |
-| ~~App name and identifiers~~ | **Decided: Drop In.** slug `drop-in`, scheme `dropin://`, bundle `com.dropin.app` | ~~store builds~~     |
-| ~~Auth method~~              | **Decided: Supabase passwordless email magic links; social later**                | ~~Phase 2~~          |
-| Browse without an account    | allow read-only browsing                                                          | Phase 2              |
-| Initial public sports        | basketball, soccer, volleyball, pickleball, tennis                                | Charlottetown launch |
-| Check-in identity display    | display name + avatar while active                                                | Phase 3              |
-| Location threshold           | 250 m, accuracy ≤100 m                                                            | Phase 3              |
-| Party-size cap               | 20                                                                                | Phase 3              |
-| Run lifetime                 | 12 weeks                                                                          | Phase 4              |
-| Production map provider      | native platform maps, adapter seam kept                                           | public beta          |
-| Venue correction flow        | admin contact form before community editing                                       | public beta          |
+| Decision                      | Status                                                                                           | Needed by          |
+| ----------------------------- | ------------------------------------------------------------------------------------------------ | ------------------ |
+| ~~App name~~                  | **Decided: Drop In.** slug `drop-in`, scheme `dropin://`                                         | ~~store builds~~   |
+| ~~Bundle identifier~~         | **Decided: `com.playdropin.app`**, both platforms — see below                                    | ~~store builds~~   |
+| ~~Auth method~~               | **Decided: passwordless email magic links, plus Apple and Google**                               | ~~Phase 2~~        |
+| ~~Browse without an account~~ | **Decided: read-only browsing allowed**; check-in, runs and submissions require an account       | ~~Phase 2~~        |
+| ~~Initial public sports~~     | **Decided: basketball, soccer, volleyball, pickleball, tennis**                                  | ~~Charlottetown~~  |
+| ~~Check-in identity display~~ | **Decided: display name + party size while active**                                              | ~~Phase 3~~        |
+| ~~Location threshold~~        | **Decided: 250 m, accuracy ≤100 m**                                                              | ~~Phase 3~~        |
+| ~~Party-size cap~~            | **Decided: 20**                                                                                  | ~~Phase 3~~        |
+| ~~Run lifetime~~              | **Decided: 12 weeks**                                                                            | ~~Phase 4~~        |
+| ~~Production map provider~~   | **Decided: Mapbox on all platforms**, `VenueMap` seam kept                                       | ~~public beta~~    |
+| ~~Appearance~~                | **Decided: light-only.** Dark palette and the System/Light/Dark picker removed in `89891bf`      | ~~public beta~~    |
+| Series renewal                | organiser extends `valid_until` by up to 12 more weeks — no RPC exists, a lapsed series is stuck | before public beta |
+| Venue-to-venue merge          | admin-only `merge_venues()` — not built, so the `merged` status is unreachable                   | before public beta |
+| Activating `ice-hockey`       | leave inactive — rink access is not pickup play                                                  | owner call         |
+| Venue correction flow         | admin contact form before community editing                                                      | public beta        |
 
-Seeded defaults reflect the recommended column. `ice-hockey` is seeded **inactive** — well
-represented in PEI data, but rink access works differently from pickup play, so activating it is
-an owner call.
+Struck-through rows are settled and are recorded here so nobody reopens them. The remaining rows
+are genuinely open: **stop and ask** rather than choosing one.
+
+`ice-hockey` is seeded **inactive** — well represented in PEI data, but rink access works
+differently from pickup play, so activating it is an owner call.
+
+**Bundle identifier.** `com.playdropin.app` is what `apps/mobile/app.config.ts` declares for both
+platforms and what the generated native project builds. Sign in with Apple binds to the App ID and
+Google's iOS OAuth client binds to the bundle ID, so this string must match what is registered in
+the Apple Developer portal and in Google Cloud. If the registered identifier is really
+`com.dropin.app`, change `APP_IDENTIFIER` in `app.config.ts` and re-run
+`npx expo prebuild --clean` — editing the config alone never reaches an existing `ios/` directory.

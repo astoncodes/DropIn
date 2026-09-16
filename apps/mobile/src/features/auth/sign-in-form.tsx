@@ -8,6 +8,7 @@ import { radius, space, useIsDark, usePalette } from '../../theme';
 import { signInWithApple } from './apple-sign-in';
 import { signInWithGoogle } from './google-sign-in';
 import { authRedirectUrl } from './redirect';
+import { describeSignInFailure, isCancellation, logSignInFailure } from './sign-in-error';
 
 type Status =
   { kind: 'idle' } | { kind: 'sent'; email: string } | { kind: 'error'; message: string };
@@ -42,11 +43,14 @@ export function SignInForm() {
       const { error } = await action();
       if (error) setStatus({ kind: 'error', message: error });
       else onSuccess();
-    } catch {
-      setStatus({
-        kind: 'error',
-        message: 'Could not connect. Check your connection and try again.',
-      });
+    } catch (cause) {
+      // Backing out of a provider sheet is not a failure and gets no message.
+      if (isCancellation(cause)) {
+        setStatus({ kind: 'idle' });
+        return;
+      }
+      logSignInFailure(method, cause);
+      setStatus({ kind: 'error', message: describeSignInFailure(cause) });
     } finally {
       sending.current = false;
       setActiveMethod(null);
