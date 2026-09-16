@@ -246,6 +246,7 @@ Agents and contributors must **stop and ask** rather than silently choosing.
 | ~~Party-size cap~~            | **Decided: 20**                                                                                  | ~~Phase 3~~        |
 | ~~Run lifetime~~              | **Decided: 12 weeks**                                                                            | ~~Phase 4~~        |
 | ~~Production map provider~~   | **Decided: Mapbox on all platforms**, `VenueMap` seam kept                                       | ~~public beta~~    |
+| ~~Appearance~~                | **Decided: light-only.** Dark palette and the System/Light/Dark picker removed in `89891bf`      | ~~public beta~~    |
 | Series renewal                | organiser extends `valid_until` by up to 12 more weeks — no RPC exists, a lapsed series is stuck | before public beta |
 | Venue-to-venue merge          | admin-only `merge_venues()` — not built, so the `merged` status is unreachable                   | before public beta |
 | Activating `ice-hockey`       | leave inactive — rink access is not pickup play                                                  | owner call         |

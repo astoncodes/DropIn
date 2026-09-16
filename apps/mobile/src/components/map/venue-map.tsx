@@ -68,7 +68,7 @@ export default function VenueMap({
     <View style={[StyleSheet.absoluteFill, style]}>
       <MapView
         style={StyleSheet.absoluteFill}
-        styleURL={`mapbox://styles/mapbox/${colorScheme === 'dark' ? 'dark-v11' : 'streets-v12'}`}
+        styleURL="mapbox://styles/mapbox/streets-v12"
         zoomEnabled
         onCameraChanged={(state) => {
           zoom.current = state.properties.zoom;

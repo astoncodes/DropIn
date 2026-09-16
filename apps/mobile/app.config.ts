@@ -72,7 +72,7 @@ const config: ExpoConfig = {
   icon: './assets/images/icon.png',
   scheme: 'dropin',
   // The New Architecture is the default in SDK 57 and no longer configurable.
-  userInterfaceStyle: 'automatic',
+  userInterfaceStyle: 'light',
 
   ios: {
     supportsTablet: true,

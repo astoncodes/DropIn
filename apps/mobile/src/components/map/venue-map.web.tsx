@@ -6,10 +6,11 @@ import { useFonts } from 'expo-font';
 import { useEffect, useRef } from 'react';
 import { sportIcon } from '../ui/primitives';
 import { palettes, sportColor } from '../../theme/tokens';
+import type { ThemeName } from '../../theme/tokens';
 import { env } from '../../lib/env';
 import type { MapMarker, VenueMapProps } from './types';
 
-function markerHtml(marker: MapMarker, scheme: 'light' | 'dark'): string {
+function markerHtml(marker: MapMarker, scheme: ThemeName): string {
   const colors = palettes[scheme];
   const session = marker.kind === 'session';
   const fill = sportColor(marker.sportSlug);
@@ -44,7 +45,6 @@ export default function VenueMap({
   const [fontsLoaded] = useFonts(MaterialCommunityIcons.font);
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
-  const appliedScheme = useRef(colorScheme);
   const callbacks = useRef({ onRegionChange, onPressCoordinate });
   useEffect(() => {
     callbacks.current = { onRegionChange, onPressCoordinate };
@@ -59,7 +59,7 @@ export default function VenueMap({
       maxZoom: 19,
       scrollZoom: true,
       touchZoomRotate: true,
-      style: `mapbox://styles/mapbox/${colorScheme === 'dark' ? 'dark-v11' : 'streets-v12'}`,
+      style: 'mapbox://styles/mapbox/streets-v12',
       center: [region.longitude, region.latitude],
       zoom: Math.log2(360 / Math.max(region.longitudeDelta, 0.0001)),
     });
@@ -85,18 +85,9 @@ export default function VenueMap({
       map.remove();
       mapRef.current = null;
     };
-    // Camera and style changes are handled without replacing the map.
+    // Camera changes are handled without replacing the map.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  useEffect(() => {
-    if (appliedScheme.current === colorScheme) return;
-    appliedScheme.current = colorScheme;
-    mapRef.current?.setStyle(
-      `mapbox://styles/mapbox/${colorScheme === 'dark' ? 'dark-v11' : 'streets-v12'}`,
-      { diff: false, localFontFamily: undefined, localIdeographFontFamily: undefined },
-    );
-  }, [colorScheme]);
 
   useEffect(() => {
     const map = mapRef.current;

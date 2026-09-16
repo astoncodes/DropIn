@@ -155,10 +155,30 @@ upload also checks media storage. No additional backend process needs starting.
 
 ## Testing on a phone
 
-Mapbox requires a native build; Expo Go cannot load `@rnmapbox/maps`.
-From `apps/mobile`, build and launch with `npx expo run:ios` or
-`npx expo run:android` (Xcode or Android Studio is required). Rebuild after changing
-native plugins. See the [Mapbox Expo installation guide](https://github.com/rnmapbox/maps/blob/main/plugin/install.md).
+Mapbox requires a native build; Expo Go cannot load `@rnmapbox/maps`. Neither can
+Sign in with Apple or native Google sign-in.
+
+From the repository root:
+
+```bash
+npm run ios       # or: npm run android
+```
+
+Xcode or Android Studio is required. See the
+[Mapbox Expo installation guide](https://github.com/rnmapbox/maps/blob/main/plugin/install.md).
+
+**Regenerate the native project after changing `app.config.ts`:**
+
+```bash
+npx expo prebuild --clean -p ios
+```
+
+Config plugins write entitlements, URL schemes and the bundle identifier at
+prebuild time, not at bundle time. `apps/mobile/ios/` is gitignored, so editing
+`app.config.ts` or `.env` and reloading Metro leaves an existing native project
+untouched — and nothing in `git status` will tell you. That is how Sign in with
+Apple and Google sign-in were both silently broken. `npm test` includes a check
+that fails when the generated project has drifted.
 
 Keep the Supabase URL as the hosted HTTPS URL. A native build uses the configured
 `dropin` auth callback scheme. Physical-device verification remains part of the
@@ -168,8 +188,8 @@ On the Live screen, **Create session/run** opens the existing session form.
 Location updates run in the foreground after permission is granted. The recenter
 button appears when the map center is more than 50 metres from the latest location;
 tapping it centers the map and hides the button. The distance threshold ignores
-small GPS fluctuations. Verify panning, recentering, permission denial, draggable
-meeting pins, and theme switching on a device with a configured Mapbox token.
+small GPS fluctuations. Verify panning, recentering, permission denial, and draggable
+meeting pins on a device with a configured Mapbox token.
 
 ## Optional admin and maintenance tools
 

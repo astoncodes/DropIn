@@ -2,7 +2,7 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
-import { usePalette, useIsDark } from '../src/theme';
+import { usePalette } from '../src/theme';
 
 import { AppProviders } from '../src/providers';
 import { RequiredLocation } from '../src/features/location/required-location';
@@ -17,11 +17,10 @@ import { RequiredLocation } from '../src/features/location/required-location';
  */
 export default function RootLayout() {
   const colors = usePalette();
-  const dark = useIsDark();
   return (
     <SafeAreaProvider>
       <AppProviders>
-        <StatusBar style={dark ? 'light' : 'dark'} />
+        <StatusBar style="dark" />
         <RequiredLocation>
           <Stack
             screenOptions={{

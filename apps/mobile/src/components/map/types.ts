@@ -1,5 +1,7 @@
 /** Shared map boundary for native Mapbox and Mapbox GL JS on web. */
 
+import type { ThemeName } from '../../theme/tokens';
+
 export type MapMarker = {
   id: string;
   /** Locations and sessions retain distinct shapes regardless of activity. */
@@ -41,6 +43,6 @@ export type VenueMapProps = {
   onRegionChange?: (region: MapRegion) => void;
   /** Blue dot for the user, when location permission has been granted. */
   userLocation?: { latitude: number; longitude: number } | null;
-  colorScheme: 'light' | 'dark';
+  colorScheme: ThemeName;
   style?: object;
 };

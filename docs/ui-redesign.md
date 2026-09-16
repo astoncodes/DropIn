@@ -1,15 +1,23 @@
 # Drop In UI redesign
 
 The redesign follows the supplied Drop In references: warm off-white surfaces,
-evergreen actions, rounded cards, consistent sport colours and icons, and a
-matching dark theme. Existing real venue/session data and the user's map-marker
-and personal-schedule changes are preserved.
+evergreen actions, rounded cards, and consistent sport colours and icons.
+Existing real venue/session data and the user's map-marker and
+personal-schedule changes are preserved.
+
+**The app ships light-only.** A dark palette and System/Light/Dark controls were
+built and then removed in `89891bf`: `ThemeName` is now `'light'`, `usePalette()`
+always returns the light palette, and both map components are pinned to
+`streets-v12`. `useIsDark()` and `useThemeName()` survive as constants so call
+sites did not all have to change — treat them as dead indirection, not as a
+theming seam.
 
 ## Implemented
 
 - Shared brand mark, sport badges, typography, spacing, button sizing, loading
   indicators, and selected-state accessibility for web and native.
-- Persistent System / Light / Dark appearance controls in Profile.
+- Light-only appearance. The System/Light/Dark controls this line once described
+  were removed with the dark palette in `89891bf`.
 - Live map with coloured sport markers, compact header, accessible expand/collapse
   control, scrolling venue results, and a desktop side panel.
 - Venue details with an actual map, activity, directions, session creation and
@@ -25,7 +33,7 @@ and personal-schedule changes are preserved.
   signing and remote environment configuration remain owner setup tasks.
 - Welcome screen and email sign-in with validation, connection errors, duplicate
   submission protection, and a clear browse-without-an-account action.
-- Profile identity and editing, appearance settings, and sign-out error handling.
+- Profile identity and editing, and sign-out error handling.
 - Confirmed account deletion with retryable storage cleanup, hosted-session and
   participant-media removal, and persistent local sign-out after deletion.
 - Location permission and an available device reading now gate all mobile app
@@ -70,7 +78,7 @@ and personal-schedule changes are preserved.
   removed afterward. No email was sent to an inbox.
 - Public browser flows pass: venue-to-session navigation, authentication gate,
   Discover search/filter/Moments, invalid email handling, stubbed email-link
-  delivery, persisted appearance, desktop map layout, and narrow admin layout.
+  delivery, desktop map layout, and narrow admin layout.
   No browser runtime exceptions were observed.
 
 - Hosted live-presence API checks pass: location accuracy/distance/timestamp,

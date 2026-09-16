@@ -25,7 +25,7 @@ const brand = {
   offWhite: '#F7F7F2',
 } as const;
 
-export type ThemeName = 'light' | 'dark';
+export type ThemeName = 'light';
 
 export type Palette = {
   background: string;
@@ -96,39 +96,6 @@ export const palettes: Record<ThemeName, Palette> = {
 
     scrim: 'rgba(8,19,15,0.45)',
     mapOverlayInk: brand.fieldInk,
-  },
-  dark: {
-    background: '#0D1C18',
-    backgroundElevated: '#101E19',
-    surface: '#132520',
-    surfaceMuted: '#1B322B',
-    surfaceInverse: brand.offWhite,
-    border: '#224037',
-    borderStrong: '#2F5A4C',
-
-    text: '#E8F0EA',
-    textMuted: '#9DB3A8',
-    textFaint: '#8DA69B',
-    textInverse: brand.fieldInk,
-
-    live: brand.fieldGreen,
-    liveSoft: 'rgba(23,199,123,0.16)',
-    liveText: '#7BE9B6',
-    soon: brand.gameAmber,
-    soonSoft: 'rgba(255,181,71,0.16)',
-    soonText: '#FFD79A',
-    info: '#6BA1FF',
-    infoSoft: 'rgba(59,130,246,0.18)',
-    alert: brand.liveCoral,
-    alertSoft: 'rgba(255,93,93,0.16)',
-    accent: brand.electricLime,
-
-    glassFill: 'rgba(19,37,32,0.62)',
-    glassBorder: 'rgba(232,240,234,0.12)',
-    glassOpaque: '#132520',
-
-    scrim: 'rgba(0,0,0,0.55)',
-    mapOverlayInk: '#040A08',
   },
 };
 
