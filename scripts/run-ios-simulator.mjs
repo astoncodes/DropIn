@@ -1,0 +1,112 @@
+#!/usr/bin/env node
+/**
+ * Builds and launches the iOS app on a simulator without a signing identity.
+ *
+ * `expo run:ios` refuses to build when the project declares an entitlement from
+ * its ENTITLEMENTS_THAT_REQUIRE_CODE_SIGNING list — `com.apple.developer.applesignin`
+ * is on it — unless a development team is configured. That check runs for
+ * simulator builds too, so on a machine with no Apple ID in Xcode it fails with
+ * "No code signing certificates are available to use" before compiling anything.
+ *
+ * Simulators do not actually verify signatures, so this builds with
+ * CODE_SIGNING_ALLOWED=NO and installs the result directly.
+ *
+ * This is a stopgap for simulator work. Sign in with Apple cannot be exercised
+ * in a simulator at all, so testing that still needs an Apple ID in
+ * Xcode > Settings > Accounts (a free account is enough) and a normal
+ * `npm run ios`.
+ *
+ *   npm run ios:sim
+ */
+
+import { execFileSync } from 'node:child_process';
+import { existsSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const repoRoot = join(dirname(fileURLToPath(import.meta.url)), '..');
+const iosDir = join(repoRoot, 'apps/mobile/ios');
+const workspace = join(iosDir, 'DropIn.xcworkspace');
+
+function run(file, args, options = {}) {
+  return execFileSync(file, args, { encoding: 'utf8', ...options });
+}
+
+if (!existsSync(workspace)) {
+  console.error(
+    'No native project found. Generate one first:\n\n' +
+      '  cd apps/mobile && npx expo prebuild --clean -p ios\n',
+  );
+  process.exit(1);
+}
+
+/** Prefer an already-booted simulator so repeat runs reuse the same device. */
+function pickSimulator() {
+  const devices = JSON.parse(run('xcrun', ['simctl', 'list', 'devices', '--json'])).devices;
+  const all = Object.values(devices)
+    .flat()
+    .filter((device) => device.isAvailable && /^iPhone/.test(device.name));
+  if (all.length === 0) {
+    console.error(
+      'No available iPhone simulators. Install one from Xcode > Settings > Components.',
+    );
+    process.exit(1);
+  }
+  return all.find((device) => device.state === 'Booted') ?? all.at(-1);
+}
+
+const simulator = pickSimulator();
+console.log(`> Simulator: ${simulator.name} (${simulator.udid})`);
+
+if (simulator.state !== 'Booted') {
+  console.log('> Booting…');
+  run('xcrun', ['simctl', 'boot', simulator.udid]);
+}
+// Bring Simulator.app forward so the launch is visible rather than headless.
+try {
+  run('open', ['-a', 'Simulator']);
+} catch {
+  // A missing Simulator.app is not fatal; the install and launch still work.
+}
+
+console.log('> Building (this takes several minutes the first time)…');
+run(
+  'xcodebuild',
+  [
+    '-workspace',
+    workspace,
+    '-scheme',
+    'DropIn',
+    '-configuration',
+    'Debug',
+    '-destination',
+    `platform=iOS Simulator,id=${simulator.udid}`,
+    '-derivedDataPath',
+    join(iosDir, 'build'),
+    'CODE_SIGNING_ALLOWED=NO',
+    'build',
+  ],
+  { stdio: ['ignore', 'ignore', 'inherit'] },
+);
+
+const app = join(iosDir, 'build/Build/Products/Debug-iphonesimulator/DropIn.app');
+if (!existsSync(app)) {
+  console.error(`Build reported success but ${app} is missing.`);
+  process.exit(1);
+}
+
+const bundleId = run('/usr/libexec/PlistBuddy', [
+  '-c',
+  'Print :CFBundleIdentifier',
+  join(app, 'Info.plist'),
+]).trim();
+
+console.log(`> Installing ${bundleId}…`);
+run('xcrun', ['simctl', 'install', simulator.udid, app]);
+run('xcrun', ['simctl', 'launch', simulator.udid, bundleId]);
+
+console.log(
+  `\nLaunched ${bundleId} on ${simulator.name}.\n` +
+    'Start the bundler in another terminal if it is not already running:\n\n' +
+    '  npm run mobile\n',
+);

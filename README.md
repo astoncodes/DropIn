@@ -182,32 +182,43 @@ that fails when the generated project has drifted.
 
 ### "No code signing certificates are available to use"
 
-`expo run:ios` picks a target device before it builds. Because
-`supportsTablet: true` makes this Mac itself a valid Designed-for-iPad
-destination, it can select the Mac, decide it is a physical device, and stop
-there — before compiling anything — if the machine has no signing identity.
-Check with:
+**Cause: Sign in with Apple, plus no Apple ID in Xcode.** The Expo CLI keeps a
+list of entitlements that force a signing check even for simulator builds
+(`@expo/cli/.../codeSigning/simulatorCodeSigning.js`):
+
+```js
+const ENTITLEMENTS_THAT_REQUIRE_CODE_SIGNING = [
+  'com.apple.developer.associated-domains',
+  'com.apple.developer.applesignin',
+];
+```
+
+`usesAppleSignIn: true` in `app.config.ts` puts `com.apple.developer.applesignin`
+into the generated entitlements, so `expo run:ios` now demands a development
+team and stops before compiling if the machine has none. This is not a device
+selection problem, and passing `--device` does not avoid it.
+
+Check whether you have an identity:
 
 ```bash
 security find-identity -v -p codesigning     # "0 valid identities found" = none
 ```
 
-Fix it once in Xcode → Settings → Accounts → add your Apple ID. A free account
-is enough for simulator and personal-device builds; open
-`apps/mobile/ios/DropIn.xcworkspace` and pick the personal team under Signing &
-Capabilities.
+**The fix is one-time:** Xcode → Settings → Accounts → add your Apple ID. A free
+account gives you a Personal Team, which is enough for simulator and
+personal-device builds. Then `npm run ios` works normally. You need this anyway
+— Sign in with Apple cannot be exercised in a simulator, only on a signed
+device build.
 
-To build without signing at all, target a simulator directly:
+**Stopgap for simulator-only work**, which skips signing entirely:
 
 ```bash
-xcrun simctl list devices available | grep iPhone    # copy a UDID
-xcodebuild -workspace apps/mobile/ios/DropIn.xcworkspace -scheme DropIn \
-  -configuration Debug -destination 'platform=iOS Simulator,id=<UDID>' \
-  CODE_SIGNING_ALLOWED=NO build
+npm run ios:sim
 ```
 
-Sign in with Apple needs a real signed build on a device; it does not work in
-the simulator.
+That builds with `CODE_SIGNING_ALLOWED=NO` and installs straight onto a
+simulator via `simctl`. Maps, check-ins, location gating and email sign-in all
+work; Apple and Google sign-in do not.
 
 Keep the Supabase URL as the hosted HTTPS URL. A native build uses the configured
 `dropin` auth callback scheme. Physical-device verification remains part of the
