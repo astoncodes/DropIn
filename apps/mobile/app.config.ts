@@ -71,7 +71,9 @@ const config: ExpoConfig = {
   orientation: 'portrait',
   icon: './assets/images/icon.png',
   scheme: 'dropin',
-  // The New Architecture is the default in SDK 57 and no longer configurable.
+  // Light-only: the dark palette and the appearance picker were removed, so
+  // honouring the system setting would leave dark-mode devices rendering a
+  // light palette against a dark chrome. See docs/product-rules.md §Appearance.
   userInterfaceStyle: 'light',
 
   ios: {

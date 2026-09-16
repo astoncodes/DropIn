@@ -23,6 +23,7 @@ export default defineConfig({
     alias: {
       'expo-constants': stub('expo-constants'),
       'expo-linking': stub('expo-linking'),
+      'expo-secure-store': stub('expo-secure-store'),
       'react-native-url-polyfill/auto': stub('url-polyfill'),
       'react-native': stub('react-native'),
     },

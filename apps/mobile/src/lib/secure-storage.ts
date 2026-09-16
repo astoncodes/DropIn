@@ -20,8 +20,52 @@ const CHUNK_SIZE = 1536;
 const manifestKey = (key: string) => `${key}.manifest`;
 const chunkKey = (key: string, index: number) => `${key}.${index}`;
 
+/**
+ * Keychain access can fail for reasons the app cannot fix: the device is
+ * locked, or the build carries no keychain entitlement. Supabase reads this
+ * adapter on the way to attaching an access token, so a rejection here does not
+ * merely lose the session — it rejects every request that needed one, and the
+ * UI reports a network problem it does not have.
+ *
+ * Every operation therefore degrades instead of throwing. A failed read reports
+ * "no stored session", which is true and recoverable by signing in again; a
+ * failed write is reported but cannot be retried usefully from here.
+ */
+type Operation = 'read' | 'write' | 'delete';
+
+/** One log line per operation kind. The auth refresh timer retries on a loop. */
+const reported = new Set<Operation>();
+
+function reportFailure(operation: Operation, key: string, cause: unknown): void {
+  if (reported.has(operation)) return;
+  reported.add(operation);
+  console.error(
+    `[secure-storage] keychain ${operation} failed for "${key}". ` +
+      'The session cannot be read or persisted, so you will be signed out. ' +
+      'On a simulator build this usually means the app was built without ' +
+      'entitlements (see README, "No code signing certificates").',
+    cause,
+  );
+}
+
+async function guard<T>(
+  operation: Operation,
+  key: string,
+  fallback: T,
+  action: () => Promise<T>,
+): Promise<T> {
+  try {
+    const result = await action();
+    reported.delete(operation);
+    return result;
+  } catch (cause) {
+    reportFailure(operation, key, cause);
+    return fallback;
+  }
+}
+
 async function readChunkCount(key: string): Promise<number> {
-  const manifest = await SecureStore.getItemAsync(manifestKey(key));
+  const manifest = await guard('read', key, null, () => SecureStore.getItemAsync(manifestKey(key)));
   if (!manifest) return 0;
 
   const count = Number.parseInt(manifest, 10);
@@ -29,11 +73,10 @@ async function readChunkCount(key: string): Promise<number> {
 }
 
 async function clearChunks(key: string, count: number): Promise<void> {
-  const deletions: Promise<void>[] = [SecureStore.deleteItemAsync(manifestKey(key))];
-  for (let index = 0; index < count; index += 1) {
-    deletions.push(SecureStore.deleteItemAsync(chunkKey(key, index)));
-  }
-  await Promise.all(deletions);
+  const keys = [manifestKey(key), ...Array.from({ length: count }, (_, i) => chunkKey(key, i))];
+  await guard('delete', key, undefined, async () => {
+    await Promise.all(keys.map((name) => SecureStore.deleteItemAsync(name)));
+  });
 }
 
 export const secureStorage = {
@@ -41,9 +84,14 @@ export const secureStorage = {
     const count = await readChunkCount(key);
     if (count === 0) return null;
 
-    const chunks = await Promise.all(
-      Array.from({ length: count }, (_, index) => SecureStore.getItemAsync(chunkKey(key, index))),
+    const chunks = await guard('read', key, [], () =>
+      Promise.all(
+        Array.from({ length: count }, (_, index) => SecureStore.getItemAsync(chunkKey(key, index))),
+      ),
     );
+    // A failed read yields no chunks, which the missing-chunk branch below
+    // already treats as absent.
+    if (chunks.length !== count) return null;
 
     // A missing chunk means a partial write — an interrupted save, or a value
     // written by an older build. Treat it as absent rather than returning
@@ -66,13 +114,19 @@ export const secureStorage = {
       chunks.push(value.slice(offset, offset + CHUNK_SIZE));
     }
 
-    await Promise.all(
-      chunks.map((chunk, index) => SecureStore.setItemAsync(chunkKey(key, index), chunk)),
-    );
+    const written = await guard('write', key, false, async () => {
+      await Promise.all(
+        chunks.map((chunk, index) => SecureStore.setItemAsync(chunkKey(key, index), chunk)),
+      );
+      // Written last, so an interrupted save leaves no manifest and therefore
+      // reads as absent rather than as a truncated session.
+      await SecureStore.setItemAsync(manifestKey(key), String(chunks.length));
+      return true;
+    });
 
-    // Written last, so an interrupted save leaves no manifest and therefore
-    // reads as absent rather than as a truncated session.
-    await SecureStore.setItemAsync(manifestKey(key), String(chunks.length));
+    // Leave nothing half-written behind. Without the manifest a later read
+    // already reports absent, but orphaned chunks would linger in the keychain.
+    if (!written) await clearChunks(key, chunks.length);
   },
 
   async removeItem(key: string): Promise<void> {
