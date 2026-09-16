@@ -180,6 +180,35 @@ untouched — and nothing in `git status` will tell you. That is how Sign in wit
 Apple and Google sign-in were both silently broken. `npm test` includes a check
 that fails when the generated project has drifted.
 
+### "No code signing certificates are available to use"
+
+`expo run:ios` picks a target device before it builds. Because
+`supportsTablet: true` makes this Mac itself a valid Designed-for-iPad
+destination, it can select the Mac, decide it is a physical device, and stop
+there — before compiling anything — if the machine has no signing identity.
+Check with:
+
+```bash
+security find-identity -v -p codesigning     # "0 valid identities found" = none
+```
+
+Fix it once in Xcode → Settings → Accounts → add your Apple ID. A free account
+is enough for simulator and personal-device builds; open
+`apps/mobile/ios/DropIn.xcworkspace` and pick the personal team under Signing &
+Capabilities.
+
+To build without signing at all, target a simulator directly:
+
+```bash
+xcrun simctl list devices available | grep iPhone    # copy a UDID
+xcodebuild -workspace apps/mobile/ios/DropIn.xcworkspace -scheme DropIn \
+  -configuration Debug -destination 'platform=iOS Simulator,id=<UDID>' \
+  CODE_SIGNING_ALLOWED=NO build
+```
+
+Sign in with Apple needs a real signed build on a device; it does not work in
+the simulator.
+
 Keep the Supabase URL as the hosted HTTPS URL. A native build uses the configured
 `dropin` auth callback scheme. Physical-device verification remains part of the
 [release checklist](docs/release-checklist.md).
