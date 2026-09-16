@@ -16,14 +16,12 @@ const config = getDefaultConfig(projectRoot);
 // Watch the whole workspace so changes in packages/* trigger a reload.
 config.watchFolders = [workspaceRoot];
 
-// Resolve from the app first, then the hoisted root.
+// Resolve from the app first, then the hoisted root. This ordering is what
+// keeps a hoisted copy from shadowing a workspace-local one; `expo/metro-config`
+// keeps hierarchical lookup enabled on top of it, which expo-doctor checks for.
 config.resolver.nodeModulesPaths = [
   path.resolve(projectRoot, 'node_modules'),
   path.resolve(workspaceRoot, 'node_modules'),
 ];
-
-// Stop Metro walking further up the filesystem than the workspace root, which
-// otherwise produces confusing duplicate-module errors.
-config.resolver.disableHierarchicalLookup = true;
 
 module.exports = config;

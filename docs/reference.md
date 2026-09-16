@@ -557,19 +557,35 @@ Review, approval, rejection, removal, verification, and merge functions write au
 
 Business-rule functions should set an explicit empty `search_path`, schema-qualify all objects, validate `auth.uid()`, and grant execution only to intended roles.
 
-| Function                                                               | Caller                                      | Responsibility                                                       |
-| ---------------------------------------------------------------------- | ------------------------------------------- | -------------------------------------------------------------------- |
-| `nearby_venues(lat, lon, radius_m, sport_ids)`                         | public/authenticated                        | Return active canonical venues and live aggregate counts             |
-| `venue_details(venue_id)`                                              | public/authenticated                        | Resolve merged IDs and return one public venue payload               |
-| `find_duplicate_candidates(location, sport_ids, radius_m, exclude_id)` | importer/admin/authenticated submission RPC | Rank nearby active venues; never merge                               |
-| `submit_venue(...)`                                                    | authenticated                               | Validate input, run duplicate detection, create candidate            |
-| `review_venue_candidate(...)`                                          | admin                                       | Approve new, merge to existing, or reject transactionally            |
-| `merge_venues(loser_id, winner_id, reason)`                            | admin                                       | Move references, preserve alias row, prevent cycles, audit           |
-| `create_check_in(...)`                                                 | authenticated                               | Validate venue/sport/duration/location and enforce one open check-in |
-| `end_check_in(check_in_id)`                                            | owner/admin                                 | End immediately with a valid reason                                  |
-| `extend_check_in(check_in_id, ...)`                                    | owner                                       | Revalidate location and cap duration                                 |
-| `upsert_run_series(...)`                                               | authenticated                               | Validate organizer, venue/sport, timezone, and 12-week limit         |
-| `upcoming_runs(region_id, sport_ids, from, to)`                        | public/authenticated                        | Materialize weekly occurrences and apply exceptions                  |
+Names below are the ones that actually exist in `supabase/migrations/`. Where this table once
+listed a planned name that was never used, the built name is given and the planned one noted.
+
+| Function                                                               | Caller                             | Responsibility                                                       |
+| ---------------------------------------------------------------------- | ---------------------------------- | -------------------------------------------------------------------- |
+| `nearby_venues(lat, lon, radius_m, sport_ids)`                         | public/authenticated               | Return active canonical venues and live aggregate counts             |
+| `venue_details(venue_id)`                                              | public/authenticated               | Resolve merged IDs and return one public venue payload               |
+| `venue_activity(venue_id)`                                             | public/authenticated               | Per-person check-in and arrival rows behind a venue's counts         |
+| `find_duplicate_candidates(location, sport_ids, radius_m, exclude_id)` | admin/authenticated submission RPC | Rank nearby active venues; never merge                               |
+| `submit_venue(...)`                                                    | authenticated                      | Validate input, run duplicate detection, create candidate            |
+| `admin_review_candidate(...)`                                          | admin                              | Approve new, fold into existing, or reject transactionally           |
+| `admin_update_venue(...)`                                              | admin                              | Edit name, address, status, verification and sports; audited         |
+| `create_check_in(...)`                                                 | authenticated                      | Validate venue/sport/duration/location and enforce one open check-in |
+| `end_check_in(check_in_id)`                                            | owner                              | End immediately with a valid reason                                  |
+| `extend_check_in(check_in_id, minutes)`                                | owner                              | Cap the total window at 4 hours from `started_at`                    |
+| `set_arrival_intent(...)` / `cancel_arrival_intent(id)`                | authenticated                      | Open or withdraw the single "on my way" signal                       |
+| `create_run(...)` / `create_run_at_pin(...)`                           | authenticated                      | Open a weekly series at a venue or at a dropped pin                  |
+| `edit_run_session(...)` / `cancel_run_session(id)`                     | organizer                          | Reschedule or cancel one occurrence, recording an exception          |
+| `join_run_session(...)` / `leave_run_session(id)`                      | authenticated                      | Join or leave one dated occurrence                                   |
+| `upcoming_runs(region_id, sport_ids, venue_id, from, days)`            | public/authenticated               | Materialize weekly occurrences and apply exceptions                  |
+
+**Planned but not built.** Do not write code that calls these — they do not exist:
+
+| Function                                    | Intended responsibility                                    | Status                                                                                     |
+| ------------------------------------------- | ---------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| `merge_venues(loser_id, winner_id, reason)` | Move references, preserve alias row, prevent cycles, audit | Never written. Nothing sets `merged_into_venue_id`, so the `merged` status is unreachable. |
+| `upsert_run_series(...)`                    | One entry point for creating **and renewing** a series     | Split into `create_run` / `create_run_at_pin`; the renewal half was never built.           |
+| `cancel_run_occurrence(...)`                | Cancel a single occurrence                                 | Built as `cancel_run_session(session_id)`.                                                 |
+| `review_venue_candidate(...)`               | Review a submission                                        | Built as `admin_review_candidate(...)`.                                                    |
 
 ### Duplicate ranking
 
@@ -628,7 +644,13 @@ pgTAP runner described in the README. Generated types come from the hosted schem
 
 ---
 
-## 11. Realtime behavior
+## 11. Realtime behavior — designed, not built
+
+> **Not the current implementation.** There are no `.channel()` subscriptions in either client.
+> Freshness comes from React Query `refetchInterval` (15 s for venue activity and presence, 8 s for
+> session chat, 30–60 s for slower lists) plus an `AppState` invalidation on foreground. See
+> `docs/architecture.md` §Freshness is polled, not pushed. The design below is the intended
+> destination; the last two bullets already hold today.
 
 Use Realtime only for `check_ins` in v1.
 

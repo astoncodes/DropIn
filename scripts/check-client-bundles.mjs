@@ -30,8 +30,16 @@ const BUNDLE_DIRS = ['apps/admin/dist', 'apps/mobile/dist'];
 
 /** Prefixes that mark a variable as intentionally public. */
 const PUBLIC_PREFIXES = ['VITE_', 'EXPO_PUBLIC_'];
-// Embedded in the Android manifest by the map plugin; provider restrictions protect it.
-const PUBLIC_NATIVE_KEYS = new Set(['GOOGLE_MAPS_ANDROID_API_KEY']);
+/**
+ * Variables a native build is expected to embed, so finding one in a bundle is
+ * not evidence of a leak.
+ *
+ * Empty on purpose. Maps are served by `@rnmapbox/maps`, whose token arrives
+ * through `EXPO_PUBLIC_MAPBOX_ACCESS_TOKEN` and is covered by the public prefix
+ * rule above. Add a key here only when a plugin genuinely writes it into a
+ * manifest, and say which plugin.
+ */
+const PUBLIC_NATIVE_KEYS = new Set();
 
 /** Values too short or generic to be meaningful evidence of a leak. */
 const MIN_SECRET_LENGTH = 12;

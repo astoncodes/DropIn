@@ -60,8 +60,15 @@ export const DUPLICATE_DISTANCE_METRES = {
 /** §Recurring runs — a series must be renewed rather than living forever. */
 export const RUN_SERIES = {
   maxWeeksValid: 12,
-  /** Public occurrence queries are bounded to this window. */
+  /** Public discovery queries are bounded to this window. */
   upcomingWindowDays: 14,
+  /**
+   * A player's own schedule may look ahead as far as a series can legally run,
+   * because those occurrences are ones they already host or joined. This is a
+   * deliberately different window from public discovery, not a relaxation of
+   * it — keep it equal to `maxWeeksValid` weeks.
+   */
+  personalScheduleWindowDays: 84,
 } as const;
 
 /** Publication state. Distinct from verification — see VerificationState. */

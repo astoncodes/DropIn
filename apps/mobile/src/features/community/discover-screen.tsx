@@ -23,7 +23,7 @@ export function DiscoverScreen() {
   const [search, setSearch] = useState('');
   const [showSearch, setShowSearch] = useState(false);
   const [error, setError] = useState('');
-  const runs = useUpcomingRuns({ sportIds: selectedSports, days: 28 });
+  const runs = useUpcomingRuns({ sportIds: selectedSports, window: 'discovery' });
   const sports = useSports();
   const attendance = useRunAttendance(
     (runs.data ?? []).map((run) => run.run_series_id),

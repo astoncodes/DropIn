@@ -13,9 +13,9 @@ import { AuthContext } from './auth-context';
 /**
  * Every provider the app needs, composed once.
  *
- * Session state lives here and nowhere else (docs/architecture.md §Client
- * state). There is deliberately no global state store — add one only if state
- * ever genuinely spans unrelated features.
+ * Session state lives here and nowhere else (docs/reference.md §14 Client state
+ * and error behavior). There is deliberately no global state store — add one
+ * only if state ever genuinely spans unrelated features.
  */
 
 const queryClient = new QueryClient({

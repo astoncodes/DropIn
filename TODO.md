@@ -1,73 +1,96 @@
 # TODO
 
-## Apple and Google sign-in
+Open work only. Anything listed here is genuinely unbuilt or unverified — if it
+is done, delete the entry rather than leaving a ticked box behind.
 
-The app currently supports email-link sign-in through Supabase. Complete provider
-configuration and add the social sign-in buttons below.
+Product decisions belong in `docs/product-rules.md`, not here.
 
-### Google provider
+## Database tests have no target
 
-- [ ] Select or create a project in [Google Cloud Console](https://console.cloud.google.com/).
-- [ ] Configure Google Auth Platform branding, audience, and test users. Use the
-  `openid`, email, and profile scopes.
-- [ ] Create an OAuth client of type **Web application** for the Supabase browser
-  sign-in flow.
-- [ ] Add the web app origins, including `http://localhost:8081` for development.
-- [ ] Add `https://<project-ref>.supabase.co/auth/v1/callback` as an authorized
-  redirect URI. Copy the exact callback from the Supabase Google provider page.
-- [ ] In Supabase → Authentication → Sign In / Providers → Google, enable the
-  provider and save the client ID and client secret.
+The pgTAP suite is the only layer with no executed coverage: 14 files planning
+177 assertions across 25 tables, 43 RLS policies and 38 RPCs. `npm run db:test`
+refuses to run without an isolated project, and it is right to — it must never
+point at the app database.
 
-Reference: [Supabase Google setup](https://supabase.com/docs/guides/auth/social-login/auth-google).
+- [ ] Create a second, free Supabase project for tests.
+- [ ] Apply `supabase/migrations/` and `supabase/tests/fixtures/seed.sql` to it.
+- [ ] Set `SUPABASE_TEST_PROJECT_REF` and `SUPABASE_TEST_DB_URL` in `.env`. Use
+      the IPv4 pooler connection string; the direct `db.<ref>.supabase.co` host
+      is IPv6-only and unreachable from some networks.
+- [ ] Run `npm run db:test` and fix whatever the 177 assertions surface.
+- [ ] Add the same two values plus `SUPABASE_ACCESS_TOKEN` to a GitHub
+      environment named `database-tests`. It does not exist yet, so
+      `.github/workflows/database.yml` has never run.
+- [ ] Once it passes reliably, move that workflow off `workflow_dispatch` so it
+      guards pull requests.
 
-### Apple provider
+## Unreachable schema
 
-These steps configure browser-based Apple sign-in.
+Each of these is fully modelled, read by an RPC, and rendered by the app, but has
+no write path. They are not placeholders — they are finished halves.
 
-- [ ] Set up an [Apple Developer account](https://developer.apple.com/account/).
-- [ ] Enable **Sign in with Apple** on the app identifier. The current bundle ID
-  is `com.dropin.app`.
-- [ ] Create a Services ID, such as `com.dropin.app.login`, and associate it with
-  the app identifier.
-- [ ] Configure the Services ID domain as `<project-ref>.supabase.co` and its
-  return URL as `https://<project-ref>.supabase.co/auth/v1/callback`.
-- [ ] Create a Sign in with Apple key and securely retain its `.p8` file, Team ID,
-  and Key ID.
-- [ ] Generate the client-secret JWT using that key and the Services ID.
-- [ ] Enable Apple in Supabase's provider settings and save the Services ID and
-  generated client secret.
-- [ ] Set a reminder to renew the Apple browser-flow client secret before its
-  expiration; its maximum lifetime is six months.
+- [ ] **Venue pulse.** `create_check_in()` takes no pulse argument, so
+      `check_ins.pulse` is always null. Add the parameter and a picker.
+- [ ] **Venue conditions.** No insert policy, grant or RPC. Adding one must also
+      fix `venue_conditions_one_per_kind_per_reporter`, whose predicate
+      `expires_at > '-infinity'` matches every row — it currently means "one
+      report per kind per reporter ever", not "one live report".
+- [ ] **Venue merging.** `merge_venues()` does not exist, so nothing writes
+      `venues.merged_into_venue_id` and the `merged` status is unreachable. Must
+      move references rather than delete, preserve the loser's name as an alias,
+      and reject cycles and chains.
+- [ ] **Series renewal.** A series stops appearing once `valid_until` passes and
+      there is no RPC to extend it, so the organiser's only route is to create a
+      new series and lose the history.
 
-Reference: [Supabase Apple setup](https://supabase.com/docs/guides/auth/social-login/auth-apple).
+## Collapse the repeated definitions in the baseline migration
 
-### Supabase redirects
+`20260908010000_baseline.sql` preserves execution order verbatim, so
+`upcoming_runs` is defined three times, `join_run_session` three times and
+`handle_new_user` twice. Only the last of each is live. Every repeat is a
+`create or replace` with an identical signature and return type, so a fresh
+apply converges correctly — this is a readability problem, not a correctness
+one, and the file header now says so.
 
-- [ ] Replace `<project-ref>` above with the hosted Supabase project reference.
-- [ ] In Authentication → URL Configuration, allow these app callback URLs:
-  - `dropin://callback`
-  - `http://localhost:8081/callback`
-  - `http://127.0.0.1:8081/callback` if used locally
-  - `https://YOUR-PRODUCTION-DOMAIN/callback` once deployed
-- [ ] Set the Site URL to the appropriate web app URL and match any different
-  development host or port exactly.
-- [ ] Keep provider client secrets and Apple's private key out of app code and
-  `EXPO_PUBLIC_*` variables. Configure provider secrets in Supabase.
+- [ ] Keep only the final definition of each. **Do not attempt this until
+      `npm run db:test` runs**: rewriting an applied migration without being
+      able to execute the pgTAP suite against the result is how a fresh deploy
+      silently diverges from the live database.
 
-Reference: [Supabase redirect URLs](https://supabase.com/docs/guides/auth/redirect-urls).
+## Bound `upcoming_runs()` server-side
 
-### App implementation and verification
+`runWindowDays()` clamps the window in the mobile client, which is the only
+caller today. The rule belongs in the database as well — `p_days` is currently
+uncapped, so any caller can ask it to materialise occurrences across an
+arbitrary range.
 
-- [ ] Add **Continue with Google** and **Continue with Apple** buttons to
-  `apps/mobile/src/features/auth/sign-in-form.tsx`.
-- [ ] Start the browser flow with `supabase.auth.signInWithOAuth()` and the
-  existing `authRedirectUrl()` helper.
-- [ ] On native, open the provider URL with `expo-web-browser` and handle the
-  return to the app. Complete the PKCE code exchange exactly once, integrating
-  with `apps/mobile/src/features/auth/auth-callback.tsx`.
-- [ ] Handle cancellation, loading, provider errors, and repeat taps.
-- [ ] Verify both providers on web and native builds, including new-account
-  onboarding, returning users, sign-out, and session persistence.
-- [ ] Verify email-link sign-in still works.
+- [ ] Cap `p_days` inside `upcoming_runs()` at `RUN_SERIES.maxWeeksValid * 7`.
+- [ ] Add a pgTAP assertion. Blocked on the test project above.
 
-Reference: [Supabase native OAuth and deep linking](https://supabase.com/docs/guides/auth/native-mobile-deep-linking).
+## There is almost no venue data
+
+Four hand-written indoor venues, of which two are reachable by any sport filter.
+No outdoor courts and no parks, which is the premise of the product.
+
+- [ ] Decide whether to revive automated OSM import or to keep curating by hand.
+      The Python importer was removed in `b63c492` and the staging tables it
+      needed were never created.
+- [ ] Either way, get a real Charlottetown venue list published. Nothing about
+      the core loop can be validated at the current scale.
+
+## Verify social sign-in on device
+
+The native configuration was regenerated and is asserted by
+`apps/mobile/tests/node/native-config.test.ts`, but no build has been run
+against a real Apple or Google account since.
+
+- [ ] Confirm `com.playdropin.app` is the identifier registered in the Apple
+      Developer portal and as the Google iOS OAuth client. If it is not, change
+      `APP_IDENTIFIER` in `app.config.ts` and re-run
+      `npx expo prebuild --clean`.
+- [ ] Sign in with Apple on a device build: new account, returning user,
+      cancellation, sign-out, session persistence.
+- [ ] Same for Google on iOS and Android.
+- [ ] Same for Google on web, which takes the `signInWithOAuth` redirect in
+      `google-sign-in.web.ts` rather than the native SDK.
+- [ ] Confirm email magic links still work on both.

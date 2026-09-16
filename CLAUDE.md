@@ -74,16 +74,16 @@ Write code for the person who has to understand it six months from now.
 
 Prefer:
 
-* small cohesive modules;
-* descriptive names;
-* explicit data flow;
-* narrow interfaces;
-* composition over giant components or functions;
-* early returns over deeply nested branches;
-* existing project abstractions over parallel implementations;
-* generated types over manually recreated database types;
-* deleting unnecessary code over hiding it behind abstractions;
-* one authoritative implementation of a concept.
+- small cohesive modules;
+- descriptive names;
+- explicit data flow;
+- narrow interfaces;
+- composition over giant components or functions;
+- early returns over deeply nested branches;
+- existing project abstractions over parallel implementations;
+- generated types over manually recreated database types;
+- deleting unnecessary code over hiding it behind abstractions;
+- one authoritative implementation of a concept.
 
 ### Keep routes thin
 
@@ -91,11 +91,11 @@ Files in `apps/mobile/app/` assemble feature components and routing behavior.
 
 They must not contain:
 
-* SQL-shaped data access;
-* database business rules;
-* complex transformation logic;
-* duplicated validation rules;
-* large reusable UI implementations.
+- SQL-shaped data access;
+- database business rules;
+- complex transformation logic;
+- duplicated validation rules;
+- large reusable UI implementations.
 
 Domain queries, mutations, services, hooks, and transformations belong in their appropriate feature modules.
 
@@ -127,10 +127,10 @@ Place code beside the feature that owns it unless it is genuinely shared.
 
 Before adding a package, confirm that:
 
-* the repository does not already have an appropriate solution;
-* the platform or standard library does not already solve the problem;
-* the dependency is compatible with the current Expo/React Native environment where applicable;
-* the maintenance cost is justified.
+- the repository does not already have an appropriate solution;
+- the platform or standard library does not already solve the problem;
+- the dependency is compatible with the current Expo/React Native environment where applicable;
+- the maintenance cost is justified.
 
 Commit intentional lockfile changes.
 
@@ -148,13 +148,13 @@ Comments are not a changelog.
 
 Do not leave comments such as:
 
-* `previously we...`
-* `this used to...`
-* `old implementation...`
-* `changed from...`
-* `after the refactor...`
-* `this replaces...`
-* `temporary fix for the old...`
+- `previously we...`
+- `this used to...`
+- `old implementation...`
+- `changed from...`
+- `after the refactor...`
+- `this replaces...`
+- `temporary fix for the old...`
 
 Historical implementation details belong in Git history, commit messages, pull requests, or an architecture decision record when the history is important to future decisions.
 
@@ -224,13 +224,13 @@ Do not use broad escape hatches to make errors disappear.
 
 Avoid:
 
-* `any`;
-* broad type assertions;
-* `@ts-ignore`;
-* `@ts-nocheck`;
-* disabling ESLint rules for entire files;
-* weakening compiler settings;
-* duplicating generated database types manually.
+- `any`;
+- broad type assertions;
+- `@ts-ignore`;
+- `@ts-nocheck`;
+- disabling ESLint rules for entire files;
+- weakening compiler settings;
+- duplicating generated database types manually.
 
 If a narrow suppression is genuinely required, scope it to the smallest possible location and explain the current technical reason.
 
@@ -248,11 +248,11 @@ Failures must be explicit.
 
 Every mutation should have appropriate handling for:
 
-* pending state;
-* successful completion;
-* validation failure;
-* authorization failure where applicable;
-* network or infrastructure failure.
+- pending state;
+- successful completion;
+- validation failure;
+- authorization failure where applicable;
+- network or infrastructure failure.
 
 Do not convert a failed operation into apparent success.
 
@@ -306,12 +306,12 @@ Use `uuid` for public-facing entities and entities referenced by user activity s
 
 Business-rule functions:
 
-* set `search_path = ''`;
-* schema-qualify referenced database objects;
-* schema-qualify extension types such as `extensions.geography`;
-* explicitly qualify authentication helpers;
-* validate the caller;
-* grant execution only to intended roles.
+- set `search_path = ''`;
+- schema-qualify referenced database objects;
+- schema-qualify extension types such as `extensions.geography`;
+- explicitly qualify authentication helpers;
+- validate the caller;
+- grant execution only to intended roles.
 
 Use `SECURITY DEFINER` only when required for the security model.
 
@@ -345,14 +345,14 @@ Test observable behavior and contracts rather than private implementation detail
 
 Include relevant:
 
-* expected behavior;
-* boundary conditions;
-* validation failures;
-* authorization failures;
-* error handling;
-* concurrency behavior;
-* expiration/time behavior;
-* privacy behavior.
+- expected behavior;
+- boundary conditions;
+- validation failures;
+- authorization failures;
+- error handling;
+- concurrency behavior;
+- expiration/time behavior;
+- privacy behavior.
 
 Not every change needs every category. Test the risks introduced by the change.
 
@@ -366,16 +366,16 @@ Do not fix a bug while leaving the same regression unprotected.
 
 Any change involving:
 
-* RLS;
-* grants;
-* authorization;
-* RPC validation;
-* transactional rules;
-* merge behavior;
-* visibility;
-* expiry;
-* ownership;
-* concurrency;
+- RLS;
+- grants;
+- authorization;
+- RPC validation;
+- transactional rules;
+- merge behavior;
+- visibility;
+- expiry;
+- ownership;
+- concurrency;
 
 must add or update the corresponding database test.
 
@@ -385,11 +385,11 @@ Test relevant anonymous, authenticated-owner, authenticated-other-user, and admi
 
 Tests must not depend unnecessarily on:
 
-* execution order;
-* real wall-clock delays;
-* external public APIs;
-* mutable external services;
-* random uncontrolled data.
+- execution order;
+- real wall-clock delays;
+- external public APIs;
+- mutable external services;
+- random uncontrolled data.
 
 Use controlled fixtures and seeded data.
 
@@ -456,16 +456,16 @@ At minimum, the repository-wide check gate must pass.
 
 For the complete application verification gate, run the repository-supported equivalents of:
 
-* formatting;
-* lint;
-* TypeScript checks for every workspace;
-* frontend unit/component tests;
-* Python importer tests;
-* database/pgTAP tests;
-* admin production build;
-* Expo web export/bundle;
-* client bundle credential scan;
-* Expo dependency/SDK alignment checks.
+- formatting;
+- lint;
+- TypeScript checks for every workspace;
+- frontend unit/component tests;
+- Python importer tests;
+- database/pgTAP tests;
+- admin production build;
+- Expo web export/bundle;
+- client bundle credential scan;
+- Expo dependency/SDK alignment checks.
 
 For changes affecting runtime user journeys, also exercise the relevant application flow before pushing.
 
@@ -477,12 +477,12 @@ For changes involving authentication, RLS, check-ins, Realtime, venue review, me
 
 Do not:
 
-* use `--no-verify` to bypass a failing hook;
-* skip a required test because the change appears small;
-* disable a test to make the suite green;
-* push with a known build failure;
-* push while required generated database types are stale;
-* push with unresolved bundle credential-scan failures.
+- use `--no-verify` to bypass a failing hook;
+- skip a required test because the change appears small;
+- disable a test to make the suite green;
+- push with a known build failure;
+- push while required generated database types are stale;
+- push with unresolved bundle credential-scan failures.
 
 If a required check cannot be run because of missing credentials, unavailable infrastructure, platform limitations, or another real blocker:
 
@@ -490,10 +490,10 @@ If a required check cannot be run because of missing credentials, unavailable in
 
 Leave the work locally committed if appropriate and report:
 
-* which check could not run;
-* why it could not run;
-* what was successfully verified;
-* what remains unverified.
+- which check could not run;
+- why it could not run;
+- what was successfully verified;
+- what remains unverified.
 
 “Should work” is not verification.
 
@@ -533,15 +533,15 @@ Do not optimize blindly, but avoid obviously wasteful behavior.
 
 Watch for:
 
-* unnecessary React rerenders;
-* repeated network requests;
-* duplicate Supabase queries;
-* fetching data that is already available;
-* large computations during render;
-* repeated transformations that can be performed once at the appropriate boundary;
-* N+1 database access patterns;
-* unbounded queries;
-* subscriptions that remain active after their screen loses focus.
+- unnecessary React rerenders;
+- repeated network requests;
+- duplicate Supabase queries;
+- fetching data that is already available;
+- large computations during render;
+- repeated transformations that can be performed once at the appropriate boundary;
+- N+1 database access patterns;
+- unbounded queries;
+- subscriptions that remain active after their screen loses focus.
 
 Measure or establish evidence before introducing complicated performance architecture.
 
@@ -553,14 +553,14 @@ Do not trade readability for hypothetical micro-optimizations.
 
 New UI must consider:
 
-* accessible labels and roles;
-* keyboard/focus behavior where applicable;
-* touch-target size;
-* dynamic text;
-* color contrast;
-* Reduce Motion;
-* Reduce Transparency;
-* map/list alternatives where maps are not usable.
+- accessible labels and roles;
+- keyboard/focus behavior where applicable;
+- touch-target size;
+- dynamic text;
+- color contrast;
+- Reduce Motion;
+- Reduce Transparency;
+- map/list alternatives where maps are not usable.
 
 Do not treat accessibility as final polish.
 
@@ -586,14 +586,14 @@ Do not claim completion because code compiles.
 
 Confirm the applicable:
 
-* automated checks pass;
-* database tests pass;
-* generated types are current;
-* builds complete;
-* bundle credential scanning passes;
-* runtime flow works;
-* relevant UI has been visually inspected;
-* working tree contains only intended changes.
+- automated checks pass;
+- database tests pass;
+- generated types are current;
+- builds complete;
+- bundle credential scanning passes;
+- runtime flow works;
+- relevant UI has been visually inspected;
+- working tree contains only intended changes.
 
 When reporting completion, include the commands actually run and their results.
 
