@@ -22,9 +22,10 @@
  *   - Google sign-in fails for the same reason.
  *
  * Use this for maps, layout, navigation and other UI work only. Anything
- * touching auth or secure storage needs a properly signed build: add an Apple
- * ID in Xcode > Settings > Accounts (a free account is enough) and use
- * `npm run ios`.
+ * touching auth or secure storage needs a properly signed build, and a free
+ * Personal Team cannot produce one while `usesAppleSignIn: true` is set:
+ * Sign in with Apple requires a paid Apple Developer Program membership. See
+ * the iOS build section of the README for the two ways forward.
  *
  *   npm run ios:sim
  */

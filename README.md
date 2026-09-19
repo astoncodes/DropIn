@@ -204,11 +204,24 @@ Check whether you have an identity:
 security find-identity -v -p codesigning     # "0 valid identities found" = none
 ```
 
-**The fix is one-time:** Xcode → Settings → Accounts → add your Apple ID. A free
-account gives you a Personal Team, which is enough for simulator and
-personal-device builds. Then `npm run ios` works normally. You need this anyway
-— Sign in with Apple cannot be exercised in a simulator, only on a signed
-device build.
+**Adding an Apple ID is not sufficient on its own.** Xcode → Settings →
+Accounts → add your Apple ID gives you a free Personal Team, but a Personal Team
+cannot provision `com.apple.developer.applesignin`: Sign in with Apple requires
+a paid Apple Developer Program membership. With a free account Xcode fails at
+the provisioning step instead of the signing-identity step, so `npm run ios`
+still does not complete while `usesAppleSignIn: true` is in `app.config.ts`.
+
+**A device build therefore needs one of:**
+
+- a paid Apple Developer Program membership (individual, or an invitation to an
+  existing Organization team — an Individual account cannot add members); or
+- temporarily removing Sign in with Apple from `app.config.ts` and re-running
+  `npx expo prebuild --clean -p ios`, which builds under a free Personal Team
+  but cannot exercise Apple sign-in. Free provisioning profiles also expire
+  after seven days.
+
+Sign in with Apple cannot be exercised in a simulator under any account, only on
+a signed device build.
 
 **Stopgap for UI work only**, which skips signing entirely:
 
