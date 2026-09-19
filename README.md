@@ -91,8 +91,7 @@ After changing `.env`, restart the development server and reload the app.
 
 ### 3. Confirm the database is prepared
 
-For the existing configured Drop In project, migrations have already been applied;
-you can proceed to startup. An empty venue list does not mean the connection failed:
+Use a Supabase project with the repository migrations applied. An empty venue list does not mean the connection failed:
 you can create a session using a dropped pin without importing any venues.
 
 For a **new Supabase project**, a maintainer must apply the repository migrations:
@@ -170,6 +169,7 @@ Xcode or Android Studio is required. See the
 **Regenerate the native project after changing `app.config.ts`:**
 
 ```bash
+cd apps/mobile
 npx expo prebuild --clean -p ios
 ```
 
@@ -233,8 +233,7 @@ with _no entitlements applied_ — check with
 Use it for maps, layout and navigation. Everything else needs the Apple ID.
 
 Keep the Supabase URL as the hosted HTTPS URL. A native build uses the configured
-`dropin` auth callback scheme. Physical-device verification remains part of the
-[release checklist](docs/release-checklist.md).
+`dropin` auth callback scheme. Physical-device authentication verification is tracked in [TODO](TODO.md).
 
 On the Live screen, **Create session/run** opens the existing session form.
 Location updates run in the foreground after permission is granted. The recenter
@@ -273,8 +272,7 @@ npm run db:types       # read hosted schema and regenerate TypeScript types
 
 The automatic **App checks** workflow runs checks/builds with offline placeholder
 configuration. It requires neither containers nor hosted database credentials.
-Map tests run in the mobile Vitest suite; there is no separate legacy tile-provider
-test runner. CI names formatting, lint, types, tests and builds separately so the
+Map tests run in the mobile Vitest suite; CI names formatting, lint, types, tests and builds separately so the
 failed step identifies the problem. `npm run check` includes the database runner's
 isolation self-test and the client-secret scanner's self-test; these do not connect
 to Supabase. Browser and hosted integration scripts are explicit local checks and
@@ -316,7 +314,7 @@ npm run test:supabase -- --project-ref=YOUR_PROJECT_REF
 - `packages/shared`: shared constants mirroring database rules.
 - `supabase/migrations`: schema source of truth.
 - `supabase/tests`: pgTAP checks and isolated-project fixtures.
-- `docs`: architecture, product rules, decisions and remaining release work.
+- `docs`: architecture, admin guide and UI documentation.
 
-See [release checklist](docs/release-checklist.md), [architecture](docs/architecture.md),
-and [contributor instructions](CLAUDE.md) for further details.
+See [open work](TODO.md), [architecture](docs/architecture.md), and
+[contributor instructions](CLAUDE.md) for further details.

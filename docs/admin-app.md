@@ -61,19 +61,11 @@ The browser venue test requires the mobile and admin dev servers, an explicitly
 selected app project, and a local management credential. It creates temporary
 accounts and venues, checks submission, approval, rejection, duplicate linking,
 venue edits, verification, removal/restoration and submission history, then removes
-its fixtures. These browser checks passed on September 12, 2026.
+its fixtures.
 `010_admin_review.sql` covers authorization, atomic approval, repeat review rejection,
-rejection reasons, duplicate linking, edits, and audit writes. The configured app
-project has migration `20260906110000_admin_review.sql` applied.
+rejection reasons, duplicate linking, edits, and audit writes. The admin review functions are defined in
+`supabase/migrations/20260908010000_baseline.sql`.
 
 Deploy `apps/admin/dist` to a static HTTPS host with the public Vite configuration
 available at build time. Choosing that host and granting the permanent admin account
 can happen later.
-
-Validation completed during setup: repository formatting/lint/types/tests, production
-builds and the client credential scan passed. A Chromium test against hosted Supabase
-exercised a temporary authenticated admin, submission approval, venue editing and
-verification, audit history, sign-out, and desktop/mobile layouts without browser
-errors. Temporary test identities and records were removed. This did not test email
-delivery to a real inbox. All 116 pgTAP assertions passed against the previously
-running local test database; the separate hosted pgTAP project remains unconfigured.

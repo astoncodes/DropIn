@@ -4,9 +4,8 @@ Instructions for contributors and AI coding agents. Read this file before modify
 
 This file defines **how work is performed** in this repository.
 
-Product behavior belongs in `docs/product-rules.md`.
-System structure and build order belong in `docs/architecture.md`.
-Detailed implementation reference belongs in `docs/reference.md`.
+System structure belongs in `docs/architecture.md`.
+Open work belongs in `TODO.md`.
 Database migrations and database tests define enforceable backend business rules.
 
 Do not duplicate large sections of those documents here.
@@ -22,11 +21,9 @@ If a rule exists in `supabase/migrations/` and is also implemented in a client, 
 Use the repository sources in this order:
 
 1. `supabase/migrations/` and `supabase/tests/` for database rules, security, RLS, constraints, and transactional behavior.
-2. `docs/product-rules.md` for product decisions.
-3. `docs/architecture.md` for system boundaries, build order, and architectural decisions.
-4. `docs/reference.md` for the detailed implementation reference.
-5. Generated database types for the schema exposed to TypeScript.
-6. `packages/shared` for small constants and types that intentionally mirror authoritative rules.
+2. `docs/architecture.md` for current system boundaries and architectural decisions.
+3. Generated database types for the schema exposed to TypeScript.
+4. `packages/shared` for small constants and types that intentionally mirror authoritative rules.
 
 `packages/shared` may mirror database constraints so clients can provide immediate validation. It does not own those constraints.
 
@@ -52,11 +49,9 @@ If documentation disagrees with executable migrations or tests, investigate the 
 
 ---
 
-## Build one phase at a time
+## Work in coherent slices
 
-Follow the build order in `docs/architecture.md`.
-
-Do not implement speculative future phases while working on the current phase.
+Use `TODO.md` for known gaps. Keep changes within the requested scope.
 
 Do not create realistic fake implementations that future work could mistake for completed functionality.
 
@@ -187,7 +182,7 @@ Useful comments explain things the code cannot express clearly on its own:
 
 ```ts
 // Refetch the authoritative aggregate instead of incrementing locally because
-// Realtime events can be missed during reconnects.
+// Other players can change activity between refreshes.
 ```
 
 ### No commented-out code
@@ -460,7 +455,6 @@ For the complete application verification gate, run the repository-supported equ
 - lint;
 - TypeScript checks for every workspace;
 - frontend unit/component tests;
-- Python importer tests;
 - database/pgTAP tests;
 - admin production build;
 - Expo web export/bundle;
@@ -471,7 +465,7 @@ For changes affecting runtime user journeys, also exercise the relevant applicat
 
 For changes affecting UI layout or presentation, visually inspect the affected screens at representative supported sizes before pushing.
 
-For changes involving authentication, RLS, check-ins, Realtime, venue review, merges, expiry, or other critical flows, test the actual behavior rather than relying only on compilation.
+For changes involving authentication, RLS, check-ins, polling, venue review, merges, expiry, or other critical flows, test the actual behavior rather than relying only on compilation.
 
 ### A failed check blocks the push
 
@@ -569,10 +563,6 @@ Do not treat accessibility as final polish.
 ## Product boundaries
 
 Do not invent product behavior to unblock implementation.
-
-When a required product decision is unresolved, use the current decision list in `docs/product-rules.md`.
-
-Do not maintain a second copy of the open-decision list in this file.
 
 If a necessary decision is genuinely unresolved, stop at that decision boundary and ask the owner rather than silently choosing.
 

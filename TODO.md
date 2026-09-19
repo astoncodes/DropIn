@@ -3,12 +3,9 @@
 Open work only. Anything listed here is genuinely unbuilt or unverified — if it
 is done, delete the entry rather than leaving a ticked box behind.
 
-Product decisions belong in `docs/product-rules.md`, not here.
-
 ## Database tests have no target
 
-The pgTAP suite is the only layer with no executed coverage: 14 files planning
-177 assertions across 25 tables, 43 RLS policies and 38 RPCs. `npm run db:test`
+The pgTAP suite needs verification against an isolated hosted test project. `npm run db:test`
 refuses to run without an isolated project, and it is right to — it must never
 point at the app database.
 
@@ -17,10 +14,11 @@ point at the app database.
 - [ ] Set `SUPABASE_TEST_PROJECT_REF` and `SUPABASE_TEST_DB_URL` in `.env`. Use
       the IPv4 pooler connection string; the direct `db.<ref>.supabase.co` host
       is IPv6-only and unreachable from some networks.
-- [ ] Run `npm run db:test` and fix whatever the 177 assertions surface.
+- [ ] Run `npm run db:test` and fix any failures.
 - [ ] Add the same two values plus `SUPABASE_ACCESS_TOKEN` to a GitHub
-      environment named `database-tests`. It does not exist yet, so
-      `.github/workflows/database.yml` has never run.
+      environment named `database-tests`, and set its `SUPABASE_PROJECT_REF`
+      variable to the app project for isolation checks. Run
+      `.github/workflows/database.yml` manually to verify the setup.
 - [ ] Once it passes reliably, move that workflow off `workflow_dispatch` so it
       guards pull requests.
 
@@ -69,25 +67,24 @@ arbitrary range.
 
 ## There is almost no venue data
 
-Four hand-written indoor venues, of which two are reachable by any sport filter.
-No outdoor courts and no parks, which is the premise of the product.
+The repository seeds four indoor venues; two support active sport filters.
+It seeds no outdoor courts or parks. Hosted data may differ.
 
 - [ ] Decide whether to revive automated OSM import or to keep curating by hand.
-      The Python importer was removed in `b63c492` and the staging tables it
-      needed were never created.
+      No importer or staging tables exist in this checkout.
 - [ ] Either way, get a real Charlottetown venue list published. Nothing about
       the core loop can be validated at the current scale.
 
 ## Verify social sign-in on device
 
-The native configuration was regenerated and is asserted by
-`apps/mobile/tests/node/native-config.test.ts`, but no build has been run
-against a real Apple or Google account since.
+Native configuration has assertions in
+`apps/mobile/tests/node/native-config.test.ts`. Device authentication still needs
+manual verification.
 
 - [ ] Confirm `com.playdropin.app` is the identifier registered in the Apple
       Developer portal and as the Google iOS OAuth client. If it is not, change
       `APP_IDENTIFIER` in `app.config.ts` and re-run
-      `npx expo prebuild --clean`.
+      `npx expo prebuild --clean` from `apps/mobile`.
 - [ ] Sign in with Apple on a device build: new account, returning user,
       cancellation, sign-out, session persistence.
 - [ ] Same for Google on iOS and Android.
