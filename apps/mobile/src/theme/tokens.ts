@@ -171,7 +171,7 @@ export const sportColors: Record<string, string> = {
   volleyball: '#7951D4',
   pickleball: '#D69A00',
   tennis: '#2378DD',
-  football: '#E3454D',
+  badminton: '#B3327A',
   'ice-hockey': '#397EA0',
 };
 

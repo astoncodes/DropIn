@@ -21,6 +21,7 @@ export const SPORT_ICONS: Record<string, IconName> = {
   volleyball: 'volleyball',
   tennis: 'tennis',
   pickleball: 'racquetball',
+  badminton: 'badminton',
   'ice-hockey': 'hockey-sticks',
 };
 
