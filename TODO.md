@@ -3,19 +3,9 @@
 Open work only. Anything listed here is genuinely unbuilt or unverified — if it
 is done, delete the entry rather than leaving a ticked box behind.
 
-## Database tests have no target
+## Run database tests in CI
 
-The pgTAP suite needs verification against an isolated hosted test project. `npm run db:test`
-refuses to run without an isolated project, and it is right to — it must never
-point at the app database.
-
-- [ ] Create a second, free Supabase project for tests.
-- [ ] Apply `supabase/migrations/` and `supabase/tests/fixtures/seed.sql` to it.
-- [ ] Set `SUPABASE_TEST_PROJECT_REF` and `SUPABASE_TEST_DB_URL` in `.env`. Use
-      the IPv4 pooler connection string; the direct `db.<ref>.supabase.co` host
-      is IPv6-only and unreachable from some networks.
-- [ ] Run `npm run db:test` and fix any failures.
-- [ ] Add the same two values plus `SUPABASE_ACCESS_TOKEN` to a GitHub
+- [ ] Add `SUPABASE_TEST_PROJECT_REF`, `SUPABASE_TEST_DB_URL`, and `SUPABASE_ACCESS_TOKEN` to a GitHub
       environment named `database-tests`, and set its `SUPABASE_PROJECT_REF`
       variable to the app project for isolation checks. Run
       `.github/workflows/database.yml` manually to verify the setup.
@@ -50,10 +40,9 @@ no write path. They are not placeholders — they are finished halves.
 apply converges correctly — this is a readability problem, not a correctness
 one, and the file header now says so.
 
-- [ ] Keep only the final definition of each. **Do not attempt this until
-      `npm run db:test` runs**: rewriting an applied migration without being
-      able to execute the pgTAP suite against the result is how a fresh deploy
-      silently diverges from the live database.
+- [ ] Keep only the final definition of each. Verify a fresh apply and run
+      `npm run db:test` against the result so the rewrite cannot silently
+      diverge from the live database.
 
 ## Bound `upcoming_runs()` server-side
 
@@ -63,7 +52,7 @@ uncapped, so any caller can ask it to materialise occurrences across an
 arbitrary range.
 
 - [ ] Cap `p_days` inside `upcoming_runs()` at `RUN_SERIES.maxWeeksValid * 7`.
-- [ ] Add a pgTAP assertion. Blocked on the test project above.
+- [ ] Add a pgTAP assertion and run `npm run db:test`.
 
 ## There is almost no venue data
 

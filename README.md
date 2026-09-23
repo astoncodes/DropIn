@@ -295,6 +295,12 @@ Database tests are separate maintenance checks, not a prerequisite to running th
 app. Prepare an isolated hosted test project with migrations and synthetic fixtures,
 set `SUPABASE_TEST_PROJECT_REF` and `SUPABASE_TEST_DB_URL`, then run `npm run db:test`.
 The runner rejects the configured app project and never resets or seeds a database.
+The dedicated free project is **DropIn Tests** (`wejyydujrhirezljvgub`, `us-east-1`).
+It contains the committed migrations and `supabase/tests/fixtures/seed.sql`.
+Keep its database credentials in the ignored root `.env`; use the IPv4 session
+pooler connection on port 5432 for `SUPABASE_TEST_DB_URL`.
+See [Using the test database](docs/database-testing.md) for password retrieval,
+database client settings, migrations, and troubleshooting.
 The optional **Hosted database checks** workflow is triggered manually and requires
 a configured `database-tests` GitHub environment. It validates the test-project
 credentials and app-project reference before installing dependencies or running tests.

@@ -36,7 +36,7 @@ select is_empty(
 
 select is(
   (select count(*)::int from public.sports),
-  5,
+  6,
   'anon sees only active sports'
 );
 
@@ -108,7 +108,7 @@ select is(
 
 select is(
   (select count(*)::int from public.sports),
-  6,
+  7,
   'an admin sees inactive sports'
 );
 
