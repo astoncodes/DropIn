@@ -86,6 +86,17 @@ describe('run limits mirror the database', () => {
   it('keeps the upcoming window shorter than a series lifetime', () => {
     expect(RUN_SERIES.upcomingWindowDays).toBeLessThan(RUN_SERIES.maxWeeksValid * 7);
   });
+
+  it('caps upcoming_runs at the personal schedule window', () => {
+    // upcoming_runs is redefined across migrations; the last definition is live.
+    const caps = [
+      ...flat(schema).matchAll(
+        /least\(make_interval\(days => greatest\(p_days, 1\)\), interval '(\d+) weeks'\)/g,
+      ),
+    ];
+    expect(caps, 'upcoming_runs p_days cap not found in any migration').not.toHaveLength(0);
+    expect(RUN_SERIES.personalScheduleWindowDays).toBe(Number(caps.at(-1)![1]) * 7);
+  });
 });
 
 describe('duplicate distances mirror the database', () => {
