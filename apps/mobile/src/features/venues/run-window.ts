@@ -3,11 +3,11 @@ import { RUN_SERIES } from '@dropin/shared';
 /**
  * Bounds how far ahead an occurrence query may look.
  *
- * `upcoming_runs()` accepts any `p_days` and materialises a row per occurrence
- * per series, so an unbounded value is both a product-rule break (§Recurring
- * runs commits to a bounded public window) and an unbounded query. The database
- * does not cap this yet, so the clamp lives here, at the one place every caller
- * passes through.
+ * `upcoming_runs()` materialises a row per occurrence per series and caps
+ * `p_days` at 12 weeks, the longest a series may run, which is the personal
+ * schedule's window. Public discovery commits to a narrower window (§Recurring
+ * runs), and the database cannot tell the two callers apart, so the per-window
+ * ceilings live here, at the one place every caller passes through.
  */
 
 export type RunWindow = 'discovery' | 'personal';

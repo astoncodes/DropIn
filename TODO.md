@@ -44,16 +44,6 @@ one, and the file header now says so.
       `npm run db:test` against the result so the rewrite cannot silently
       diverge from the live database.
 
-## Bound `upcoming_runs()` server-side
-
-`runWindowDays()` clamps the window in the mobile client, which is the only
-caller today. The rule belongs in the database as well — `p_days` is currently
-uncapped, so any caller can ask it to materialise occurrences across an
-arbitrary range.
-
-- [ ] Cap `p_days` inside `upcoming_runs()` at `RUN_SERIES.maxWeeksValid * 7`.
-- [ ] Add a pgTAP assertion and run `npm run db:test`.
-
 ## There is almost no venue data
 
 The repository seeds four indoor venues; two support active sport filters.

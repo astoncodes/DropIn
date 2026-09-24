@@ -4,10 +4,9 @@ import { describe, expect, it } from 'vitest';
 import { runWindowDays } from '../src/features/venues/run-window';
 
 /**
- * §Recurring runs commits to a bounded public window. Before this clamp existed
- * the bound was documented in three places and enforced in none: the constant
- * was never imported, `upcoming_runs()` accepts any `p_days`, and two screens
- * asked for 28 and 84 days of public occurrences.
+ * §Recurring runs commits to a bounded public window. `upcoming_runs()` caps
+ * `p_days` only at a series' 12-week lifetime, so this clamp is what holds
+ * public discovery to its narrower window.
  */
 
 describe('runWindowDays', () => {

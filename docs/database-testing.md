@@ -68,10 +68,11 @@ Run from the repository root:
 npm run db:test
 ```
 
-The suite currently runs 14 SQL files and reports `PASS: 177 database assertions.`
-It checks database constraints, row-level security, profiles, session access,
-attendance, presence, account deletion, and function privileges. Each SQL test
-runs in a transaction and rolls back its changes. The shared seed fixtures remain.
+The suite runs every SQL file in `supabase/tests/` and finishes with
+`PASS: <count> database assertions.` It checks database constraints, row-level
+security, profiles, session access, attendance, presence, account deletion,
+function privileges, and the upcoming-runs window. Each SQL test runs in a
+transaction and rolls back its changes. The shared seed fixtures remain.
 
 The runner loads `.env`, rejects the app project as a test target, and checks that
 the connection identifies the configured test project. It does not apply
