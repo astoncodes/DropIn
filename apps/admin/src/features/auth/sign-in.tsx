@@ -41,38 +41,8 @@ export function SignIn() {
 
   return (
     <div className="auth-layout">
-      <section className="auth-story">
-        <Brand />
-        <div className="auth-story-copy">
-          <p className="eyebrow">LOCAL SPORTS. REAL PEOPLE.</p>
-          <h1>
-            Great games
-            <br />
-            start with
-            <br />
-            <span>great places.</span>
-          </h1>
-          <p>
-            A little care behind the scenes.
-            <br />A better place for everyone to play.
-          </p>
-        </div>
-        <div className="court-art" aria-hidden="true">
-          <div className="court-lines">
-            <div className="court-circle" />
-            <div className="court-key court-key-top" />
-            <div className="court-key court-key-bottom" />
-          </div>
-          <span className="court-ball" />
-        </div>
-        <p className="auth-story-footer">Find a game. Meet your people.</p>
-      </section>
       <section className="auth-entry" aria-label="Admin sign in">
-        <div className="auth-topline">
-          <span className="workspace-badge">
-            <Icon name="shield" /> Community workspace
-          </span>
-        </div>
+        <Brand />
         {status.kind === 'sent' ? (
           <div className="auth-form" role="status">
             <span className="auth-symbol">
@@ -97,10 +67,9 @@ export function SignIn() {
               <Icon name="shield" />
             </span>
             <p className="eyebrow">DROP IN / ADMIN</p>
-            <h1>Welcome back.</h1>
+            <h1>Admin sign in</h1>
             <p className="auth-description">
-              Help your community find its next game. Sign in to review and care for the places they
-              play.
+              Sign in to approve new locations, manage published places, and review admin activity.
             </p>
 
             <div className="auth-field">

@@ -119,7 +119,7 @@ try {
   );
   const adminPage = await pageFor(reviewer.session);
   await adminPage.goto('http://localhost:5173');
-  await adminPage.getByRole('button', { name: 'Review queue', exact: true }).click();
+  await adminPage.getByRole('link', { name: 'Location approvals', exact: true }).click();
   await adminPage.getByRole('textbox', { name: 'Search by name', exact: true }).fill(name);
   await adminPage
     .getByRole('row')
@@ -203,7 +203,7 @@ try {
       assert.equal(await note.getAttribute('required'), '');
       await note.fill('Temporary verification: not a separate sports venue.');
     } else {
-      await adminPage.getByLabel(/^Existing venue/).selectOption(published.id);
+      await adminPage.getByLabel(/^Existing location/).selectOption(published.id);
     }
     await adminPage.getByRole('button', { name: 'Confirm review decision', exact: true }).click();
     await adminPage.getByRole('dialog').waitFor({ state: 'hidden' });
@@ -224,7 +224,7 @@ try {
   console.log(
     'PASS: duplicate evidence, rejection with reason, explicit linking without overwriting canonical name',
   );
-  await adminPage.getByRole('button', { name: 'Venues', exact: true }).click();
+  await adminPage.getByRole('link', { name: 'Locations', exact: true }).click();
   await adminPage.getByRole('textbox', { name: 'Search by name', exact: true }).fill(name);
   const manage = () =>
     adminPage

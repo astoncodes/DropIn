@@ -1,8 +1,24 @@
-# Admin app
+# Admin website
 
 Run `npm run admin` from the repository root, then open http://localhost:5173.
 The app reads `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` from the root `.env`.
 Only a publishable/anon key belongs in the browser.
+
+## Website navigation
+
+The website uses a simple top navigation bar with bookmarkable pages. Browser Back,
+Forward and reload preserve the selected page:
+
+- `#dashboard`: live totals and the five oldest locations awaiting review.
+- `#approvals`: search and filter submissions, then approve, reject or link duplicates.
+- `#locations`: edit, verify, hide and restore published locations.
+- `#activity`: review the history of admin decisions and changes.
+- `#coverage`: read the configured regions and sports.
+
+The approval form shows only the fields needed for the selected decision. Rejection
+requires a nonblank reason, approvals require readable coordinates, and linking
+requires an existing location. Successful changes show confirmation on the page.
+The sign-in page is a compact email form. The website works at desktop and phone widths.
 
 ## Features
 
@@ -69,3 +85,18 @@ rejection reasons, duplicate linking, edits, and audit writes. The admin review 
 Deploy `apps/admin/dist` to a static HTTPS host with the public Vite configuration
 available at build time. Choosing that host and granting the permanent admin account
 can happen later.
+
+## Isolated website browser checks
+
+These checks use intercepted fixture responses and never write to the hosted database.
+Start a separate dev server with a deliberately fake public configuration:
+
+```bash
+VITE_SUPABASE_URL=https://admin-test.supabase.co VITE_SUPABASE_ANON_KEY=test-public-key npm run dev --workspace apps/admin -- --port 5174
+node scripts/tests/browser-admin-website.mjs
+```
+
+They cover sign-in rendering, the dashboard queue, approval and duplicate linking,
+rejection validation and RPC payloads, success and empty states, navigation, browser
+Back, reload and mobile width.
+Screenshots are saved in `test-results/ui/admin-website-*.png`.

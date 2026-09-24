@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { supabase } from '../../lib/supabase';
@@ -8,7 +8,8 @@ import { label, date, pages } from './console-shared';
 import type { Candidate, Page, Venue } from './console-shared';
 
 export function AdminConsole() {
-  const [page, setPage] = useState<Page>('Overview');
+  const [page, setPage] = useState<Page>(() => pageFromHash());
+  const [notice, setNotice] = useState('');
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('pending');
   const [venueFilter, setVenueFilter] = useState<'all' | 'active' | 'unverified'>('all');
@@ -105,8 +106,40 @@ export function AdminConsole() {
       return result;
     },
   });
+  const recent = useQuery({
+    queryKey: ['admin', 'next-submissions'],
+    enabled: page === 'Overview',
+    queryFn: async () => {
+      const result = await supabase
+        .from('venue_candidates')
+        .select('*')
+        .in('status', ['pending', 'possible_duplicate'])
+        .order('created_at')
+        .order('id')
+        .limit(5);
+      if (result.error) throw result.error;
+      return result.data;
+    },
+  });
+  useEffect(() => {
+    const sync = () => {
+      setPage(pageFromHash());
+      setOffset(0);
+      setSearch('');
+      setRegion('');
+      setStatus('pending');
+      setVenueFilter('all');
+      setCandidate(null);
+      setVenue(null);
+    };
+    window.addEventListener('hashchange', sync);
+    return () => window.removeEventListener('hashchange', sync);
+  }, []);
   function navigate(next: Page) {
+    window.history.pushState(null, '', `#${pageSlugs[next]}`);
     setPage(next);
+    setRegion('');
+    setStatus('pending');
     setOffset(0);
     setSearch('');
     setVenueFilter('all');
@@ -124,50 +157,49 @@ export function AdminConsole() {
   const regionName = (id: number) => lookups.data?.regions.find((r) => r.id === id)?.name ?? '—';
   return (
     <div className="console">
-      <aside className="sidebar">
+      <header className="site-navigation">
         <a
           className="brand"
-          href="#"
-          onClick={(e) => {
-            e.preventDefault();
+          href="#dashboard"
+          onClick={(event) => {
+            event.preventDefault();
             navigate('Overview');
           }}
         >
           <span className="brand-icon">D</span> Drop In <small>ADMIN</small>
         </a>
-        <p className="eyebrow">WORKSPACE</p>
         <nav aria-label="Admin navigation">
           {pages.map((p) => (
-            <button
+            <a
               key={p}
+              href={`#${pageSlugs[p]}`}
               className={page === p ? 'nav-link selected' : 'nav-link'}
-              onClick={() => navigate(p)}
+              onClick={(event) => {
+                event.preventDefault();
+                navigate(p);
+              }}
               aria-current={page === p ? 'page' : undefined}
             >
-              {p}
-            </button>
+              {pageTitles[p]}
+            </a>
           ))}
         </nav>
-        <div className="sidebar-note">
-          <span className="live-dot" /> Connected to Supabase
-          <p>Every venue starts with a human review.</p>
-        </div>
-      </aside>
+      </header>
       <div className="workspace">
         <header className="page-heading">
           <div>
-            <p className="eyebrow">DROP IN / OPERATIONS</p>
-            <h1>{page}</h1>
+            <p className="eyebrow">ADMINISTRATION</p>
+            <h1>{pageTitles[page]}</h1>
             <p className="hint">
               {page === 'Overview'
-                ? 'A clear view of your sports community.'
+                ? 'Review new locations and keep published places up to date.'
                 : page === 'Review queue'
-                  ? 'Review submissions and resolve possible duplicates.'
+                  ? 'Check the location and sports, then approve, link a duplicate, or reject.'
                   : page === 'Venues'
                     ? 'Keep published places accurate and useful.'
                     : page === 'Audit history'
                       ? 'A record of admin decisions and venue changes.'
-                      : 'Configured coverage and the sports your community plays.'}
+                      : 'Reference lists for the regions and sports available in Drop In.'}
             </p>
           </div>
           <button
@@ -177,6 +209,14 @@ export function AdminConsole() {
             Refresh data
           </button>
         </header>
+        {notice && (
+          <div className="notice" role="status">
+            {notice}
+            <button className="secondary" onClick={() => setNotice('')}>
+              Dismiss
+            </button>
+          </div>
+        )}
         {lookups.error && (
           <p role="alert" className="error">
             {lookups.error.message}
@@ -190,53 +230,88 @@ export function AdminConsole() {
               </p>
             )}
             <div className="stats">
-              {['Awaiting review', 'Active venues', 'Possible duplicates', 'Unverified venues'].map(
-                (title, i) => (
-                  <button
-                    className="stat"
-                    key={title}
-                    onClick={() => {
-                      navigate(i % 2 === 0 ? 'Review queue' : 'Venues');
-                      setStatus(i === 2 ? 'possible_duplicate' : 'pending');
-                      if (i === 1 || i === 3) setVenueFilter(i === 3 ? 'unverified' : 'active');
-                    }}
-                  >
-                    <span>{title}</span>
-                    <strong>{stats.data?.[i] ?? '—'}</strong>
-                    <small>View records ↗</small>
-                  </button>
-                ),
-              )}
+              {[
+                'Awaiting review',
+                'Published locations',
+                'Possible duplicates',
+                'Need verification',
+              ].map((title, i) => (
+                <button
+                  className="stat"
+                  key={title}
+                  onClick={() => {
+                    navigate(i % 2 === 0 ? 'Review queue' : 'Venues');
+                    setStatus(i === 2 ? 'possible_duplicate' : 'pending');
+                    if (i === 1 || i === 3) setVenueFilter(i === 3 ? 'unverified' : 'active');
+                  }}
+                >
+                  <span>{title}</span>
+                  <strong>{stats.data?.[i] ?? '—'}</strong>
+                  <small>View records ↗</small>
+                </button>
+              ))}
             </div>
-            <section className="card wide welcome">
-              <p className="eyebrow">MAKE ROOM FOR THE NEXT GAME</p>
-              <h2>Good games need good places.</h2>
-              <p>
-                Check new submissions, compare nearby venues, and help players find a reliable place
-                to play.
-              </p>
-              <button onClick={() => navigate('Review queue')}>Open review queue →</button>
-            </section>
             <section className="card wide">
-              <h2>Your workflow</h2>
-              <div className="workflow">
-                <p>
-                  <b>01 · Review</b>
-                  <br />
-                  Check the submitted name, location, and sports.
-                </p>
-                <p>
-                  <b>02 · Compare</b>
-                  <br />
-                  Inspect suggested duplicates before publishing.
-                </p>
-                <p>
-                  <b>03 · Maintain</b>
-                  <br />
-                  Update venues and verify the places you know.
-                </p>
+              <div className="section-heading">
+                <div>
+                  <h2>Next locations to review</h2>
+                  <p className="hint">
+                    Oldest submissions first. Open a location to check its details.
+                  </p>
+                </div>
+                <button className="secondary" onClick={() => navigate('Review queue')}>
+                  View all approvals →
+                </button>
               </div>
+              {recent.isPending && <p role="status">Loading submissions…</p>}
+              {recent.error && (
+                <p className="error" role="alert">
+                  {recent.error.message}
+                </p>
+              )}
+              {recent.data?.map((item) => (
+                <div className="review-row" key={item.id}>
+                  <div>
+                    <strong>{item.proposed_name}</strong>
+                    <small>
+                      {item.address_text || regionName(item.region_id)} · {date(item.created_at)}
+                    </small>
+                  </div>
+                  <span className={`badge ${item.status}`}>{label(item.status)}</span>
+                  <button className="secondary" onClick={() => setCandidate(item)}>
+                    Review
+                  </button>
+                </div>
+              ))}
+              {recent.data?.length === 0 && (
+                <div className="empty">
+                  <h3>You’re all caught up</h3>
+                  <p>New location submissions will appear here for approval.</p>
+                </div>
+              )}
             </section>
+            <div className="reference-grid">
+              <section className="card wide">
+                <h2>Keep locations accurate</h2>
+                <p className="hint">
+                  Edit names, addresses and sports. Verify checked locations or hide places that are
+                  no longer available.
+                </p>
+                <button className="secondary" onClick={() => navigate('Venues')}>
+                  Manage locations →
+                </button>
+              </section>
+              <section className="card wide">
+                <h2>Follow admin decisions</h2>
+                <p className="hint">
+                  See who approved a submission or changed a location, with the time and details of
+                  each change.
+                </p>
+                <button className="secondary" onClick={() => navigate('Audit history')}>
+                  View activity →
+                </button>
+              </section>
+            </div>
           </>
         )}
         {(page === 'Review queue' || page === 'Venues') && (
@@ -274,9 +349,9 @@ export function AdminConsole() {
                   setOffset(0);
                 }}
               >
-                <option value="all">All venues</option>
-                <option value="active">Active venues</option>
-                <option value="unverified">Unverified active venues</option>
+                <option value="all">All locations</option>
+                <option value="active">Published locations</option>
+                <option value="unverified">Need verification</option>
               </select>
             )}
             {page === 'Review queue' && (
@@ -343,7 +418,9 @@ export function AdminConsole() {
                     <td>{date(c.created_at)}</td>
                     <td>
                       <button className="secondary" onClick={() => setCandidate(c)}>
-                        Review
+                        {['pending', 'possible_duplicate'].includes(c.status)
+                          ? 'Review'
+                          : 'View decision'}
                       </button>
                     </td>
                   </tr>
@@ -352,7 +429,7 @@ export function AdminConsole() {
             </table>
             {!candidates.data.data.length && (
               <div className="empty">
-                <h2>No submissions here</h2>
+                <h2>No submissions found</h2>
                 <p>New venue submissions will appear here. Try another filter.</p>
               </div>
             )}
@@ -363,7 +440,7 @@ export function AdminConsole() {
             <table>
               <thead>
                 <tr>
-                  <th>Venue</th>
+                  <th>Location</th>
                   <th>Region</th>
                   <th>Status</th>
                   <th>Verification</th>
@@ -393,7 +470,7 @@ export function AdminConsole() {
             </table>
             {!venues.data.data.length && (
               <div className="empty">
-                <h2>No venues found</h2>
+                <h2>No locations found</h2>
                 <p>Approve a submission to publish your first venue, or adjust your search.</p>
               </div>
             )}
@@ -403,6 +480,7 @@ export function AdminConsole() {
           <div className="reference-grid">
             <section className="card wide">
               <h2>Regions</h2>
+              <p className="hint">Coverage is managed in the project configuration.</p>
               {lookups.isPending && <p>Loading…</p>}
               {lookups.data?.regions.map((r) => (
                 <div className="reference-row" key={r.id}>
@@ -471,16 +549,40 @@ export function AdminConsole() {
         )}
       </div>
       {candidate && (
-        <CandidatePanel key={candidate.id} candidate={candidate} close={() => setCandidate(null)} />
+        <CandidatePanel
+          key={candidate.id}
+          candidate={candidate}
+          onSaved={setNotice}
+          close={() => setCandidate(null)}
+        />
       )}
       {venue && lookups.data && (
         <VenuePanel
           key={venue.id}
           venue={venue}
+          onSaved={setNotice}
           sports={lookups.data.sports}
           close={() => setVenue(null)}
         />
       )}
     </div>
   );
+}
+
+const pageSlugs: Record<Page, string> = {
+  Overview: 'dashboard',
+  'Review queue': 'approvals',
+  Venues: 'locations',
+  'Regions & sports': 'coverage',
+  'Audit history': 'activity',
+};
+const pageTitles: Record<Page, string> = {
+  Overview: 'Dashboard',
+  'Review queue': 'Location approvals',
+  Venues: 'Locations',
+  'Regions & sports': 'Regions & sports',
+  'Audit history': 'Activity',
+};
+function pageFromHash(): Page {
+  return pages.find((page) => pageSlugs[page] === window.location.hash.slice(1)) ?? 'Overview';
 }

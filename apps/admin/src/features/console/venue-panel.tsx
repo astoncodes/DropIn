@@ -39,10 +39,12 @@ export function VenuePanel({
   venue: v,
   sports,
   close,
+  onSaved,
 }: {
   venue: Venue;
   sports: Sport[];
   close: () => void;
+  onSaved?: (message: string) => void;
 }) {
   const client = useQueryClient();
   const [name, setName] = useState(v.name);
@@ -78,6 +80,7 @@ export function VenuePanel({
     },
     onSuccess: async () => {
       await client.invalidateQueries({ queryKey: ['admin'] });
+      onSaved?.('Location changes saved.');
       close();
     },
   });

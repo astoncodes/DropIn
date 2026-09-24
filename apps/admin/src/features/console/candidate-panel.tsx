@@ -10,9 +10,11 @@ import type { Candidate } from './console-shared';
 export function CandidatePanel({
   candidate: c,
   close,
+  onSaved,
 }: {
   candidate: Candidate;
   close: () => void;
+  onSaved?: (message: string) => void;
 }) {
   const client = useQueryClient();
   const [name, setName] = useState(c.proposed_name);
@@ -60,6 +62,13 @@ export function CandidatePanel({
     },
     onSuccess: async () => {
       await client.invalidateQueries({ queryKey: ['admin'] });
+      onSaved?.(
+        decision === 'approve'
+          ? 'Location approved and published.'
+          : decision === 'merge'
+            ? 'Submission linked to the existing location.'
+            : 'Submission rejected.',
+      );
       close();
     },
   });
@@ -141,16 +150,6 @@ export function CandidatePanel({
           }}
         >
           <label>
-            Published name
-            <input
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              minLength={2}
-              maxLength={120}
-              required
-            />
-          </label>
-          <label>
             Decision
             <select
               value={decision ?? ''}
@@ -160,16 +159,30 @@ export function CandidatePanel({
               <option value="" disabled>
                 Choose an action
               </option>
-              <option value="approve">Approve as a new venue</option>
-              <option value="merge">Link to an existing venue</option>
+              <option value="approve">Approve new location</option>
+              <option value="merge">Link existing location</option>
               <option value="reject">Reject submission</option>
             </select>
           </label>
+          {decision === 'approve' && (
+            <>
+              <label>
+                Published name
+                <input
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  minLength={2}
+                  maxLength={120}
+                  required
+                />
+              </label>
+            </>
+          )}
           {decision === 'merge' && (
             <label>
-              Existing venue
+              Existing location
               <select required value={target} onChange={(e) => setTarget(e.target.value)}>
-                <option value="">Choose a venue</option>
+                <option value="">Choose a location</option>
                 {details.data?.targets.map((v) => (
                   <option key={v.id} value={v.id}>
                     {v.name}
@@ -189,8 +202,14 @@ export function CandidatePanel({
             />
           </label>
           <p className="hint">
-            Approval publishes a new venue. Linking adds the submission’s sports and name as an
-            alias to the selected venue. Decisions are final and recorded in history.
+            {decision === 'approve'
+              ? 'This publishes the location for players. Verify it separately after checking it.'
+              : decision === 'merge'
+                ? 'This adds the submitted name and sports to the selected location without creating a duplicate.'
+                : decision === 'reject'
+                  ? 'The submitter can see your reason. Explain what needs to change.'
+                  : 'Choose how to handle this submission.'}{' '}
+            Decisions are final and recorded in activity.
           </p>
           {mutation.error && (
             <p className="error" role="alert">
@@ -199,7 +218,12 @@ export function CandidatePanel({
           )}
           <button
             disabled={
-              mutation.isPending || !decision || !details.data || (decision === 'approve' && !point)
+              mutation.isPending ||
+              !decision ||
+              !details.data ||
+              (decision === 'approve' && (!point || name.trim().length < 2)) ||
+              (decision === 'reject' && !note.trim()) ||
+              (decision === 'merge' && !target)
             }
           >
             {mutation.isPending ? 'Saving decision…' : 'Confirm review decision'}

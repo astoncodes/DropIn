@@ -46,7 +46,7 @@ export default function App() {
       <main className="loading-shell" role="status">
         <Brand />
         <span className="spinner" />
-        <p>Loading your workspace…</p>
+        <p>Loading administration…</p>
       </main>
     );
   }
@@ -63,7 +63,7 @@ export default function App() {
     <main className="shell">
       <header className="bar">
         <span className="bar-title">
-          <Icon name="shield" /> Community workspace
+          <Icon name="shield" /> Drop In administration
         </span>
         <span className="account-email">{session.user.email}</span>
         <button
@@ -108,7 +108,7 @@ export default function App() {
           <span className="auth-symbol">
             <Icon name="shield" />
           </span>
-          <p className="eyebrow">COMMUNITY WORKSPACE</p>
+          <p className="eyebrow">DROP IN ADMIN</p>
           <h1>Admin access required</h1>
           <p>
             This account does not have admin access yet. Once the project owner grants access, check
