@@ -27,6 +27,9 @@
  * Sign in with Apple requires a paid Apple Developer Program membership. See
  * the iOS build section of the README for the two ways forward.
  *
+ * Before launching, it moves the simulator to downtown Charlottetown (see
+ * SIMULATED_LOCATION).
+ *
  *   npm run ios:sim
  */
 
@@ -38,6 +41,13 @@ import { fileURLToPath } from 'node:url';
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), '..');
 const iosDir = join(repoRoot, 'apps/mobile/ios');
 const workspace = join(iosDir, 'DropIn.xcworkspace');
+
+/**
+ * Downtown Charlottetown, where the venue data is. A freshly booted simulator
+ * reports San Francisco, and the Live screen lists only venues within 8 km of
+ * the map centre, so without this the app opens on an empty map.
+ */
+const SIMULATED_LOCATION = '46.2382,-63.1311';
 
 function run(file, args, options = {}) {
   return execFileSync(file, args, { encoding: 'utf8', ...options });
@@ -114,6 +124,18 @@ const bundleId = run('/usr/libexec/PlistBuddy', [
 
 console.log(`> Installing ${bundleId}…`);
 run('xcrun', ['simctl', 'install', simulator.udid, app]);
+
+// The Live map centres on the location it reads at startup, so set it first.
+// A failure here is not fatal: the app still launches, just somewhere else.
+try {
+  run('xcrun', ['simctl', 'location', simulator.udid, 'set', SIMULATED_LOCATION]);
+  console.log(`> Location: downtown Charlottetown (${SIMULATED_LOCATION})`);
+} catch (error) {
+  console.warn(
+    `> Could not set the simulator location (${error.message.trim()}).\n` +
+      '  Set it in Simulator > Features > Location.',
+  );
+}
 run('xcrun', ['simctl', 'launch', simulator.udid, bundleId]);
 
 console.log(
