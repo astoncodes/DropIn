@@ -154,8 +154,11 @@ upload also checks media storage. No additional backend process needs starting.
 
 ## Testing on a phone
 
+For step-by-step iPhone setup, see [Run Drop In on your iPhone](docs/run-on-iphone.md).
+
 Mapbox requires a native build; Expo Go cannot load `@rnmapbox/maps`. Neither can
-Sign in with Apple or native Google sign-in.
+native Google sign-in. Apple authentication alone is supported in Expo Go, but
+this app needs its own development build for its other native dependencies.
 
 From the repository root:
 
