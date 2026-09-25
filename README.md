@@ -230,7 +230,10 @@ npm run ios:sim
 ```
 
 That builds with `CODE_SIGNING_ALLOWED=NO` and installs straight onto a
-simulator via `simctl`.
+simulator via `simctl`. Before launching, it sets the simulator's location to
+downtown Charlottetown: a freshly booted simulator reports San Francisco, and
+the Live screen lists only venues within 8 km of the map centre. Change it
+afterwards in Simulator → Features → Location.
 
 **It cannot test authentication.** Disabling signing produces an ad-hoc binary
 with _no entitlements applied_ — check with
