@@ -3,6 +3,7 @@ select plan(15);
 
 insert into auth.users (instance_id, id, aud, role, email, raw_user_meta_data)
 values
+  ('00000000-0000-0000-0000-000000000000', '90000000-0000-4000-8000-000000000000', 'authenticated', 'authenticated', 'organizer@example.test', '{"display_name":"Organizer"}'),
   ('00000000-0000-0000-0000-000000000000', '91111111-1111-4111-8111-111111111111', 'authenticated', 'authenticated', 'member@example.test', '{"display_name":"Member"}'),
   ('00000000-0000-0000-0000-000000000000', '92222222-2222-4222-8222-222222222222', 'authenticated', 'authenticated', 'outsider@example.test', '{"display_name":"Outsider"}');
 
@@ -12,18 +13,17 @@ select has_table('public', 'session_messages', 'private messages exist');
 select has_table('public', 'session_posts', 'public session posts exist');
 select has_table('public', 'session_media', 'post media exists');
 
--- Count the actual upcoming occurrence's members. Seed dates age as the clock
--- advances, so the first occurrence need not be one of the materialized demos.
-select set_config('test.expected_members', (
-  with occurrence as (select * from public.upcoming_runs(null, null, null, now(), 14) limit 1),
-  expected as (
-    select m.user_id from public.session_memberships m
-      join public.run_sessions r on r.id = m.session_id
-      join occurrence o on o.run_series_id = r.run_series_id and o.occurrence_date = r.occurrence_date
-    union select organizer_id from occurrence
-    union select '91111111-1111-4111-8111-111111111111'::uuid
-  ) select count(*)::text from expected
-), true);
+-- Host a run for tomorrow rather than joining a seeded one. The hosted test
+-- project keeps its fixtures, so seeded series expire weeks after loading.
+select set_config('request.jwt.claims', json_build_object('sub', '90000000-0000-4000-8000-000000000000', 'role', 'authenticated')::text, true);
+set local role authenticated;
+select set_config('test.hosted_session_id', public.create_run_at_pin(
+  46.24, -63.13, 'Social test court', (select id from public.sports where is_active limit 1),
+  current_date + 1, '18:00', '20:00', 1, 'Social test run', 'UTC'
+)::text, true);
+select set_config('test.series', (select run_series_id::text from public.run_sessions where id = current_setting('test.hosted_session_id')::uuid), true);
+select set_config('test.date', (select occurrence_date::text from public.run_sessions where id = current_setting('test.hosted_session_id')::uuid), true);
+reset role;
 
 select set_config('request.jwt.claims', json_build_object('sub', '91111111-1111-4111-8111-111111111111', 'role', 'authenticated')::text, true);
 set local role authenticated;
@@ -31,17 +31,16 @@ set local role authenticated;
 select lives_ok(
   $$ select set_config(
        'test.joined_session_id',
-       public.join_run_session(u.run_series_id, u.occurrence_date)::text,
+       public.join_run_session(current_setting('test.series')::uuid, current_setting('test.date')::date)::text,
        true
-     )
-       from public.upcoming_runs(null, null, null, now(), 14) u limit 1 $$,
+     ) $$,
   'an authenticated player can join a valid dated occurrence'
 );
 
 select is(
   (select count(*)::integer from public.session_memberships
     where session_id = current_setting('test.joined_session_id')::uuid),
-  current_setting('test.expected_members')::integer,
+  2,
   'the joining player can see every member of the session they joined'
 );
 
@@ -53,9 +52,8 @@ select lives_ok(
 );
 
 select lives_ok(
-  $$ select public.create_session_photo_post(s.id, 'Great run tonight',
-       extensions.st_y(v.location::extensions.geometry), extensions.st_x(v.location::extensions.geometry), 10, now())
-       from public.run_sessions s join public.venues v on v.id = s.venue_id
+  $$ select public.create_session_photo_post(s.id, 'Great run tonight', s.latitude, s.longitude, 10, now())
+       from public.run_sessions s
        where s.id = current_setting('test.joined_session_id')::uuid $$,
   'a nearby member can publish a feed post'
 );
@@ -90,8 +88,7 @@ set local role anon;
 select is((select count(*)::integer from public.session_posts), 4,
   'public feed posts are visible without an account');
 select throws_ok(
-  $$ select public.join_run_session(u.run_series_id, u.occurrence_date)
-       from public.upcoming_runs(null, null, null, now(), 14) u limit 1 $$,
+  $$ select public.join_run_session(current_setting('test.series')::uuid, current_setting('test.date')::date) $$,
   '42501', null, 'anonymous users cannot join sessions'
 );
 

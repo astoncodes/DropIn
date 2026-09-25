@@ -11,11 +11,14 @@ select throws_ok(
      values ('session-media', '93333333-3333-4333-8333-333333333333/no-post/photo.jpg', '93333333-3333-4333-8333-333333333333') $$,
   '42501', null, 'upload requires a real owned session post');
 
-select set_config('test.storage_session', public.join_run_session(u.run_series_id, u.occurrence_date)::text, true)
-from public.upcoming_runs(null, null, null, now(), 14) u limit 1;
+-- Host a run rather than joining a seeded one; see 007_session_social.sql.
+select set_config('test.storage_session', public.create_run_at_pin(
+  46.24, -63.13, 'Storage test court', (select id from public.sports where is_active limit 1),
+  current_date + 1, '18:00', '20:00', 1, 'Storage test run', 'UTC'
+)::text, true);
 select set_config('test.storage_post', public.create_session_photo_post(s.id, 'Storage test',
-  extensions.st_y(v.location::extensions.geometry), extensions.st_x(v.location::extensions.geometry), 10, now())::text, true)
-  from public.run_sessions s join public.venues v on v.id = s.venue_id
+  s.latitude, s.longitude, 10, now())::text, true)
+  from public.run_sessions s
   where s.id = current_setting('test.storage_session')::uuid;
 
 select lives_ok(

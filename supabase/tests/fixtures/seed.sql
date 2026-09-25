@@ -286,8 +286,10 @@ on conflict do nothing;
 -- ---------------------------------------------------------------------------
 -- Recurring runs — state 3: nothing live, but something reliable is coming
 -- ---------------------------------------------------------------------------
--- Weekdays are relative to today so the Scheduled tab always has entries in
--- Today / Tomorrow / This week regardless of when the database is reset.
+-- Weekdays are relative to the day this file is loaded, so a freshly loaded
+-- project has entries in Today / Tomorrow / This week. The hosted test project
+-- keeps its fixtures, so these series expire six weeks after loading; a test
+-- that needs an upcoming occurrence hosts its own run.
 
 insert into public.run_series (
   id, organizer_id, venue_id, sport_id, region_id,
