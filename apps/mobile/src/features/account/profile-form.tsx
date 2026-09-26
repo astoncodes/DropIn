@@ -6,6 +6,7 @@ import type { IconName } from '../../components/ui/primitives';
 import { useSports } from '../venues/api';
 import { radius, space, usePalette } from '../../theme';
 import { useAccountProfile, useAccountSports, useUpdateAccount } from './api';
+import { userMessage } from '../../lib/errors';
 
 export function ProfileForm({
   userId,
@@ -26,7 +27,12 @@ export function ProfileForm({
   }
 
   const loadError = profile.error ?? selectedSports.error ?? sports.error;
-  if (loadError) return <AppText tone="alert">{loadError.message}</AppText>;
+  if (loadError)
+    return (
+      <AppText tone="alert">
+        {userMessage(loadError, 'Could not load your profile. Pull to refresh and try again.')}
+      </AppText>
+    );
 
   return (
     <EditableProfileForm
@@ -122,7 +128,11 @@ function EditableProfileForm({
       </View>
 
       {validationError && <AppText tone="alert">{validationError}</AppText>}
-      {updateAccount.isError && <AppText tone="alert">{updateAccount.error.message}</AppText>}
+      {updateAccount.isError && (
+        <AppText tone="alert">
+          {userMessage(updateAccount.error, 'Could not save your profile. Try again.')}
+        </AppText>
+      )}
       {updateAccount.isSuccess && !onSaved && (
         <AppText variant="caption" tone="live">
           Profile saved.

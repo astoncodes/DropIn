@@ -5,6 +5,7 @@ import VenueMap from '../../components/map/venue-map';
 import { AppText, Button } from '../../components/ui/primitives';
 import { space, usePalette, useThemeName } from '../../theme';
 import type { EditSessionInput, useSessionOverview } from './api';
+import { userMessage } from '../../lib/errors';
 
 type Session = NonNullable<ReturnType<typeof useSessionOverview>['data']>;
 
@@ -71,11 +72,7 @@ export function SessionEditForm({
       });
       onClose();
     } catch (cause) {
-      setError(
-        cause instanceof Error
-          ? cause.message
-          : ((cause as { message?: string })?.message ?? 'Could not save. Try again.'),
-      );
+      setError(userMessage(cause, 'Could not save. Try again.'));
     }
   }
   const fields = [

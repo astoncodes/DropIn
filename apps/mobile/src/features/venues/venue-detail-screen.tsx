@@ -25,6 +25,7 @@ import { SessionCard } from '../community/session-card';
 import { useJoinSession, useRunAttendance } from '../community/api';
 import type { UpcomingRun } from './api';
 import type { IconName } from '../../components/ui/primitives';
+import { userMessage } from '../../lib/errors';
 
 /**
  * Venue detail — "what is actually happening here, and can I join?"
@@ -66,7 +67,7 @@ export function VenueDetailScreen() {
       });
       router.push(`/session/${id}`);
     } catch (cause) {
-      setJoinError((cause as { message?: string })?.message ?? 'Could not join. Please try again.');
+      setJoinError(userMessage(cause, 'Could not join. Please try again.'));
     }
   }
 

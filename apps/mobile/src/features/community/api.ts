@@ -2,6 +2,7 @@ import type { Tables } from '@dropin/database-types';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { supabase } from '../../lib/supabase';
+import { UserFacingError } from '../../lib/errors';
 
 type RunSession = Tables<'run_sessions'>;
 type SessionPost = Tables<'session_posts'>;
@@ -318,8 +319,8 @@ export async function publishSessionPost(input: {
   };
 }) {
   const caption = input.caption.trim();
-  if (!caption && !input.asset) throw new Error('Add a caption or a photo to share.');
-  if (caption.length > 500) throw new Error('Keep captions under 500 characters.');
+  if (!caption && !input.asset) throw new UserFacingError('Add a caption or a photo to share.');
+  if (caption.length > 500) throw new UserFacingError('Keep captions under 500 characters.');
   const extensions: Record<string, string> = {
     'image/jpeg': 'jpg',
     'image/png': 'png',
@@ -333,7 +334,7 @@ export async function publishSessionPost(input: {
       !extensions[input.asset.mimeType] ||
       !input.asset.mimeType.startsWith(`${input.asset.kind}/`)
     ) {
-      throw new Error('Choose a JPEG, PNG, WebP image, or an MP4 or MOV clip.');
+      throw new UserFacingError('Choose a JPEG, PNG, WebP image, or an MP4 or MOV clip.');
     }
     if (
       input.asset.kind === 'video' &&
@@ -341,11 +342,11 @@ export async function publishSessionPost(input: {
         (input.asset.durationSeconds ?? 0) <= 0 ||
         input.asset.durationSeconds! > 30)
     ) {
-      throw new Error('Clips must be between 1 and 30 seconds long.');
+      throw new UserFacingError('Clips must be between 1 and 30 seconds long.');
     }
     body = await fetch(input.asset.uri).then((response) => response.arrayBuffer());
     if (!body || body.byteLength === 0 || body.byteLength > 25 * 1024 * 1024) {
-      throw new Error('Choose a non-empty file no larger than 25 MB.');
+      throw new UserFacingError('Choose a non-empty file no larger than 25 MB.');
     }
   }
 

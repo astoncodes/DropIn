@@ -9,6 +9,7 @@ import { AppText, Button } from '../../components/ui/primitives';
 import { space, usePalette } from '../../theme';
 import { checkSessionPhotoLocation, usePublishSessionPost } from './api';
 import type { PhotoLocation } from './api';
+import { UserFacingError, userMessage } from '../../lib/errors';
 
 function ClipPreview({ uri }: { uri: string }) {
   const player = useVideoPlayer(uri);
@@ -44,9 +45,7 @@ export function SessionPhotoComposer({
     try {
       await action();
     } catch (cause) {
-      setError(
-        (cause as { message?: string })?.message ?? 'Could not share your photo. Please try again.',
-      );
+      setError(userMessage(cause, 'Could not share your photo. Please try again.'));
     } finally {
       locked.current = false;
       setBusy(false);
@@ -57,14 +56,15 @@ export function SessionPhotoComposer({
     const permission = await Location.requestForegroundPermissionsAsync();
     if (!permission.granted) {
       setSettings(!permission.canAskAgain);
-      throw new Error(
+      throw new UserFacingError(
         'Allow location access to confirm you are within 500 metres of this session.',
       );
     }
     const position = await readDevicePosition();
-    if (position.mocked) throw new Error('Turn off simulated location to share session photos.');
+    if (position.mocked)
+      throw new UserFacingError('Turn off simulated location to share session photos.');
     if (position.coords.accuracy === null)
-      throw new Error(
+      throw new UserFacingError(
         'Could not confirm location accuracy. Enable precise location and try again.',
       );
     const location = {
@@ -80,14 +80,16 @@ export function SessionPhotoComposer({
   async function choose(camera: boolean) {
     if (Date.now() - verifiedAt.current > 120000) {
       setVerified(false);
-      throw new Error('Check your location again before opening the camera or choosing a photo.');
+      throw new UserFacingError(
+        'Check your location again before opening the camera or choosing a photo.',
+      );
     }
     // A separate button preserves the browser's user gesture after the GPS check.
     if (camera && Platform.OS !== 'web') {
       const permission = await ImagePicker.requestCameraPermissionsAsync();
       if (!permission.granted) {
         setSettings(!permission.canAskAgain);
-        throw new Error('Allow camera access to take a session photo.');
+        throw new UserFacingError('Allow camera access to take a session photo.');
       }
     }
     const result = camera
@@ -102,9 +104,9 @@ export function SessionPhotoComposer({
     const selected = result.assets[0];
     if (!selected) return;
     if ((selected.fileSize ?? 0) > 25 * 1024 * 1024)
-      throw new Error('Choose a photo or clip smaller than 25 MB.');
+      throw new UserFacingError('Choose a photo or clip smaller than 25 MB.');
     if (selected.type === 'video' && (!selected.duration || selected.duration > 30000))
-      throw new Error('Choose a clip up to 30 seconds long.');
+      throw new UserFacingError('Choose a clip up to 30 seconds long.');
     setAsset(selected);
   }
 

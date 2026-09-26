@@ -7,6 +7,7 @@ import { AppText, Button } from '../../components/ui/primitives';
 import { supabase } from '../../lib/supabase';
 import { useSession } from '../../providers/auth-context';
 import { radius, space, usePalette } from '../../theme';
+import { UserFacingError, userMessage } from '../../lib/errors';
 
 export function DeleteAccount({ userId }: { userId: string }) {
   const colors = usePalette();
@@ -46,21 +47,22 @@ export function DeleteAccount({ userId }: { userId: string }) {
           const context = (result.error as { context?: Response }).context;
           const details =
             typeof context?.json === 'function' ? await context.json().catch(() => null) : null;
-          throw new Error(details?.error ?? 'Could not finish deletion. Please retry.');
+          // The function's own error text is written for players; transport failures are not.
+          if (typeof details?.error === 'string') throw new UserFacingError(details.error);
+          throw result.error;
         }
         if (result.data?.deleted) {
           await clearDeletedAccount();
           router.replace({ pathname: '/sign-in', params: { accountDeleted: 'true' } });
           return;
         }
-        if (!result.data?.pending) throw new Error('Could not confirm deletion. Please retry.');
+        if (!result.data?.pending)
+          throw new UserFacingError('Could not confirm deletion. Please retry.');
         setStarted(true);
       }
       setError('Your files are still being removed. Continue deletion to finish.');
     } catch (cause) {
-      setError(
-        (cause as { message?: string })?.message ?? 'Could not finish deletion. Please retry.',
-      );
+      setError(userMessage(cause, 'Could not finish deletion. Please retry.'));
       void status.refetch();
     } finally {
       locked.current = false;

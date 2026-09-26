@@ -12,6 +12,7 @@ import type { UpcomingRun } from '../venues/api';
 import { useJoinSession, useRunAttendance } from './api';
 import { MomentsFeed } from './feed-screen';
 import { SessionCard } from './session-card';
+import { userMessage } from '../../lib/errors';
 
 export function DiscoverScreen() {
   const colors = usePalette();
@@ -58,10 +59,7 @@ export function DiscoverScreen() {
       });
       router.push(`/session/${id}`);
     } catch (cause) {
-      setError(
-        (cause as { message?: string })?.message ??
-          'Could not join this session. Please try again.',
-      );
+      setError(userMessage(cause, 'Could not join this session. Please try again.'));
     }
   }
 

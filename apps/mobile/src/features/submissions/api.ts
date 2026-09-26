@@ -3,6 +3,7 @@ import type { IndoorState } from '@dropin/shared';
 import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { supabase } from '../../lib/supabase';
+import { UserFacingError } from '../../lib/errors';
 
 export type VenueSubmissionInput = {
   name: string;
@@ -27,8 +28,8 @@ export function useSubmitVenue() {
         p_indoor_state: input.indoorState,
         p_address_text: input.addressText,
       });
-      if (error) throw new Error(error.message);
-      if (!data?.[0]) throw new Error('The submission did not return a confirmation.');
+      if (error) throw error;
+      if (!data?.[0]) throw new UserFacingError('The submission did not return a confirmation.');
       return data[0];
     },
     onSuccess: () => client.invalidateQueries({ queryKey: ['own-venue-submissions'] }),

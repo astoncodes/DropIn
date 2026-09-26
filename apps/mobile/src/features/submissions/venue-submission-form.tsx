@@ -26,6 +26,7 @@ import type { IconName } from '../../components/ui/primitives';
 import { useSubmitVenue } from './api';
 import { useDeviceLocation } from '../location/use-device-location';
 import { useRequiredLocation } from '../location/required-location';
+import { userMessage } from '../../lib/errors';
 
 export function VenueSubmissionForm() {
   const initialLocation = useRequiredLocation();
@@ -112,7 +113,8 @@ export function VenueSubmissionForm() {
       setSearchResults(results);
       if (results.length === 0) setSearchError('No matching places found. Try a broader search.');
     } catch (error) {
-      if ((error as Error).name !== 'AbortError') setSearchError((error as Error).message);
+      if ((error as Error).name !== 'AbortError')
+        setSearchError(userMessage(error, 'Place search is unavailable right now.'));
     } finally {
       if (searchController.current === controller) setIsSearching(false);
     }
@@ -415,7 +417,11 @@ export function VenueSubmissionForm() {
             </AppText>
           )}
           {validationError && <AppText tone="alert">{validationError}</AppText>}
-          {submitVenue.isError && <AppText tone="alert">{submitVenue.error.message}</AppText>}
+          {submitVenue.isError && (
+            <AppText tone="alert">
+              {userMessage(submitVenue.error, 'Could not submit this venue. Try again.')}
+            </AppText>
+          )}
           <Button
             label={session ? 'Submit for review' : 'Sign in to submit'}
             icon={session ? 'send' : 'login'}

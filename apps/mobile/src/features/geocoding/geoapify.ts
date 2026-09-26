@@ -1,6 +1,7 @@
 import 'react-native-url-polyfill/auto';
 
 import { env } from '../../lib/env';
+import { UserFacingError } from '../../lib/errors';
 
 export type GeocodingResult = {
   id: string;
@@ -33,10 +34,12 @@ export async function searchPlaces(
   signal?: AbortSignal,
 ): Promise<GeocodingResult[]> {
   if (!env.geoapifyApiKey)
-    throw new Error('Place search is not configured. You can still place a pin on the map.');
+    throw new UserFacingError(
+      'Place search is not configured. You can still place a pin on the map.',
+    );
   const query = rawQuery.trim();
-  if (query.length < 3) throw new Error('Enter at least 3 characters.');
-  if (query.length > 160) throw new Error('Keep the search under 160 characters.');
+  if (query.length < 3) throw new UserFacingError('Enter at least 3 characters.');
+  if (query.length > 160) throw new UserFacingError('Keep the search under 160 characters.');
 
   if (signal?.aborted) throw abortError();
   const cacheKey = query.toLocaleLowerCase('en-CA');
@@ -78,11 +81,11 @@ export async function searchPlaces(
     response = await fetch(url.toString(), { signal, headers: { Accept: 'application/json' } });
   } catch {
     if (signal?.aborted) throw abortError();
-    throw new Error('Place search is unavailable. Check your connection and try again.');
+    throw new UserFacingError('Place search is unavailable. Check your connection and try again.');
   }
 
   if (!response.ok) {
-    throw new Error(
+    throw new UserFacingError(
       response.status === 429
         ? 'Place search has reached its usage limit. Try again later or place a pin manually.'
         : response.status === 401 || response.status === 403
@@ -93,7 +96,8 @@ export async function searchPlaces(
 
   const payload: unknown = await response.json();
   const items = (payload as { results?: unknown } | null)?.results;
-  if (!Array.isArray(items)) throw new Error('Place search returned an unexpected response.');
+  if (!Array.isArray(items))
+    throw new UserFacingError('Place search returned an unexpected response.');
 
   const results = items.flatMap<GeocodingResult>((item) => {
     if (!item || typeof item !== 'object') return [];

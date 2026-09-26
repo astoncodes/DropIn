@@ -11,6 +11,7 @@ import { radius, space, usePalette } from '../../theme';
 import { useDeviceLocation } from '../location/use-device-location';
 import { useSports, useVenueDetail } from '../venues/api';
 import { useOwnPresence, usePresenceAction } from './api';
+import { UserFacingError, userMessage } from '../../lib/errors';
 
 export function CheckInScreen({
   venueId,
@@ -66,11 +67,13 @@ export function CheckInScreen({
       } else {
         const coords = await location.request();
         if (!coords)
-          throw new Error(
+          throw new UserFacingError(
             'Location is needed to check in. Enable location access and try again, or share that you are on your way.',
           );
         if (coords.accuracyM == null)
-          throw new Error('Your device could not report location accuracy. Try again outdoors.');
+          throw new UserFacingError(
+            'Your device could not report location accuracy. Try again outdoors.',
+          );
         await action.mutateAsync({
           kind: 'check-in',
           venueId: venue.data.venue_id,
@@ -86,10 +89,7 @@ export function CheckInScreen({
       }
       router.replace(`/venue/${venue.data.venue_id}`);
     } catch (cause) {
-      setError(
-        (cause as { message?: string })?.message ??
-          'Could not update your status. Please try again.',
-      );
+      setError(userMessage(cause, 'Could not update your status. Please try again.'));
     } finally {
       inFlight.current = false;
       setBusy(false);

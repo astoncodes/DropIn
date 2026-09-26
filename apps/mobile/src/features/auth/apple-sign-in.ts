@@ -1,6 +1,7 @@
 import * as AppleAuthentication from 'expo-apple-authentication';
 import * as Crypto from 'expo-crypto';
 
+import { UserFacingError } from '../../lib/errors';
 import { supabase } from '../../lib/supabase';
 
 /**
@@ -12,7 +13,7 @@ import { supabase } from '../../lib/supabase';
  * token exchange to carry the raw nonce it was hashed from, so a replayed
  * identity token can't be used to establish a session on its own.
  */
-export async function signInWithApple(): Promise<{ error: string | null }> {
+export async function signInWithApple(): Promise<{ error: Error | null }> {
   const rawNonce = Crypto.randomUUID();
   const hashedNonce = await Crypto.digestStringAsync(Crypto.CryptoDigestAlgorithm.SHA256, rawNonce);
 
@@ -33,7 +34,9 @@ export async function signInWithApple(): Promise<{ error: string | null }> {
   }
 
   if (!credential.identityToken) {
-    return { error: 'Apple did not return a usable sign-in token. Try again.' };
+    return {
+      error: new UserFacingError('Apple did not return a usable sign-in token. Try again.'),
+    };
   }
 
   const { error } = await supabase.auth.signInWithIdToken({
@@ -41,5 +44,5 @@ export async function signInWithApple(): Promise<{ error: string | null }> {
     token: credential.identityToken,
     nonce: rawNonce,
   });
-  return { error: error?.message ?? null };
+  return { error };
 }

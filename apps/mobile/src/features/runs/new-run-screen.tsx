@@ -14,6 +14,7 @@ import { useDeviceLocation } from '../location/use-device-location';
 import { supabase } from '../../lib/supabase';
 import { useSession } from '../../providers/auth-context';
 import { radius, space, usePalette, useThemeName } from '../../theme';
+import { UserFacingError, userMessage } from '../../lib/errors';
 
 export function NewRunScreen() {
   const initialLocation = useRequiredLocation();
@@ -57,7 +58,7 @@ export function NewRunScreen() {
         .limit(50);
       if (venueSearch.trim()) query = query.ilike('name', `%${venueSearch.trim()}%`);
       const result = await query;
-      if (result.error) throw new Error(result.error.message);
+      if (result.error) throw result.error;
       return result.data;
     },
   });
@@ -86,9 +87,10 @@ export function NewRunScreen() {
   const [sportId, setSportId] = useState<number>();
   const create = useMutation({
     mutationFn: async () => {
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) throw new Error('Enter a date as YYYY-MM-DD.');
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(date))
+        throw new UserFacingError('Enter a date as YYYY-MM-DD.');
       if (![start, end].every((value) => /^([01]\d|2[0-3]):[0-5]\d$/.test(value))) {
-        throw new Error('Enter times as HH:MM using the 24-hour clock.');
+        throw new UserFacingError('Enter times as HH:MM using the 24-hour clock.');
       }
       const common = {
         p_sport_id: sportId!,
@@ -99,7 +101,7 @@ export function NewRunScreen() {
         p_title: title.trim(),
       };
       if (locationMode === 'pin' && !pin)
-        throw new Error('Tap the map to choose the meeting spot.');
+        throw new UserFacingError('Tap the map to choose the meeting spot.');
       const result =
         locationMode === 'pin'
           ? await supabase.rpc('create_run_at_pin', {
@@ -110,7 +112,7 @@ export function NewRunScreen() {
               p_timezone: timezone.trim(),
             })
           : await supabase.rpc('create_run', { ...common, p_venue_id: venueId! });
-      if (result.error) throw new Error(result.error.message);
+      if (result.error) throw result.error;
       return result.data;
     },
     onSuccess: async (id) => {
@@ -157,7 +159,9 @@ export function NewRunScreen() {
           <Body>Loading venues…</Body>
         ) : venueOptions.isError ? (
           <>
-            <AppText tone="alert">{venueOptions.error.message}</AppText>
+            <AppText tone="alert">
+              {userMessage(venueOptions.error, 'Could not load venues. Try again.')}
+            </AppText>
             <Button label="Try again" onPress={() => void venueOptions.refetch()} />
           </>
         ) : venueOptions.data?.length ? (
@@ -384,7 +388,11 @@ export function NewRunScreen() {
           />
         ))}
       </View>
-      {create.isError && <AppText tone="alert">{create.error.message}</AppText>}
+      {create.isError && (
+        <AppText tone="alert">
+          {userMessage(create.error, 'Could not create this session. Try again.')}
+        </AppText>
+      )}
       <Button
         label="Create session and open chat"
         loading={create.isPending}

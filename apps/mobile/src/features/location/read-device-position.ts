@@ -1,4 +1,5 @@
 import * as Location from 'expo-location';
+import { UserFacingError } from '../../lib/errors';
 
 /** Expo's web adapter defaults to an infinitely cached reading. Presence and
  * photo proximity checks need a new reading, with a bounded wait on all devices. */
@@ -12,7 +13,7 @@ export async function readDevicePosition(accuracy = Location.Accuracy.High) {
         timer = setTimeout(
           () =>
             reject(
-              new Error(
+              new UserFacingError(
                 'Location is taking too long. Move somewhere with a clear signal and try again.',
               ),
             ),

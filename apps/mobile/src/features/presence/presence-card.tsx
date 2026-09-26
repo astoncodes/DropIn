@@ -8,6 +8,7 @@ import { useSession } from '../../providers/auth-context';
 import { radius, space, usePalette } from '../../theme';
 import { useVenueDetail } from '../venues/api';
 import { useOwnPresence, usePresenceAction, usePresenceClock } from './api';
+import { userMessage } from '../../lib/errors';
 
 export function PresenceCard({ venueId }: { venueId?: string }) {
   const { session } = useSession();
@@ -52,9 +53,7 @@ function PresenceStatus({
     try {
       await action.mutateAsync({ kind, id: active.id });
     } catch (cause) {
-      setError(
-        (cause as { message?: string })?.message ?? 'Could not update your status. Try again.',
-      );
+      setError(userMessage(cause, 'Could not update your status. Try again.'));
     }
   }
   const canExtend =

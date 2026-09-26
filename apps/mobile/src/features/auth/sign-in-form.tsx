@@ -32,7 +32,7 @@ export function SignInForm() {
   /** Shared by email, Apple, and Google — only one sign-in attempt at a time. */
   async function runSignIn(
     method: SignInMethod,
-    action: () => Promise<{ error: string | null }>,
+    action: () => Promise<{ error: Error | null }>,
     onSuccess: () => void,
   ) {
     if (sending.current) return;
@@ -41,8 +41,9 @@ export function SignInForm() {
     setStatus({ kind: 'idle' });
     try {
       const { error } = await action();
-      if (error) setStatus({ kind: 'error', message: error });
-      else onSuccess();
+      if (!error) return onSuccess();
+      logSignInFailure(method, error);
+      setStatus({ kind: 'error', message: describeSignInFailure(error) });
     } catch (cause) {
       // Backing out of a provider sheet is not a failure and gets no message.
       if (isCancellation(cause)) {
@@ -74,7 +75,7 @@ export function SignInForm() {
             email: normalized,
             options: { emailRedirectTo: authRedirectUrl(), shouldCreateUser: true },
           })
-          .then(({ error }) => ({ error: error?.message ?? null })),
+          .then(({ error }) => ({ error })),
       () => setStatus({ kind: 'sent', email: normalized }),
     );
   }

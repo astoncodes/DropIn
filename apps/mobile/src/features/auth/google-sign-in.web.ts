@@ -13,10 +13,10 @@ import { authRedirectUrl } from './redirect';
  * Resolving with a null error here means "the redirect is under way", not "you
  * are signed in". The session arrives on the callback screen.
  */
-export async function signInWithGoogle(): Promise<{ error: string | null }> {
+export async function signInWithGoogle(): Promise<{ error: Error | null }> {
   const { error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: { redirectTo: authRedirectUrl() },
   });
-  return { error: error?.message ?? null };
+  return { error };
 }

@@ -6,6 +6,7 @@ import { AppText, Button } from '../../components/ui/primitives';
 import { radius, space, usePalette } from '../../theme';
 import { searchPlaces } from './geoapify';
 import type { GeocodingResult } from './geoapify';
+import { userMessage } from '../../lib/errors';
 
 export function PlaceSearch({ onSelect }: { onSelect: (place: GeocodingResult) => void }) {
   const colors = usePalette();
@@ -60,7 +61,9 @@ export function PlaceSearch({ onSelect }: { onSelect: (place: GeocodingResult) =
       />
       {visible && results.isError && (
         <View accessibilityRole="alert">
-          <AppText tone="alert">{results.error.message}</AppText>
+          <AppText tone="alert">
+            {userMessage(results.error, 'Place search is unavailable right now.')}
+          </AppText>
           <AppText variant="caption">Try searching again, or choose a spot on the map.</AppText>
         </View>
       )}

@@ -19,6 +19,7 @@ import type { UpcomingRun } from '../venues/api';
 import { timeOfDay, weekdayName, weekdayGroup } from '../../lib/format';
 import { radius, space, usePalette } from '../../theme';
 import { useSession } from '../../providers/auth-context';
+import { userMessage } from '../../lib/errors';
 
 /** Only hosted, Going and Maybe sessions belong in the player's schedule. */
 export function ScheduledScreen() {
@@ -85,7 +86,7 @@ export function ScheduledScreen() {
       });
       router.push(`/session/${id}`);
     } catch (cause) {
-      setError((cause as { message?: string })?.message ?? 'Could not open session. Try again.');
+      setError(userMessage(cause, 'Could not open session. Try again.'));
     }
   }
   return (

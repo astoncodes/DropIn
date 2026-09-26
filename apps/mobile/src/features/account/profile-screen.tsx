@@ -14,6 +14,7 @@ import { useAccountProfile } from './api';
 import { ProfileForm } from './profile-form';
 import { DeleteAccount } from './delete-account';
 import { PresenceCard } from '../presence/presence-card';
+import { userMessage } from '../../lib/errors';
 
 export function ProfileAccountScreen() {
   const router = useRouter();
@@ -33,7 +34,7 @@ export function ProfileAccountScreen() {
       if (error) throw error;
       setEditing(false);
     } catch (error) {
-      setSignOutError(error instanceof Error ? error.message : 'Could not sign out. Try again.');
+      setSignOutError(userMessage(error, 'Could not sign out. Try again.'));
     } finally {
       setIsSigningOut(false);
     }

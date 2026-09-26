@@ -29,6 +29,7 @@ import {
 import { SessionPhotoComposer } from './session-photo-composer';
 import { MomentsFeed } from './feed-screen';
 import { SessionEditForm } from './session-edit-form';
+import { userMessage } from '../../lib/errors';
 
 export function SessionScreen() {
   const { sessionId, tab } = useLocalSearchParams<{ sessionId: string; tab?: string }>();
@@ -75,19 +76,12 @@ export function SessionScreen() {
       }
       setConfirmAction(null);
     } catch (error) {
-      setActionError(
-        error instanceof Error
-          ? error.message
-          : ((error as { message?: string })?.message ?? 'Please try again.'),
-      );
+      setActionError(userMessage(error, 'Could not update this session. Please try again.'));
     }
   }
 
   function reportError(error: unknown) {
-    setActionError(
-      (error as { message?: string })?.message ??
-        'Could not complete that action. Please try again.',
-    );
+    setActionError(userMessage(error, 'Could not complete that action. Please try again.'));
   }
 
   async function handleJoin(attendance: 'going' | 'maybe') {
@@ -404,7 +398,7 @@ export function SessionScreen() {
                   <EmptyState
                     icon="alert-circle-outline"
                     title="Couldn’t load chat"
-                    body={messages.error.message}
+                    body={userMessage(messages.error, 'Check your connection and try again.')}
                     action={<Button label="Try again" onPress={() => void messages.refetch()} />}
                   />
                 ) : messages.isPending ? (
