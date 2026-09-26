@@ -249,6 +249,54 @@ export type Database = {
           },
         ]
       }
+      content_reports: {
+        Row: {
+          content_snapshot: string | null
+          created_at: string
+          details: string | null
+          id: string
+          reason: Database["public"]["Enums"]["report_reason"]
+          reporter_id: string | null
+          resolution_note: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          status: Database["public"]["Enums"]["report_status"]
+          target_id: string
+          target_kind: Database["public"]["Enums"]["report_target"]
+          target_user_id: string
+        }
+        Insert: {
+          content_snapshot?: string | null
+          created_at?: string
+          details?: string | null
+          id?: string
+          reason: Database["public"]["Enums"]["report_reason"]
+          reporter_id?: string | null
+          resolution_note?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: Database["public"]["Enums"]["report_status"]
+          target_id: string
+          target_kind: Database["public"]["Enums"]["report_target"]
+          target_user_id: string
+        }
+        Update: {
+          content_snapshot?: string | null
+          created_at?: string
+          details?: string | null
+          id?: string
+          reason?: Database["public"]["Enums"]["report_reason"]
+          reporter_id?: string | null
+          resolution_note?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: Database["public"]["Enums"]["report_status"]
+          target_id?: string
+          target_kind?: Database["public"]["Enums"]["report_target"]
+          target_user_id?: string
+        }
+        Relationships: []
+      }
       osm_sport_aliases: {
         Row: {
           alias: string
@@ -782,6 +830,24 @@ export type Database = {
         }
         Relationships: []
       }
+      user_blocks: {
+        Row: {
+          blocked_id: string
+          blocker_id: string
+          created_at: string
+        }
+        Insert: {
+          blocked_id: string
+          blocker_id: string
+          created_at?: string
+        }
+        Update: {
+          blocked_id?: string
+          blocker_id?: string
+          created_at?: string
+        }
+        Relationships: []
+      }
       venue_aliases: {
         Row: {
           alias: string
@@ -1127,6 +1193,17 @@ export type Database = {
         Args: { p_paths: string[]; p_user_id: string }
         Returns: undefined
       }
+      admin_resolve_reports: {
+        Args: {
+          p_action: string
+          p_note?: string
+          p_target_id: string
+          p_target_kind: Database["public"]["Enums"]["report_target"]
+        }
+        Returns: {
+          storage_path: string
+        }[]
+      }
       admin_review_candidate: {
         Args: {
           p_candidate_id: string
@@ -1273,6 +1350,7 @@ export type Database = {
         }[]
       }
       is_admin: { Args: { p_user_id?: string }; Returns: boolean }
+      is_blocked_by_viewer: { Args: { p_user_id: string }; Returns: boolean }
       is_session_member: { Args: { p_session_id: string }; Returns: boolean }
       join_run_session: {
         Args: { p_occurrence_date: string; p_run_series_id: string }
@@ -1310,6 +1388,15 @@ export type Database = {
       prepare_account_deletion: {
         Args: { p_user_id: string }
         Returns: undefined
+      }
+      report_content: {
+        Args: {
+          p_details?: string
+          p_reason: Database["public"]["Enums"]["report_reason"]
+          p_target_id: string
+          p_target_kind: Database["public"]["Enums"]["report_target"]
+        }
+        Returns: string
       }
       run_attendance: {
         Args: { p_series_ids: string[] }
@@ -1442,6 +1529,22 @@ export type Database = {
     Enums: {
       check_in_end_reason: "checkout" | "expired" | "replaced" | "admin"
       indoor_state: "indoor" | "outdoor" | "unknown"
+      report_reason:
+        | "spam"
+        | "harassment"
+        | "hate"
+        | "sexual_content"
+        | "violence"
+        | "self_harm"
+        | "illegal"
+        | "impersonation"
+        | "other"
+      report_status: "open" | "actioned" | "dismissed"
+      report_target:
+        | "session_post"
+        | "session_message"
+        | "run_session"
+        | "profile"
       run_exception_status: "cancelled" | "rescheduled"
       run_series_status: "active" | "inactive" | "removed"
       session_media_kind: "image" | "video"
@@ -1592,6 +1695,24 @@ export const Constants = {
     Enums: {
       check_in_end_reason: ["checkout", "expired", "replaced", "admin"],
       indoor_state: ["indoor", "outdoor", "unknown"],
+      report_reason: [
+        "spam",
+        "harassment",
+        "hate",
+        "sexual_content",
+        "violence",
+        "self_harm",
+        "illegal",
+        "impersonation",
+        "other",
+      ],
+      report_status: ["open", "actioned", "dismissed"],
+      report_target: [
+        "session_post",
+        "session_message",
+        "run_session",
+        "profile",
+      ],
       run_exception_status: ["cancelled", "rescheduled"],
       run_series_status: ["active", "inactive", "removed"],
       session_media_kind: ["image", "video"],

@@ -71,6 +71,16 @@ export const RUN_SERIES = {
   personalScheduleWindowDays: 84,
 } as const;
 
+/**
+ * §Moderation — mirrors content_reports constraints so the report sheet and the
+ * admin queue can cap input before report_content() or admin_resolve_reports()
+ * refuses it.
+ */
+export const MODERATION = {
+  reportDetailsMaxLength: 500,
+  resolutionNoteMaxLength: 500,
+} as const;
+
 /** Publication state. Distinct from verification — see VerificationState. */
 export type VenueStatus = 'active' | 'merged' | 'removed';
 

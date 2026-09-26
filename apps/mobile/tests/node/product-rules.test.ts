@@ -5,6 +5,7 @@ import {
   CHECK_IN_DURATION,
   CHECK_IN_NOTE_MAX_LENGTH,
   DUPLICATE_DISTANCE_METRES,
+  MODERATION,
   PARTY_SIZE,
   RUN_SERIES,
 } from '@dropin/shared';
@@ -122,6 +123,26 @@ describe('duplicate distances mirror the database', () => {
     expect(DUPLICATE_DISTANCE_METRES.candidateSearch).toBeGreaterThan(
       DUPLICATE_DISTANCE_METRES.highConfidenceReview,
     );
+  });
+});
+
+describe('moderation limits mirror the database', () => {
+  it('caps report details where content_reports_details_length does', () => {
+    const match =
+      /content_reports_details_length check \( details is null or char_length\(details\) between 1 and (\d+) \)/.exec(
+        flat(schema),
+      );
+    expect(match, 'content_reports_details_length not found in any migration').not.toBeNull();
+    expect(MODERATION.reportDetailsMaxLength).toBe(Number(match![1]));
+  });
+
+  it('caps moderator notes where content_reports_note_length does', () => {
+    const match =
+      /content_reports_note_length check \( resolution_note is null or char_length\(resolution_note\) between 1 and (\d+) \)/.exec(
+        flat(schema),
+      );
+    expect(match, 'content_reports_note_length not found in any migration').not.toBeNull();
+    expect(MODERATION.resolutionNoteMaxLength).toBe(Number(match![1]));
   });
 });
 
