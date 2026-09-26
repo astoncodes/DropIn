@@ -10,7 +10,7 @@ export default function OnboardingScreen() {
   const { session, isLoading } = useSession();
 
   return (
-    <Screen>
+    <Screen insetTop={false}>
       <Title>Pick your sports</Title>
       <Body>What you choose here becomes your default filter on the map.</Body>
       {!isLoading && !session && (

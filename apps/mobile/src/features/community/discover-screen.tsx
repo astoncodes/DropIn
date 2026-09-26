@@ -1,12 +1,15 @@
 import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { ScrollView, View, TextInput, RefreshControl } from 'react-native';
+import { ScrollView, View, RefreshControl } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { EmptyState, Skeleton } from '../../components/ui/activity';
 import { AppText, Button, Chip, IconButton, sportIcon } from '../../components/ui/primitives';
+import { ScreenHeader } from '../../components/ui/screen-header';
+import { SegmentedControl } from '../../components/ui/segmented-control';
+import { TextField } from '../../components/ui/text-field';
 import { useSession } from '../../providers/auth-context';
-import { radius, space, usePalette } from '../../theme';
+import { space, usePalette } from '../../theme';
 import { useUpcomingRuns, useSports } from '../venues/api';
 import type { UpcomingRun } from '../venues/api';
 import { useJoinSession, useRunAttendance } from './api';
@@ -76,59 +79,47 @@ export function DiscoverScreen() {
           alignSelf: 'center',
         }}
       >
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.sm }}>
-          <View style={{ flex: 1, gap: 4 }}>
-            <AppText variant="display">Discover</AppText>
-            <AppText tone="muted">A good game is closer than you think.</AppText>
-          </View>
-          <IconButton
-            icon="magnify"
-            label={showSearch ? 'Hide search' : 'Search sessions'}
-            onPress={() => {
-              setShowSearch(!showSearch);
-              setTab('sessions');
-              setSearch('');
-            }}
-          />
-          <IconButton
-            icon="plus"
-            label="Create session"
-            tone="live"
-            onPress={() => router.push('/run/new')}
-          />
-        </View>
-        <View style={{ flexDirection: 'row', gap: space.sm }}>
-          <Chip
-            label="Sessions"
-            icon="calendar-outline"
-            selected={tab === 'sessions'}
-            onPress={() => setTab('sessions')}
-          />
-          <Chip
-            label="Moments"
-            icon="image-outline"
-            selected={tab === 'moments'}
-            onPress={() => setTab('moments')}
-          />
-        </View>
+        <ScreenHeader
+          title="Discover"
+          subtitle="A good game is closer than you think."
+          actions={
+            <>
+              <IconButton
+                icon={showSearch ? 'close' : 'magnify'}
+                label={showSearch ? 'Hide search' : 'Search sessions'}
+                onPress={() => {
+                  setShowSearch(!showSearch);
+                  setTab('sessions');
+                  setSearch('');
+                }}
+              />
+              <IconButton
+                icon="plus"
+                label="Create session"
+                tone="live"
+                onPress={() => router.push('/run/new')}
+              />
+            </>
+          }
+        />
+        <SegmentedControl
+          segments={[
+            { value: 'sessions', label: 'Sessions', icon: 'calendar-outline' },
+            { value: 'moments', label: 'Moments', icon: 'image-outline' },
+          ]}
+          value={tab}
+          onChange={setTab}
+          accessibilityLabel="Discover sections"
+        />
         {showSearch && (
-          <TextInput
+          <TextField
             autoFocus
+            label="Search sessions"
+            labelHidden
             value={search}
             onChangeText={setSearch}
             placeholder="Search a sport, session, or venue"
-            accessibilityLabel="Search sessions"
-            placeholderTextColor={colors.textFaint}
-            style={{
-              color: colors.text,
-              backgroundColor: colors.surface,
-              borderColor: colors.border,
-              borderWidth: 1,
-              minHeight: 48,
-              borderRadius: radius.md,
-              paddingHorizontal: space.lg,
-              fontSize: 16,
-            }}
+            returnKeyType="search"
           />
         )}
       </View>

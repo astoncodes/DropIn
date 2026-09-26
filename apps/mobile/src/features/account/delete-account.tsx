@@ -1,25 +1,22 @@
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { useRef, useState } from 'react';
-import { TextInput, View } from 'react-native';
 
+import { Dialog } from '../../components/ui/dialog';
+import { Notice } from '../../components/ui/notice';
 import { AppText, Button } from '../../components/ui/primitives';
+import { TextField } from '../../components/ui/text-field';
+import { UserFacingError, userMessage } from '../../lib/errors';
 import { supabase } from '../../lib/supabase';
 import { useSession } from '../../providers/auth-context';
-import { radius, space, usePalette } from '../../theme';
-import { UserFacingError, userMessage } from '../../lib/errors';
 
-export function DeleteAccount({ userId }: { userId: string }) {
-  const colors = usePalette();
-  const router = useRouter();
-  const { clearDeletedAccount } = useSession();
-  const [expanded, setExpanded] = useState(false);
-  const [confirmation, setConfirmation] = useState('');
-  const [busy, setBusy] = useState(false);
-  const [started, setStarted] = useState(false);
-  const [error, setError] = useState('');
-  const locked = useRef(false);
-  const status = useQuery({
+/**
+ * Whether an earlier deletion stopped part-way. The Edge Function records the
+ * request before removing files, so an interrupted deletion stays visible here
+ * until it is finished.
+ */
+export function useAccountDeletionStatus(userId: string) {
+  return useQuery({
     queryKey: ['account-deletion', userId],
     queryFn: async () => {
       const result = await supabase
@@ -31,6 +28,30 @@ export function DeleteAccount({ userId }: { userId: string }) {
       return result.data;
     },
   });
+}
+
+/**
+ * Permanent account deletion behind a typed confirmation. Deletion runs in
+ * bounded batches on the server; this keeps calling until the function reports
+ * the account gone, or tells the player to come back and finish.
+ */
+export function DeleteAccountDialog({
+  userId,
+  visible,
+  onClose,
+}: {
+  userId: string;
+  visible: boolean;
+  onClose: () => void;
+}) {
+  const router = useRouter();
+  const { clearDeletedAccount } = useSession();
+  const [confirmation, setConfirmation] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [started, setStarted] = useState(false);
+  const [error, setError] = useState('');
+  const locked = useRef(false);
+  const status = useAccountDeletionStatus(userId);
   const pending = started || Boolean(status.data);
 
   async function remove() {
@@ -70,73 +91,54 @@ export function DeleteAccount({ userId }: { userId: string }) {
     }
   }
 
+  function close() {
+    if (busy) return;
+    setConfirmation('');
+    setError('');
+    onClose();
+  }
+
   return (
-    <View
-      style={{ gap: space.md, borderTopWidth: 1, borderColor: colors.border, paddingTop: space.lg }}
-    >
-      {expanded || pending ? (
+    <Dialog
+      visible={visible}
+      onClose={close}
+      dismissible={!busy}
+      title={pending ? 'Finish deleting your account' : 'Delete your account?'}
+      description="This permanently removes your profile, check-ins, messages, posts, photos, clips and venue submissions. Sessions you organise are removed too, including other players’ messages and posts in them. Approved public venues stay listed."
+      actions={
         <>
-          <AppText variant="heading">
-            {pending ? 'Finish account deletion' : 'Delete your account?'}
-          </AppText>
-          <AppText tone="muted">
-            This permanently removes your profile, check-ins, messages, posts, uploads and venue
-            submissions. Sessions you host, including their conversations and participants’ posts
-            and uploads, are also removed. Approved public venues remain.
-          </AppText>
-          <AppText tone="muted">
-            This cannot be undone. If deletion is interrupted, return here to finish removing your
-            files.
-          </AppText>
-          <TextInput
-            accessibilityLabel="Type DELETE to confirm"
-            placeholder="Type DELETE to confirm"
-            placeholderTextColor={colors.textFaint}
-            value={confirmation}
-            onChangeText={setConfirmation}
-            autoCapitalize="characters"
-            autoCorrect={false}
-            editable={!busy}
-            style={{
-              padding: space.md,
-              borderWidth: 1,
-              borderColor: colors.borderStrong,
-              borderRadius: radius.md,
-              backgroundColor: colors.surface,
-              color: colors.text,
-              fontSize: 16,
-            }}
-          />
-          {!!error && <AppText tone="alert">{error}</AppText>}
           <Button
-            label={pending ? 'Continue deletion' : 'Permanently delete account'}
+            label={pending ? 'Continue deletion' : 'Delete permanently'}
             tone="alert"
-            disabled={confirmation !== 'DELETE' || busy}
+            disabled={confirmation !== 'DELETE'}
             loading={busy}
             onPress={() => void remove()}
           />
-          {!pending && (
-            <Button
-              label="Keep my account"
-              tone="neutral"
-              variant="outline"
-              disabled={busy}
-              onPress={() => {
-                setExpanded(false);
-                setConfirmation('');
-                setError('');
-              }}
-            />
-          )}
+          <Button
+            label={pending ? 'Not now' : 'Keep my account'}
+            tone="neutral"
+            variant="ghost"
+            disabled={busy}
+            onPress={close}
+          />
         </>
-      ) : (
-        <Button
-          label="Delete account"
-          tone="alert"
-          variant="outline"
-          onPress={() => setExpanded(true)}
-        />
-      )}
-    </View>
+      }
+    >
+      <AppText variant="bodyStrong">This cannot be undone.</AppText>
+      <TextField
+        label="Type DELETE to confirm"
+        value={confirmation}
+        onChangeText={setConfirmation}
+        autoCapitalize="characters"
+        autoCorrect={false}
+        editable={!busy}
+        hint={
+          pending
+            ? 'If deletion is interrupted, return here to finish removing your files.'
+            : undefined
+        }
+      />
+      {!!error && <Notice tone="error" message={error} />}
+    </Dialog>
   );
 }

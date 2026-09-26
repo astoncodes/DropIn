@@ -12,6 +12,8 @@ import {
   IconButton,
   PressableSurface,
 } from '../../components/ui/primitives';
+import { ScreenHeader } from '../../components/ui/screen-header';
+import { SegmentedControl } from '../../components/ui/segmented-control';
 import { useJoinedSessions, useJoinSession, useRunAttendance } from './api';
 import { SessionCard } from './session-card';
 import { useUpcomingRuns } from '../venues/api';
@@ -103,44 +105,27 @@ export function ScheduledScreen() {
           alignSelf: 'center',
         }}
       >
-        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-          <View style={{ flex: 1, gap: 4 }}>
-            <AppText variant="display">Scheduled</AppText>
-            <AppText tone="muted">Make time for a little play.</AppText>
-          </View>
-          <IconButton
-            icon="plus"
-            tone="live"
-            label="Create session"
-            onPress={() => router.push('/run/new')}
-          />
-        </View>
-        <View
-          style={{
-            flexDirection: 'row',
-            gap: space.sm,
-            backgroundColor: colors.surfaceMuted,
-            padding: 4,
-            borderRadius: radius.pill,
-          }}
-        >
-          <Button
-            label="Upcoming"
-            size="sm"
-            variant={tab === 'upcoming' ? 'solid' : 'soft'}
-            tone={tab === 'upcoming' ? 'live' : 'neutral'}
-            style={{ flex: 1 }}
-            onPress={() => setTab('upcoming')}
-          />
-          <Button
-            label="Past"
-            size="sm"
-            variant={tab === 'past' ? 'solid' : 'soft'}
-            tone={tab === 'past' ? 'live' : 'neutral'}
-            style={{ flex: 1 }}
-            onPress={() => setTab('past')}
-          />
-        </View>
+        <ScreenHeader
+          title="Scheduled"
+          subtitle="Make time for a little play."
+          actions={
+            <IconButton
+              icon="plus"
+              tone="live"
+              label="Create session"
+              onPress={() => router.push('/run/new')}
+            />
+          }
+        />
+        <SegmentedControl
+          segments={[
+            { value: 'upcoming', label: 'Upcoming' },
+            { value: 'past', label: 'Past' },
+          ]}
+          value={tab}
+          onChange={setTab}
+          accessibilityLabel="Schedule views"
+        />
       </View>
       <ScrollView
         refreshControl={

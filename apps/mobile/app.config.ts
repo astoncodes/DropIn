@@ -64,6 +64,39 @@ function read(name: string): string {
   return process.env[name] ?? rootEnv[name] ?? '';
 }
 
+/**
+ * Public values a store build cannot work without. Development builds start
+ * without them and explain what is missing; a production binary would instead
+ * ship broken (an empty Supabase URL crashes at launch, a missing Google URL
+ * scheme breaks sign-in), so production builds fail here instead.
+ */
+export const RELEASE_REQUIRED_CONFIG = [
+  'EXPO_PUBLIC_SUPABASE_URL',
+  'EXPO_PUBLIC_SUPABASE_ANON_KEY',
+  'EXPO_PUBLIC_MAPBOX_ACCESS_TOKEN',
+  'EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID',
+  'EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID',
+  'EXPO_PUBLIC_GOOGLE_IOS_URL_SCHEME',
+  'EXPO_PUBLIC_SUPPORT_EMAIL',
+] as const;
+
+export function missingReleaseConfig(lookup: (name: string) => string): string[] {
+  return RELEASE_REQUIRED_CONFIG.filter((name) => lookup(name).trim() === '');
+}
+
+// EAS sets EAS_BUILD_PROFILE while it evaluates this file, locally and on its
+// build machines. The root .env is gitignored, so it never reaches EAS: these
+// values must be EAS environment variables (docs/release.md).
+if (process.env.EAS_BUILD_PROFILE === 'production') {
+  const missing = missingReleaseConfig(read);
+  if (missing.length > 0) {
+    throw new Error(
+      `Production build is missing ${missing.join(', ')}. ` +
+        'Add them as EAS environment variables for the production environment; see docs/release.md.',
+    );
+  }
+}
+
 const config: ExpoConfig = {
   name: 'Drop In',
   slug: 'drop-in',
@@ -71,15 +104,17 @@ const config: ExpoConfig = {
   orientation: 'portrait',
   icon: './assets/images/icon.png',
   scheme: 'dropin',
-  // Light-only: the dark palette and the appearance picker were removed, so
-  // honouring the system setting would leave dark-mode devices rendering a
-  // light palette against a dark chrome. See docs/product-rules.md §Appearance.
+  // Light-only: there is no dark palette, so honouring the system setting would
+  // leave dark-mode devices rendering a light palette against a dark chrome.
   userInterfaceStyle: 'light',
 
   ios: {
     supportsTablet: true,
     bundleIdentifier: APP_IDENTIFIER,
     usesAppleSignIn: true,
+    // Only the operating system's HTTPS is used, which is exempt from export
+    // compliance documentation. Declaring it skips the question on every upload.
+    config: { usesNonExemptEncryption: false },
   },
 
   android: {
@@ -134,7 +169,7 @@ const config: ExpoConfig = {
       'expo-location',
       {
         locationWhenInUsePermission:
-          'Drop In uses your location to show nearby sports sessions help you choose a meeting spot, and confirm you are nearby when sharing session photos.',
+          'Drop In uses your location to show nearby venues and sessions, start the map where you are when you place a meeting spot, and confirm you are nearby when you check in or share session photos.',
         locationAlwaysPermission: false,
         locationAlwaysAndWhenInUsePermission: false,
         motionUsagePermission: false,
@@ -168,6 +203,9 @@ const config: ExpoConfig = {
     mapboxAccessToken: read('EXPO_PUBLIC_MAPBOX_ACCESS_TOKEN'),
     googleWebClientId: read('EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID'),
     googleIosClientId: read('EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID'),
+    supportEmail: read('EXPO_PUBLIC_SUPPORT_EMAIL'),
+    operatorName: read('EXPO_PUBLIC_OPERATOR_NAME'),
+    siteUrl: read('EXPO_PUBLIC_SITE_URL'),
   },
 };
 

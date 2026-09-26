@@ -210,6 +210,11 @@ export function useSessionOverview(sessionId?: string, userId?: string) {
       if (result.error) throw result.error;
       const labels = await sessionLabels([result.data]);
       const sport = labels.sports.get(result.data.sport_id);
+      const organizerId = labels.series.get(result.data.run_series_id)?.organizer_id ?? null;
+      const organizer = organizerId
+        ? await supabase.from('profiles').select('display_name').eq('id', organizerId).maybeSingle()
+        : { data: null, error: null };
+      if (organizer.error) throw organizer.error;
       let isMember = false;
       let attendance: string | null = null;
       if (userId) {
@@ -229,7 +234,9 @@ export function useSessionOverview(sessionId?: string, userId?: string) {
           result.data.title ??
           labels.series.get(result.data.run_series_id)?.title ??
           'Pickup session',
-        isOrganizer: labels.series.get(result.data.run_series_id)?.organizer_id === userId,
+        isOrganizer: organizerId !== null && organizerId === userId,
+        organizerId,
+        organizerName: organizer.data?.display_name ?? 'Drop In player',
         timezone: labels.series.get(result.data.run_series_id)?.timezone ?? 'UTC',
         venueName:
           result.data.location_name ??

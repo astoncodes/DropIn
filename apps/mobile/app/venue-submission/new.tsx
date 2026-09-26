@@ -3,7 +3,10 @@ import { VenueSubmissionForm } from '../../src/features/submissions/venue-submis
 
 export default function NewVenueSubmissionScreen() {
   return (
-    <RequiredLocation reason="Drop In starts the venue map at your location so you can place the pin.">
+    <RequiredLocation
+      insetTop={false}
+      reason="Drop In starts the venue map at your location so you can place the pin."
+    >
       <VenueSubmissionForm />
     </RequiredLocation>
   );

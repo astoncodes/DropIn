@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SportBadge } from '../../components/ui/brand';
 import { EmptyState, Skeleton } from '../../components/ui/activity';
 import { AppText, Button, PressableSurface } from '../../components/ui/primitives';
+import { ScreenHeader } from '../../components/ui/screen-header';
 import { relativeTime, timeOfDay, weekdayName } from '../../lib/format';
 import { useSession } from '../../providers/auth-context';
 import { elevation, radius, space, usePalette } from '../../theme';
@@ -39,10 +40,7 @@ export function ChatsScreen() {
       }
     >
       <View style={styles.heading}>
-        <AppText variant="display">Chats</AppText>
-        <AppText variant="body" tone="muted">
-          Private conversations for sessions you joined.
-        </AppText>
+        <ScreenHeader title="Chats" subtitle="Private conversations for sessions you joined." />
       </View>
 
       {isLoading || (Boolean(session) && chats.isPending) ? (
@@ -52,14 +50,12 @@ export function ChatsScreen() {
           ))}
         </View>
       ) : !session ? (
-        <View style={styles.empty}>
-          <EmptyState
-            icon="message-lock-outline"
-            title="Sign in to see chats"
-            body="Your session conversations stay private to people who joined."
-          />
-          <Button label="Sign in" onPress={() => router.push('/sign-in')} />
-        </View>
+        <EmptyState
+          icon="message-lock-outline"
+          title="Sign in to see chats"
+          body="Your session conversations stay private to people who joined."
+          action={<Button label="Sign in" onPress={() => router.push('/sign-in')} />}
+        />
       ) : chats.isError ? (
         <EmptyState
           icon="wifi-off"
@@ -110,14 +106,12 @@ export function ChatsScreen() {
           ))}
         </View>
       ) : (
-        <View style={styles.empty}>
-          <EmptyState
-            icon="calendar-heart"
-            title="No session chats yet"
-            body="Join a session in Discover and its private chat will appear here."
-          />
-          <Button label="Browse sessions" onPress={() => router.push('/feed')} />
-        </View>
+        <EmptyState
+          icon="calendar-heart"
+          title="No session chats yet"
+          body="Join a session in Discover and its private chat will appear here."
+          action={<Button label="Browse sessions" onPress={() => router.push('/feed')} />}
+        />
       )}
     </ScrollView>
   );
@@ -126,7 +120,6 @@ export function ChatsScreen() {
 const styles = StyleSheet.create({
   heading: { paddingHorizontal: space.lg, gap: 3, marginBottom: space.xl },
   list: { paddingHorizontal: space.lg, gap: space.md },
-  empty: { padding: space.lg, gap: space.lg },
   card: {
     flexDirection: 'row',
     alignItems: 'center',

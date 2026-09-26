@@ -37,9 +37,9 @@ mkdirSync('test-results/ui', { recursive: true });
       .fill('NoMatchingGameHere');
     await page.getByText('No matching sessions', { exact: true }).waitFor();
     await page.getByRole('button', { name: 'Clear filters', exact: true }).click();
-    await page.getByRole('button', { name: 'Moments', exact: true }).click();
+    await page.getByRole('tab', { name: 'Moments', exact: true }).click();
     assert.equal(
-      await page.getByRole('button', { name: 'Moments', exact: true }).getAttribute('aria-pressed'),
+      await page.getByRole('tab', { name: 'Moments', exact: true }).getAttribute('aria-selected'),
       'true',
     );
     await page.goto('http://localhost:8081/sign-in');

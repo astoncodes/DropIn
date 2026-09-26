@@ -1,10 +1,11 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useRef } from 'react';
-import { View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import { Screen } from '../../src/components/screen';
 import { BrandMark } from '../../src/components/ui/brand';
 import { CourtArt } from '../../src/components/ui/court-art';
+import { Notice } from '../../src/components/ui/notice';
 import { AppText, Button } from '../../src/components/ui/primitives';
 import { routeAfterSignIn } from '../../src/features/auth/route-after-sign-in';
 import { SignInForm } from '../../src/features/auth/sign-in-form';
@@ -32,9 +33,9 @@ export default function SignInScreen() {
 
   if (session) return null;
   return (
-    <Screen>
+    <Screen insetTop={false}>
       {accountDeleted === 'true' && (
-        <AppText tone="live">Your account and its data have been deleted.</AppText>
+        <Notice tone="success" message="Your account and its data have been deleted." />
       )}
       <View style={{ paddingVertical: space.md }}>
         <BrandMark size={36} showTagline />
@@ -47,6 +48,27 @@ export default function SignInScreen() {
         </AppText>
       </View>
       <SignInForm />
+      <AppText variant="caption" tone="muted" style={{ textAlign: 'center' }}>
+        By continuing, you agree to the{' '}
+        <AppText
+          variant="caption"
+          accessibilityRole="link"
+          onPress={() => router.push('/terms')}
+          style={styles.link}
+        >
+          Terms of use
+        </AppText>{' '}
+        and community guidelines, and acknowledge the{' '}
+        <AppText
+          variant="caption"
+          accessibilityRole="link"
+          onPress={() => router.push('/privacy')}
+          style={styles.link}
+        >
+          Privacy policy
+        </AppText>
+        .
+      </AppText>
       <Button
         label="Explore without an account"
         icon="arrow-right"
@@ -64,3 +86,7 @@ export default function SignInScreen() {
     </Screen>
   );
 }
+
+const styles = StyleSheet.create({
+  link: { fontWeight: '700', textDecorationLine: 'underline' },
+});

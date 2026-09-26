@@ -126,14 +126,14 @@ export function NewRunScreen() {
   });
   if (!session)
     return (
-      <Screen>
+      <Screen insetTop={false}>
         <Title>Sign in to organize</Title>
         <Button label="Sign in" onPress={() => router.push('/sign-in')} />
       </Screen>
     );
   if (locationMode === 'venue' && !venueId)
     return (
-      <Screen>
+      <Screen insetTop={false}>
         <Title>Create session</Title>
         <Body>Choose an existing venue or drop your own session pin.</Body>
         <Button
@@ -194,13 +194,13 @@ export function NewRunScreen() {
     );
   if (locationMode === 'venue' && (venue.isPending || zone.isPending))
     return (
-      <Screen>
+      <Screen insetTop={false}>
         <Body>Loading venue…</Body>
       </Screen>
     );
   if (locationMode === 'venue' && (!venue.data || zone.isError))
     return (
-      <Screen>
+      <Screen insetTop={false}>
         <Body>Couldn’t load the venue. Go back and try again.</Body>
       </Screen>
     );
@@ -227,7 +227,7 @@ export function NewRunScreen() {
     { label: 'End time (24-hour)', value: end, change: setEnd, placeholder: '20:00', max: 5 },
   ];
   return (
-    <Screen>
+    <Screen insetTop={false}>
       <Title>Create session</Title>
       {locationMode === 'pin' ? (
         <>

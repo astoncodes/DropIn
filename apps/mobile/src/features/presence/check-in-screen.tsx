@@ -98,13 +98,13 @@ export function CheckInScreen({
 
   if (isLoading || venue.isPending)
     return (
-      <Screen>
+      <Screen insetTop={false}>
         <AppText>Loading your venue…</AppText>
       </Screen>
     );
   if (!session)
     return (
-      <Screen>
+      <Screen insetTop={false}>
         <AppText variant="display">Meet you on the court.</AppText>
         <AppText tone="muted">Sign in to check in or let players know you are on your way.</AppText>
         <Button label="Sign in" onPress={() => router.push('/sign-in')} />
@@ -112,13 +112,13 @@ export function CheckInScreen({
     );
   if (!venue.data)
     return (
-      <Screen>
+      <Screen insetTop={false}>
         <AppText variant="heading">This venue is unavailable.</AppText>
         <Button label="Back to map" onPress={() => router.replace('/')} />
       </Screen>
     );
   return (
-    <Screen>
+    <Screen insetTop={false}>
       <SportBadge slug={selected?.slug} size={56} />
       <AppText variant="display">{arrival ? 'See you soon.' : 'Make it a game.'}</AppText>
       <AppText tone="muted">{venue.data.name}</AppText>

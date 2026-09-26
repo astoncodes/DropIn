@@ -30,11 +30,14 @@ export function RequiredLocation({
   children,
   reason = 'Drop In uses your location to show nearby venues and games.',
   alternative,
+  insetTop = true,
 }: {
   children: ReactNode;
   /** One sentence on why this screen needs a position. */
   reason?: string;
   alternative?: ReactNode;
+  /** False when the gated screen sits under a navigation header. */
+  insetTop?: boolean;
 }) {
   const { state, request } = useLocationAccess();
   const colors = usePalette();
@@ -55,7 +58,7 @@ export function RequiredLocation({
   };
   const loading = state.status === 'idle' || state.status === 'requesting';
   return (
-    <Screen>
+    <Screen insetTop={insetTop}>
       <View style={{ gap: space.lg, paddingVertical: space.xxl }}>
         <BrandMark size={40} />
         <AppText variant="display">
