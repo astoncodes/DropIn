@@ -20,11 +20,26 @@ try {
   assert.equal(await page.locator('.mapboxgl-map').count(), 0);
   assert.deepEqual(nearbyRequests, [], 'Denied permission must not query a fallback location');
   await page.screenshot({ path: 'test-results/ui/location-required.png' });
-  for (const route of ['/feed', '/run/new', '/venue-submission/new', '/profile']) {
+  await page.getByRole('button', { name: 'Browse upcoming sessions', exact: true }).waitFor();
+  for (const route of ['/run/new', '/venue-submission/new']) {
     await page.goto(`http://localhost:8081${route}`);
     await page.getByText('Enable location to play', { exact: true }).waitFor();
     assert.equal(await page.locator('.mapboxgl-map').count(), 0);
   }
+  // Sign-in, browsing and account settings (including deletion) must not depend
+  // on location consent (App Store Review Guideline 5.1.1).
+  for (const [route, heading] of [
+    ['/feed', 'Discover'],
+    ['/scheduled', 'Scheduled'],
+    ['/chats', 'Chats'],
+    ['/profile', 'Profile'],
+    ['/sign-in', 'Continue with email'],
+  ]) {
+    await page.goto(`http://localhost:8081${route}`);
+    await page.getByText(heading, { exact: true }).first().waitFor();
+    assert.equal(await page.getByText('Enable location to play', { exact: true }).count(), 0);
+  }
+  assert.deepEqual(nearbyRequests, [], 'Screens without a location must not query venues');
   await page.goto('http://localhost:8081/');
   await page.getByText('Enable location to play', { exact: true }).waitFor();
   await context.setGeolocation({ latitude: 43.6532, longitude: -79.3832 });
@@ -66,7 +81,7 @@ try {
   assert.equal(await unavailable.locator('.mapboxgl-map').count(), 0);
   assert.deepEqual(errors, []);
   console.log(
-    'PASS: location denied blocks app routes and map requests; permission grant uses actual GPS; revocation blocks again; restoration recovers; unavailable GPS has no fallback.',
+    'PASS: denied location gates only location screens and leaves sign-in, browsing and profile usable; permission grant uses actual GPS; revocation blocks again; restoration recovers; unavailable GPS has no fallback.',
   );
 } finally {
   await browser.close();

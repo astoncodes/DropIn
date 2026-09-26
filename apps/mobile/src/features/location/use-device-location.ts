@@ -15,8 +15,9 @@ export type LocationState =
   | { status: 'unavailable'; message: string };
 
 /**
- * Foreground location with explicit denied/unavailable outcomes. The root
- * RequiredLocation boundary requires a successful reading before opening the app.
+ * Foreground location with explicit denied/unavailable outcomes. The app-wide
+ * instance lives in LocationAccessProvider; RequiredLocation gates the screens
+ * that need a successful reading.
  */
 export function useDeviceLocation({ live = false }: { live?: boolean } = {}) {
   const [state, setState] = useState<LocationState>({ status: 'idle' });

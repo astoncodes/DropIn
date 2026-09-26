@@ -5,15 +5,17 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { usePalette } from '../src/theme';
 
 import { AppProviders } from '../src/providers';
-import { RequiredLocation } from '../src/features/location/required-location';
+import { LocationAccessProvider } from '../src/features/location/location-access';
 
 /**
  * Root layout.
  *
  * Route files assemble screens; they hold no data access or business rules
- * (CLAUDE.md §Keep routes thin). Device location is required
- * before opening app routes. Account authentication is separately required for
- * actions such as checking in, posting a run and submitting a venue.
+ * (CLAUDE.md §Keep routes thin). Location access is tracked app-wide but only
+ * the screens that need a position require it (see RequiredLocation), so
+ * signing in, browsing and account settings never depend on location consent.
+ * Account authentication is separately required for actions such as checking
+ * in, posting a run and submitting a venue.
  */
 export default function RootLayout() {
   const colors = usePalette();
@@ -21,7 +23,7 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <AppProviders>
         <StatusBar style="dark" />
-        <RequiredLocation>
+        <LocationAccessProvider>
           <Stack
             screenOptions={{
               headerShown: false,
@@ -52,7 +54,7 @@ export default function RootLayout() {
               options={{ headerShown: true, title: 'Add a venue', presentation: 'modal' }}
             />
           </Stack>
-        </RequiredLocation>
+        </LocationAccessProvider>
       </AppProviders>
     </SafeAreaProvider>
   );
