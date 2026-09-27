@@ -3,15 +3,11 @@
 Open work only. Anything listed here is genuinely unbuilt or unverified — if it
 is done, delete the entry rather than leaving a ticked box behind.
 
-## Apply the content moderation migration
+## Verify moderation with real accounts
 
-`20260926120000_content_moderation.sql` is applied to the test project
-(`npm run db:test` passes, 226 assertions) but not to the app project, so the
-report, block and admin Reports screens fail against the live backend until it
-is.
+`20260926120000_content_moderation.sql` is applied to the test and app projects
+(`npm run db:test` passes; `npm run db:types` is unchanged).
 
-- [ ] Apply it to the app project; confirm `npm run db:types` leaves
-      `database.types.ts` unchanged.
 - [ ] Report, block and remove content end to end with real accounts,
       including deleting a removed post's files from Storage.
 
