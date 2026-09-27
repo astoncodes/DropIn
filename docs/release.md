@@ -109,12 +109,18 @@ In the Supabase dashboard for the app project:
 - **Authentication → Providers → Apple.** Enable it and add `com.playdropin.app`
   to the client IDs used for native sign-in. A Services ID and key are needed
   only for web sign-in with Apple.
-- **Authentication → Providers → Google.** Use the web client ID. "Skip nonce
-  checks" is currently on because the free Google Sign-In library cannot send a
-  nonce on iOS; see the project notes before release.
+- **Authentication → Providers → Google.** List the **Web** client ID first in
+  "Client IDs", then the iOS client ID, and use the Web client's secret. The
+  first ID is the one sent to Google for browser sign-in; an iOS client there
+  makes Google answer `Error 400: redirect_uri_mismatch`. The iOS ID is still
+  needed for native sign-in. "Skip nonce checks" is currently on because the
+  free Google Sign-In library cannot send a nonce on iOS; see the project notes
+  before release.
 
 In Google Cloud:
 
+- Add `https://<project-ref>.supabase.co/auth/v1/callback` to the **Web**
+  client's authorized redirect URIs.
 - Create an **Android** OAuth client for package `com.playdropin.app` with the
   SHA-1 fingerprints of the EAS upload key (`npx eas-cli credentials`) and of
   the Play App Signing key (Play Console → App integrity).
