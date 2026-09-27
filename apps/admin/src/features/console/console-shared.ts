@@ -11,11 +11,13 @@ export type Candidate = Database['public']['Tables']['venue_candidates']['Row'];
 export type Venue = Database['public']['Tables']['venues']['Row'];
 export type Sport = Database['public']['Tables']['sports']['Row'];
 
-export type Page = 'Overview' | 'Review queue' | 'Venues' | 'Regions & sports' | 'Audit history';
+export type Page =
+  'Overview' | 'Review queue' | 'Reports' | 'Venues' | 'Regions & sports' | 'Audit history';
 
 export const pages: Page[] = [
   'Overview',
   'Review queue',
+  'Reports',
   'Venues',
   'Regions & sports',
   'Audit history',
