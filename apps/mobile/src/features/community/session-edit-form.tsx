@@ -1,9 +1,11 @@
 import { useState } from 'react';
-import { TextInput, View } from 'react-native';
+import { View } from 'react-native';
 
 import VenueMap from '../../components/map/venue-map';
+import { Notice } from '../../components/ui/notice';
 import { AppText, Button } from '../../components/ui/primitives';
-import { space, usePalette, useThemeName } from '../../theme';
+import { TextField } from '../../components/ui/text-field';
+import { space, useThemeName } from '../../theme';
 import type { EditSessionInput, useSessionOverview } from './api';
 import { userMessage } from '../../lib/errors';
 
@@ -37,7 +39,6 @@ export function SessionEditForm({
   onSave: (input: EditSessionInput) => Promise<void>;
   onClose: () => void;
 }) {
-  const colors = usePalette();
   const scheme = useThemeName();
   const [title, setTitle] = useState(item.title);
   const [date, setDate] = useState(localFields(item.starts_at, item.timezone).date);
@@ -91,23 +92,15 @@ export function SessionEditForm({
         Only this occurrence changes. Times are in {item.timezone}.
       </AppText>
       {fields.map((field) => (
-        <View key={field.label} style={{ gap: space.xs }}>
-          <AppText variant="caption">{field.label}</AppText>
-          <TextInput
-            accessibilityLabel={field.label}
-            value={field.value}
-            onChangeText={field.change}
-            editable={!pending}
-            maxLength={field.max}
-            autoCapitalize="none"
-            style={{
-              color: colors.text,
-              backgroundColor: colors.surfaceMuted,
-              padding: space.md,
-              borderRadius: 12,
-            }}
-          />
-        </View>
+        <TextField
+          key={field.label}
+          label={field.label}
+          value={field.value}
+          onChangeText={field.change}
+          editable={!pending}
+          maxLength={field.max}
+          autoCapitalize="none"
+        />
       ))}
       {item.venue_id === null && (
         <>
@@ -138,11 +131,7 @@ export function SessionEditForm({
           </View>
         </>
       )}
-      {error ? (
-        <View accessibilityRole="alert">
-          <AppText variant="body">{error}</AppText>
-        </View>
-      ) : null}
+      {error ? <Notice tone="error" message={error} /> : null}
       <Button label="Save changes" loading={pending} onPress={() => void save()} />
       <Button
         label="Discard changes"

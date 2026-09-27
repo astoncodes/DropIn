@@ -1,10 +1,12 @@
 import { useState } from 'react';
-import { ActivityIndicator, StyleSheet, TextInput, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, View } from 'react-native';
 
+import { Notice } from '../../components/ui/notice';
 import { AppText, Button, Chip, sportIcon } from '../../components/ui/primitives';
+import { TextField } from '../../components/ui/text-field';
 import type { IconName } from '../../components/ui/primitives';
 import { useSports } from '../venues/api';
-import { radius, space, usePalette } from '../../theme';
+import { space, usePalette } from '../../theme';
 import { useAccountProfile, useAccountSports, useUpdateAccount } from './api';
 import { userMessage } from '../../lib/errors';
 
@@ -29,9 +31,10 @@ export function ProfileForm({
   const loadError = profile.error ?? selectedSports.error ?? sports.error;
   if (loadError)
     return (
-      <AppText tone="alert">
-        {userMessage(loadError, 'Could not load your profile. Pull to refresh and try again.')}
-      </AppText>
+      <Notice
+        tone="error"
+        message={userMessage(loadError, 'Could not load your profile. Try again in a moment.')}
+      />
     );
 
   return (
@@ -62,7 +65,6 @@ function EditableProfileForm({
   submitLabel: string;
   onSaved?: () => void;
 }) {
-  const colors = usePalette();
   const updateAccount = useUpdateAccount(userId);
   const [displayName, setDisplayName] = useState(initialDisplayName);
   const [sportIds, setSportIds] = useState(initialSportIds);
@@ -86,22 +88,17 @@ function EditableProfileForm({
 
   return (
     <View style={{ gap: space.xl }}>
-      <View style={{ gap: space.sm }}>
-        <AppText variant="heading">Display name</AppText>
-        <TextInput
-          value={displayName}
-          onChangeText={setDisplayName}
-          maxLength={40}
-          autoComplete="name"
-          placeholder="How other players see you"
-          placeholderTextColor={colors.textFaint}
-          accessibilityLabel="Display name"
-          style={[
-            styles.input,
-            { color: colors.text, backgroundColor: colors.surface, borderColor: colors.border },
-          ]}
-        />
-      </View>
+      <TextField
+        label="Display name"
+        value={displayName}
+        onChangeText={setDisplayName}
+        maxLength={40}
+        showCount
+        autoComplete="name"
+        placeholder="How other players see you"
+        hint="Shown to other players on your posts, messages and sessions."
+        error={validationError}
+      />
 
       <View style={{ gap: space.sm }}>
         <AppText variant="heading">Sports you play</AppText>
@@ -127,11 +124,11 @@ function EditableProfileForm({
         </View>
       </View>
 
-      {validationError && <AppText tone="alert">{validationError}</AppText>}
       {updateAccount.isError && (
-        <AppText tone="alert">
-          {userMessage(updateAccount.error, 'Could not save your profile. Try again.')}
-        </AppText>
+        <Notice
+          tone="error"
+          message={userMessage(updateAccount.error, 'Could not save your profile. Try again.')}
+        />
       )}
       {updateAccount.isSuccess && !onSaved && (
         <AppText variant="caption" tone="live">
@@ -149,12 +146,5 @@ function EditableProfileForm({
 }
 
 const styles = StyleSheet.create({
-  input: {
-    minHeight: 52,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: radius.lg,
-    paddingHorizontal: space.lg,
-    fontSize: 16,
-  },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
 });

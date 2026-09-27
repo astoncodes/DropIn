@@ -1,13 +1,15 @@
 import { CHECK_IN_DURATION, CHECK_IN_NOTE_MAX_LENGTH, PARTY_SIZE } from '@dropin/shared';
 import { useRouter } from 'expo-router';
 import { useRef, useState } from 'react';
-import { TextInput, View } from 'react-native';
+import { View } from 'react-native';
 
 import { Screen } from '../../components/screen';
 import { SportBadge } from '../../components/ui/brand';
+import { Notice } from '../../components/ui/notice';
 import { AppText, Button, Chip, IconButton, sportIcon } from '../../components/ui/primitives';
+import { TextField } from '../../components/ui/text-field';
 import { useSession } from '../../providers/auth-context';
-import { radius, space, usePalette } from '../../theme';
+import { space } from '../../theme';
 import { useDeviceLocation } from '../location/use-device-location';
 import { useSports, useVenueDetail } from '../venues/api';
 import { useOwnPresence, usePresenceAction } from './api';
@@ -20,7 +22,6 @@ export function CheckInScreen({
   venueId: string;
   initialArrival?: boolean;
 }) {
-  const colors = usePalette();
   const router = useRouter();
   const { session, isLoading } = useSession();
   const venue = useVenueDetail(venueId);
@@ -41,15 +42,6 @@ export function CheckInScreen({
     (sport) => venue.data?.sport_slugs?.includes(sport.slug) && sport.is_active,
   );
   const selected = available.find((sport) => sport.id === sportId) ?? available[0];
-  const fieldStyle = {
-    color: colors.text,
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
-    borderWidth: 1,
-    borderRadius: radius.md,
-    padding: space.md,
-    fontSize: 16,
-  };
 
   async function submit() {
     if (!session || !selected || !venue.data || inFlight.current) return;
@@ -197,18 +189,15 @@ export function CheckInScreen({
               disabled={busy || party === PARTY_SIZE.max}
             />
           </View>
-          <AppText variant="heading">
-            A quick note <AppText tone="muted">(optional)</AppText>
-          </AppText>
-          <TextInput
+          <TextField
+            label="A quick note (optional)"
             accessibilityLabel="Check-in note"
             placeholder="Bringing a ball. All levels welcome."
-            placeholderTextColor={colors.textFaint}
             value={note}
             onChangeText={setNote}
             maxLength={CHECK_IN_NOTE_MAX_LENGTH}
+            showCount
             editable={!busy}
-            style={fieldStyle}
           />
           <AppText variant="caption" tone="muted">
             Check in within 250 metres with location accuracy of 100 metres or better. Your name,
@@ -226,7 +215,7 @@ export function CheckInScreen({
           in the live player count.
         </AppText>
       )}
-      {!!error && <AppText tone="alert">{error}</AppText>}
+      {!!error && <Notice tone="error" message={error} />}
       <Button
         label={arrival ? "I'm on my way" : 'Check in now'}
         icon={arrival ? 'walk' : 'map-marker-check'}

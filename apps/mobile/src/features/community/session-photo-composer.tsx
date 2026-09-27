@@ -2,11 +2,13 @@ import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
 import { readDevicePosition } from '../location/read-device-position';
 import { useRef, useState } from 'react';
-import { Image, Linking, Platform, TextInput, View } from 'react-native';
+import { Image, Linking, Platform, View } from 'react-native';
 import { useVideoPlayer, VideoView } from 'expo-video';
 
 import { AppText, Button } from '../../components/ui/primitives';
-import { space, usePalette } from '../../theme';
+import { Notice } from '../../components/ui/notice';
+import { TextField } from '../../components/ui/text-field';
+import { radius, space } from '../../theme';
 import { checkSessionPhotoLocation, usePublishSessionPost } from './api';
 import type { PhotoLocation } from './api';
 import { UserFacingError, userMessage } from '../../lib/errors';
@@ -25,7 +27,6 @@ export function SessionPhotoComposer({
   userId: string;
   onPublished: () => void;
 }) {
-  const colors = usePalette();
   const publish = usePublishSessionPost(sessionId, userId);
   const [verified, setVerified] = useState(false);
   const verifiedAt = useRef(0);
@@ -163,26 +164,20 @@ export function SessionPhotoComposer({
                 <Image
                   source={{ uri: asset.uri }}
                   accessibilityLabel="Photo preview"
-                  style={{ width: '100%', height: 220, borderRadius: 12 }}
+                  style={{ width: '100%', height: 220, borderRadius: radius.md }}
                   resizeMode="contain"
                 />
               )}
-              <TextInput
+              <TextField
+                label="Caption (optional)"
+                accessibilityLabel="Photo caption"
                 value={caption}
                 onChangeText={setCaption}
                 maxLength={500}
+                showCount
                 multiline
                 editable={!busy}
-                accessibilityLabel="Photo caption"
-                placeholder="Add a caption (optional)"
-                placeholderTextColor={colors.textMuted}
-                style={{
-                  color: colors.text,
-                  backgroundColor: colors.surface,
-                  padding: space.md,
-                  borderRadius: 12,
-                  minHeight: 70,
-                }}
+                placeholder="What happened on court?"
               />
               <Button
                 label="Post to session feed"
@@ -232,11 +227,7 @@ export function SessionPhotoComposer({
           )}
         </>
       )}
-      {error ? (
-        <View accessibilityRole="alert">
-          <AppText>{error}</AppText>
-        </View>
-      ) : null}
+      {error ? <Notice tone="error" message={error} /> : null}
       {settings &&
         (Platform.OS === 'web' ? (
           <AppText variant="caption">

@@ -1,10 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
-import { TextInput, View } from 'react-native';
+import { View } from 'react-native';
 
 import { Body, Screen, Title } from '../../components/screen';
+import { Notice } from '../../components/ui/notice';
 import { AppText, Button, Chip } from '../../components/ui/primitives';
+import { TextField } from '../../components/ui/text-field';
 import { useSports, useVenueDetail } from '../venues/api';
 import { useRequiredLocation } from '../location/required-location';
 import VenueMap from '../../components/map/venue-map';
@@ -13,8 +15,9 @@ import { PlaceSearch } from '../geocoding/place-search';
 import { useDeviceLocation } from '../location/use-device-location';
 import { supabase } from '../../lib/supabase';
 import { useSession } from '../../providers/auth-context';
-import { radius, space, usePalette, useThemeName } from '../../theme';
+import { radius, space, useThemeName } from '../../theme';
 import { UserFacingError, userMessage } from '../../lib/errors';
+import { tomorrowDate } from '../../lib/format';
 
 export function NewRunScreen() {
   const initialLocation = useRequiredLocation();
@@ -43,7 +46,6 @@ export function NewRunScreen() {
   }
   const router = useRouter();
   const client = useQueryClient();
-  const colors = usePalette();
   const { session } = useSession();
   const venueOptions = useQuery({
     queryKey: ['session-venues', venueSearch.trim()],
@@ -134,36 +136,35 @@ export function NewRunScreen() {
   if (locationMode === 'venue' && !venueId)
     return (
       <Screen insetTop={false}>
-        <Title>Create session</Title>
         <Body>Choose an existing venue or drop your own session pin.</Body>
         <Button
           label="Drop a pin instead"
           icon="map-marker-plus-outline"
           onPress={() => setLocationMode('pin')}
         />
-        <TextInput
+        <TextField
+          label="Search venues"
           value={venueSearch}
           onChangeText={setVenueSearch}
-          accessibilityLabel="Search venues"
-          placeholder="Search venues"
+          placeholder="Court, gym or park name"
           autoCorrect={false}
-          placeholderTextColor={colors.textFaint}
-          style={{
-            color: colors.text,
-            backgroundColor: colors.surface,
-            borderRadius: radius.md,
-            padding: space.md,
-          }}
         />
         {venueOptions.isPending ? (
           <Body>Loading venues…</Body>
         ) : venueOptions.isError ? (
-          <>
-            <AppText tone="alert">
-              {userMessage(venueOptions.error, 'Could not load venues. Try again.')}
-            </AppText>
-            <Button label="Try again" onPress={() => void venueOptions.refetch()} />
-          </>
+          <Notice
+            tone="error"
+            message={userMessage(venueOptions.error, 'Could not load venues. Try again.')}
+            action={
+              <Button
+                label="Try again"
+                size="sm"
+                tone="neutral"
+                variant="soft"
+                onPress={() => void venueOptions.refetch()}
+              />
+            }
+          />
         ) : venueOptions.data?.length ? (
           venueOptions.data.map((place) => (
             <View key={place.id} style={{ gap: space.xs }}>
@@ -220,7 +221,7 @@ export function NewRunScreen() {
       label: 'First date (YYYY-MM-DD)',
       value: date,
       change: setDate,
-      placeholder: '2026-09-15',
+      placeholder: tomorrowDate(),
       max: 10,
     },
     { label: 'Start time (24-hour)', value: start, change: setStart, placeholder: '19:00', max: 5 },
@@ -228,7 +229,6 @@ export function NewRunScreen() {
   ];
   return (
     <Screen insetTop={false}>
-      <Title>Create session</Title>
       {locationMode === 'pin' ? (
         <>
           <Body>Search for a location or drop a pin for this session.</Body>
@@ -238,19 +238,13 @@ export function NewRunScreen() {
               setLocationName(place.label.slice(0, 120));
             }}
           />
-          <TextInput
-            accessibilityLabel="Meeting spot name"
-            placeholder="Meeting spot, e.g. east side of the park"
+          <TextField
+            label="Meeting spot name"
+            placeholder="East side of the park"
+            hint="Everyone sees this name on the map."
             value={locationName}
             onChangeText={setLocationName}
             maxLength={120}
-            placeholderTextColor={colors.textFaint}
-            style={{
-              color: colors.text,
-              backgroundColor: colors.surface,
-              padding: space.md,
-              borderRadius: radius.md,
-            }}
           />
           <View
             style={{
@@ -307,24 +301,23 @@ export function NewRunScreen() {
             }}
           />
           {deviceLocation.state.status === 'denied' && (
-            <Body>Enable location services and allow access to continue.</Body>
+            <Notice
+              tone="warning"
+              message="Enable location services and allow access to use your location."
+            />
           )}
           {deviceLocation.state.status === 'unavailable' && (
-            <Body>{deviceLocation.state.message}</Body>
+            <Notice tone="warning" message={deviceLocation.state.message} />
           )}
-          <AppText>Time zone</AppText>
-          <TextInput
+          <TextField
+            label="Time zone"
             accessibilityLabel="Session time zone"
+            hint="Where the session happens, e.g. America/Halifax."
             value={timezone}
             onChangeText={setTimezone}
             autoCapitalize="none"
-            placeholder="America/Toronto"
-            style={{
-              color: colors.text,
-              backgroundColor: colors.surface,
-              padding: space.md,
-              borderRadius: radius.md,
-            }}
+            autoCorrect={false}
+            placeholder="America/Halifax"
           />
           <Button
             label="Use an existing venue instead"
@@ -347,26 +340,17 @@ export function NewRunScreen() {
         </>
       )}
       {fields.map((field) => (
-        <View key={field.label} style={{ gap: space.xs }}>
-          <AppText>{field.label}</AppText>
-          <TextInput
-            accessibilityLabel={field.label}
-            value={field.value}
-            onChangeText={field.change}
-            placeholder={field.placeholder}
-            maxLength={field.max}
-            autoCapitalize="none"
-            placeholderTextColor={colors.textFaint}
-            style={{
-              color: colors.text,
-              backgroundColor: colors.surface,
-              borderRadius: radius.md,
-              padding: space.md,
-            }}
-          />
-        </View>
+        <TextField
+          key={field.label}
+          label={field.label}
+          value={field.value}
+          onChangeText={field.change}
+          placeholder={field.placeholder}
+          maxLength={field.max}
+          autoCapitalize="none"
+        />
       ))}
-      <AppText>Sport</AppText>
+      <AppText variant="bodyStrong">Sport</AppText>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.sm }}>
         {available.map((sport) => (
           <Chip
@@ -377,7 +361,7 @@ export function NewRunScreen() {
           />
         ))}
       </View>
-      <AppText>Repeat weekly</AppText>
+      <AppText variant="bodyStrong">Repeat weekly</AppText>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.sm }}>
         {[1, 4, 8, 12].map((count) => (
           <Chip
@@ -389,9 +373,10 @@ export function NewRunScreen() {
         ))}
       </View>
       {create.isError && (
-        <AppText tone="alert">
-          {userMessage(create.error, 'Could not create this session. Try again.')}
-        </AppText>
+        <Notice
+          tone="error"
+          message={userMessage(create.error, 'Could not create this session. Try again.')}
+        />
       )}
       <Button
         label="Create session and open chat"
