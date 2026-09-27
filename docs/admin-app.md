@@ -11,6 +11,7 @@ Forward and reload preserve the selected page:
 
 - `#dashboard`: live totals and the five oldest locations awaiting review.
 - `#approvals`: search and filter submissions, then approve, reject or link duplicates.
+- `#reports`: review what players reported, then remove the content or dismiss the reports.
 - `#locations`: edit, verify, hide and restore published locations.
 - `#activity`: review the history of admin decisions and changes.
 - `#coverage`: read the configured regions and sports.
@@ -41,7 +42,31 @@ use admin-checked database functions. Direct venue writes are denied even to adm
 The audit log is readable only by admins and cannot be changed through their API role.
 
 The queue handles user-submitted canonical venues. Spontaneous sessions do not
-need review. Import tooling and social-content moderation are separate work.
+need review. Import tooling is separate work.
+
+## Player reports
+
+Players report posts, chat messages, sessions and display names from the app,
+and can block other players. Reports arrive on `#reports`, grouped by the
+reported content with the oldest first; the dashboard shows the open count. A
+report records what the reporter saw at the time, so content its author edited
+or deleted can still be judged.
+
+Each decision covers every open report on that content and is written to the
+activity log:
+
+| Reported     | Remove                                                         | Dismiss  |
+| ------------ | -------------------------------------------------------------- | -------- |
+| Post         | Deletes the post and its media rows, then its files            | Keeps it |
+| Chat message | Deletes the message                                            | Keeps it |
+| Session      | Hides the series from discovery and cancels its upcoming dates | Keeps it |
+| Display name | Resets it to “Drop In player”                                  | Keeps it |
+
+Removing a post deletes its database rows first, so it disappears from the app
+immediately, and then deletes its photos or clips through the Storage API. If
+that second step fails, the panel stays open with a retry; until it succeeds the
+files remain reachable by direct link. Reporters are never named to the player.
+Suspending an account entirely is done from Supabase Auth in the dashboard.
 Submitters can revisit their private review history from Profile → Your venue
 submissions, including decisions, reviewer notes and links to approved venues.
 
@@ -79,7 +104,9 @@ accounts and venues, checks submission, approval, rejection, duplicate linking,
 venue edits, verification, removal/restoration and submission history, then removes
 its fixtures.
 `010_admin_review.sql` covers authorization, atomic approval, repeat review rejection,
-rejection reasons, duplicate linking, edits, and audit writes. The admin review functions are defined in
+rejection reasons, duplicate linking, edits, and audit writes. `016_content_moderation.sql`
+covers reporting, blocking, report visibility, removal and dismissal, audit writes and
+admin storage clean-up. The admin review functions are defined in
 `supabase/migrations/20260908010000_baseline.sql`.
 
 Deploy `apps/admin/dist` to a static HTTPS host with the public Vite configuration
@@ -97,6 +124,6 @@ node scripts/tests/browser-admin-website.mjs
 ```
 
 They cover sign-in rendering, the dashboard queue, approval and duplicate linking,
-rejection validation and RPC payloads, success and empty states, navigation, browser
-Back, reload and mobile width.
+rejection validation and RPC payloads, report removal with its storage clean-up request,
+success and empty states, navigation, browser Back, reload and mobile width.
 Screenshots are saved in `test-results/ui/admin-website-*.png`.
