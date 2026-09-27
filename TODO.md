@@ -5,12 +5,11 @@ is done, delete the entry rather than leaving a ticked box behind.
 
 ## Apply the content moderation migration
 
-`20260926120000_content_moderation.sql` is committed with its pgTAP tests and
-generated types, and was verified by injecting it into the test suite's
-transactions, but it is not applied to either hosted project. The report,
-block and admin Reports screens fail until it is.
+`20260926120000_content_moderation.sql` is applied to the test project
+(`npm run db:test` passes, 226 assertions) but not to the app project, so the
+report, block and admin Reports screens fail against the live backend until it
+is.
 
-- [ ] Apply it to the test project and run `npm run db:test`.
 - [ ] Apply it to the app project; confirm `npm run db:types` leaves
       `database.types.ts` unchanged.
 - [ ] Report, block and remove content end to end with real accounts,
