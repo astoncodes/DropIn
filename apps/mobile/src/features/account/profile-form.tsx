@@ -143,7 +143,7 @@ function EditableProfileForm({
         />
       )}
       {updateAccount.isSuccess && !onSaved && (
-        <AppText variant="caption" tone="live">
+        <AppText variant="caption" tone="muted">
           Profile saved.
         </AppText>
       )}

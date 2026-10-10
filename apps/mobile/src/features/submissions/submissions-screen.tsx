@@ -12,8 +12,8 @@ import { useOwnVenueSubmissions } from './api';
 const STATUS: Record<string, { label: string; tone: TagTone }> = {
   pending: { label: 'Under review', tone: 'soon' },
   possible_duplicate: { label: 'Under review', tone: 'soon' },
-  approved: { label: 'Approved', tone: 'live' },
-  merged: { label: 'Linked to an existing venue', tone: 'live' },
+  approved: { label: 'Approved', tone: 'neutral' },
+  merged: { label: 'Linked to an existing venue', tone: 'neutral' },
   rejected: { label: 'Not approved', tone: 'neutral' },
 };
 
