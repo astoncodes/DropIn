@@ -215,10 +215,12 @@ try {
   });
   page.setDefaultTimeout(30000);
   await page.goto('http://localhost:8081/profile');
-  await page.getByRole('button', { name: 'Delete account', exact: true }).click();
+  await page.getByRole('button', { name: /Delete account/ }).click();
   await page.getByRole('button', { name: 'Keep my account', exact: true }).click();
-  await page.getByRole('button', { name: 'Delete account', exact: true }).click();
-  const submit = page.getByRole('button', { name: 'Permanently delete account', exact: true });
+  await page.getByRole('button', { name: /Delete account/ }).click();
+  const submit = page
+    .getByRole('dialog')
+    .getByRole('button', { name: 'Delete permanently', exact: true });
   assert.equal(await submit.getAttribute('aria-disabled'), 'true');
   await page.getByRole('textbox', { name: 'Type DELETE to confirm' }).fill('DELETE');
   expectedNetworkFailure = true;
@@ -226,7 +228,9 @@ try {
     route.abort('internetdisconnected'),
   );
   await submit.click();
-  await page.getByText('Could not finish deletion. Please retry.', { exact: true }).waitFor();
+  await page
+    .getByText('Could not connect. Check your connection and try again.', { exact: true })
+    .waitFor();
   assert(
     (await admin.auth.admin.getUserById(owner.id)).data.user,
     'Network failure leaves account intact',

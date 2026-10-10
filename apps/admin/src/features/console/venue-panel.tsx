@@ -4,7 +4,7 @@ import { useState } from 'react';
 
 import { supabase } from '../../lib/supabase';
 import { Panel } from './panel';
-
+import { label } from './console-shared';
 import type { Sport, Venue } from './console-shared';
 
 /**
@@ -114,7 +114,9 @@ export function VenuePanel({
             Setting
             <select value={indoor} onChange={(e) => setIndoor(e.target.value as typeof indoor)}>
               {['indoor', 'outdoor', 'unknown'].map((s) => (
-                <option key={s}>{s}</option>
+                <option key={s} value={s}>
+                  {label(s)}
+                </option>
               ))}
             </select>
           </label>

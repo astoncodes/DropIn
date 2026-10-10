@@ -5,6 +5,7 @@ import { Animated, PanResponder, StyleSheet, View, useWindowDimensions } from 'r
 import { useReduceMotion } from '../../lib/accessibility';
 import { elevation, radius, space, usePalette } from '../../theme';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { LivePulse } from './activity';
 import { AppText, IconButton } from './primitives';
 
 /**
@@ -21,13 +22,12 @@ import { AppText, IconButton } from './primitives';
 export function ResultsSheet({
   children,
   title,
-  subtitle,
-  headerRight,
+  live = false,
 }: {
   children: ReactNode;
   title: string;
-  subtitle?: string;
-  headerRight?: ReactNode;
+  /** Marks the title with the live pulse: the list below has players in it now. */
+  live?: boolean;
 }) {
   const colors = usePalette();
   const reduceMotion = useReduceMotion();
@@ -101,15 +101,10 @@ export function ResultsSheet({
 
   const header = (
     <View style={styles.header}>
-      <View style={{ flex: 1 }}>
+      {live && <LivePulse />}
+      <View accessibilityRole="header" style={{ flex: 1 }}>
         <AppText variant="heading">{title}</AppText>
-        {subtitle && (
-          <AppText variant="caption" tone="muted">
-            {subtitle}
-          </AppText>
-        )}
       </View>
-      {headerRight}
       {!isWide && (
         <IconButton
           icon={expanded ? 'chevron-down' : 'chevron-up'}
@@ -125,7 +120,7 @@ export function ResultsSheet({
       <View
         style={[
           styles.panel,
-          { backgroundColor: colors.background, borderColor: colors.border },
+          { backgroundColor: colors.surface, borderColor: colors.border },
           elevation.floating,
         ]}
       >
@@ -141,7 +136,7 @@ export function ResultsSheet({
         styles.sheet,
         {
           height: availableHeight - (expanded ? expandedOffset : peekOffset),
-          backgroundColor: colors.background,
+          backgroundColor: colors.surface,
           borderColor: colors.border,
           transform: [{ translateY }],
         },
@@ -173,7 +168,7 @@ const styles = StyleSheet.create({
     top: 0,
     borderTopLeftRadius: radius.xl,
     borderTopRightRadius: radius.xl,
-    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopWidth: 1,
     overflow: 'hidden',
   },
   panel: {
@@ -182,8 +177,8 @@ const styles = StyleSheet.create({
     right: space.lg,
     bottom: space.lg,
     width: 400,
-    borderRadius: radius.xl,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: radius.lg,
+    borderWidth: 1,
     overflow: 'hidden',
   },
   grabArea: {
@@ -200,7 +195,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: space.md,
-    paddingHorizontal: space.lg,
-    paddingVertical: space.md,
+    minHeight: 48,
+    paddingLeft: space.lg,
+    paddingRight: space.sm,
   },
 });

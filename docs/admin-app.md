@@ -19,7 +19,8 @@ Forward and reload preserve the selected page:
 The approval form shows only the fields needed for the selected decision. Rejection
 requires a nonblank reason, approvals require readable coordinates, and linking
 requires an existing location. Successful changes show confirmation on the page.
-The sign-in page is a compact email form. The website works at desktop and phone widths.
+The sign-in page is a compact email form. The website works at desktop and phone widths,
+and looks the way the [design system](design-system.md#admin-website) describes.
 
 ## Features
 

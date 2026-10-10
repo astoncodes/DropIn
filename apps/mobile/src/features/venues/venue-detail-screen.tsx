@@ -1,47 +1,50 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
+import { userMessage } from '@dropin/shared';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Linking, Platform, ScrollView, StyleSheet, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import VenueMap from '../../components/map/venue-map';
-import { SportBadge } from '../../components/ui/brand';
-import {
-  ConditionChip,
-  EmptyState,
-  LoadError,
-  ScoreStat,
-  Skeleton,
-} from '../../components/ui/activity';
-import { AppText, Button, Chip, sportIcon } from '../../components/ui/primitives';
-import { useUpcomingRuns, useVenueActivity, useVenueConditions, useVenueDetail } from './api';
+import { ActionBar } from '../../components/ui/action-bar';
+import { ConditionChip, EmptyState, LoadError, Skeleton, Stat } from '../../components/ui/activity';
+import { Avatar } from '../../components/ui/avatar';
+import { ListRow, ListSection } from '../../components/ui/list-row';
+import { Notice } from '../../components/ui/notice';
+import { AppText, Button, Tag } from '../../components/ui/primitives';
+import type { IconName } from '../../components/ui/primitives';
 import {
   CONDITION_ICON,
   CONDITION_IS_BLOCKING,
   CONDITION_LABEL,
   PULSE_LABEL,
   PULSE_TONE,
+  dayLabel,
   relativeTime,
+  timeOfDay,
 } from '../../lib/format';
-import { useSession } from '../../providers/auth-context';
-import { elevation, radius, space, usePalette, useThemeName } from '../../theme';
-import { PresenceCard } from '../presence/presence-card';
-import { usePresenceClock } from '../presence/api';
-import { SessionCard } from '../community/session-card';
-import { useJoinSession, useRunAttendance } from '../community/api';
-import type { UpcomingRun } from './api';
-import type { IconName } from '../../components/ui/primitives';
-import { userMessage } from '@dropin/shared';
 import { loadPhase } from '../../lib/load-phase';
 import { uuidParam } from '../../lib/route-params';
+import { useSession } from '../../providers/auth-context';
+import { radius, space, usePalette, useThemeName } from '../../theme';
+import { useJoinSession, useRunAttendance } from '../community/api';
+import { SessionRow } from '../community/session-row';
+import { usePresenceClock } from '../presence/api';
+import { PresenceCard } from '../presence/presence-card';
+import { useUpcomingRuns, useVenueActivity, useVenueConditions, useVenueDetail } from './api';
+import type { UpcomingRun } from './api';
+
+const SETTING_LABEL = { indoor: 'Indoor', outdoor: 'Outdoor', unknown: null } as const;
 
 /**
  * Venue detail — "what is actually happening here, and can I join?"
  *
- * Here-now and heading-there are shown as two separate figures and never added
+ * Here-now and on-the-way are shown as two separate figures and never added
  * together. A verified check-in means somebody's device confirmed they were at
  * the venue; an arrival intent means somebody tapped a button. Merging them
  * would make the stronger signal worthless.
+ *
+ * Checking in is the point of the screen, so it is pinned at the bottom rather
+ * than left at the end of the scroll.
  */
 export function VenueDetailScreen() {
   const venueId = uuidParam(useLocalSearchParams<{ venueId: string }>().venueId);
@@ -50,7 +53,6 @@ export function VenueDetailScreen() {
   const [directionError, setDirectionError] = useState('');
   const [joinError, setJoinError] = useState('');
   const now = usePresenceClock();
-  const insets = useSafeAreaInsets();
   const router = useRouter();
   const { session } = useSession();
 
@@ -84,19 +86,17 @@ export function VenueDetailScreen() {
 
   if (phase === 'loading') {
     return (
-      <View
-        style={{ flex: 1, backgroundColor: colors.background, padding: space.lg, gap: space.md }}
-      >
-        <Skeleton height={32} width="70%" />
-        <Skeleton height={110} />
-        <Skeleton height={80} />
+      <View style={[styles.state, { backgroundColor: colors.background }]}>
+        <Skeleton height={180} />
+        <Skeleton height={36} width="70%" />
+        <Skeleton height={84} />
       </View>
     );
   }
 
   if (phase === 'failed') {
     return (
-      <View style={{ flex: 1, backgroundColor: colors.background, justifyContent: 'center' }}>
+      <View style={[styles.state, { backgroundColor: colors.background }]}>
         <LoadError
           title="Could not load this venue"
           onRetry={() => void venue.refetch()}
@@ -108,19 +108,11 @@ export function VenueDetailScreen() {
 
   if (!venue.data) {
     return (
-      <View style={{ flex: 1, backgroundColor: colors.background, justifyContent: 'center' }}>
+      <View style={[styles.state, { backgroundColor: colors.background }]}>
         <EmptyState
-          icon="map-marker-question-outline"
           title="Venue not found"
           body="This place may have been removed, or the link is out of date."
-          action={
-            <Button
-              label="Back to map"
-              tone="neutral"
-              variant="soft"
-              onPress={() => router.replace('/')}
-            />
-          }
+          action={<Button label="Back to map" size="sm" onPress={() => router.replace('/')} />}
         />
       </View>
     );
@@ -138,6 +130,10 @@ export function VenueDetailScreen() {
     ? checkIns.reduce((total, row) => total + row.party_size, 0)
     : data.here_now;
   const headingThere = activity.data ? intents.length : data.heading_there;
+  const upcoming = (runs.data ?? []).slice(0, 4);
+  const nextRun = upcoming[0];
+  const sportNames = data.sport_names ?? [];
+  const sportName = (slug: string) => sportNames[(data.sport_slugs ?? []).indexOf(slug)] ?? slug;
 
   function openDirections() {
     const label = encodeURIComponent(data.name);
@@ -153,152 +149,134 @@ export function VenueDetailScreen() {
   }
 
   return (
-    <ScrollView
-      style={{ flex: 1, backgroundColor: colors.background }}
-      contentContainerStyle={{
-        padding: space.lg,
-        paddingBottom: insets.bottom + space.xxl,
-        width: '100%',
-        maxWidth: 760,
-        alignSelf: 'center',
-        gap: space.lg,
-      }}
-    >
-      {/* A merged venue resolves to its survivor rather than 404ing. Saying so
-          avoids the confusion of tapping one name and landing on another. */}
-      {data.was_merged && (
-        <View style={[styles.notice, { backgroundColor: colors.infoSoft }]}>
-          <AppText variant="caption" style={{ color: colors.info }}>
-            This venue was merged into {data.name}, which is the one people check into.
-          </AppText>
-        </View>
-      )}
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
+      <ScrollView contentContainerStyle={styles.content}>
+        {/* A merged venue resolves to its survivor rather than 404ing. Saying so
+            avoids the confusion of tapping one name and landing on another. */}
+        {data.was_merged && (
+          <Notice
+            tone="info"
+            message={`This venue was merged into ${data.name}, which is the one people check into.`}
+          />
+        )}
 
-      <View style={{ height: 220, borderRadius: radius.xl, overflow: 'hidden' }}>
-        <VenueMap
-          colorScheme={scheme}
-          region={{
-            latitude: data.latitude,
-            longitude: data.longitude,
-            latitudeDelta: 0.012,
-            longitudeDelta: 0.012,
-          }}
-          markers={[
-            {
-              id: data.venue_id,
+        <View style={styles.map}>
+          <VenueMap
+            colorScheme={scheme}
+            region={{
               latitude: data.latitude,
               longitude: data.longitude,
-              label: data.name,
-              sportSlug: data.sport_slugs?.[0] ?? null,
-              count: hereNow,
-              isLive: hereNow > 0,
-              isPending: headingThere > 0,
-            },
-          ]}
-        />
-      </View>
-      <View style={{ gap: space.sm }}>
-        <SportBadge slug={data.sport_slugs?.[0]} />
-        <AppText variant="display">{data.name}</AppText>
-
-        <View style={styles.metaRow}>
-          <MaterialCommunityIcons
-            name={data.indoor_state === 'indoor' ? 'home-variant' : 'weather-sunny'}
-            size={14}
-            color={colors.textMuted}
+              latitudeDelta: 0.012,
+              longitudeDelta: 0.012,
+            }}
+            markers={[
+              {
+                id: data.venue_id,
+                latitude: data.latitude,
+                longitude: data.longitude,
+                label: data.name,
+                sportSlug: data.sport_slugs?.[0] ?? null,
+                count: hereNow,
+                isLive: hereNow > 0,
+                isPending: headingThere > 0,
+              },
+            ]}
           />
-          <AppText variant="caption" tone="muted">
-            {data.indoor_state === 'indoor'
-              ? 'Indoor'
-              : data.indoor_state === 'outdoor'
-                ? 'Outdoor'
-                : 'Indoor/outdoor unknown'}
-          </AppText>
+        </View>
 
+        <View style={styles.identity}>
+          <View accessibilityRole="header">
+            <AppText variant="title">{data.name}</AppText>
+          </View>
+          <AppText tone="muted">
+            {[SETTING_LABEL[data.indoor_state], sportNames.join(', ')].filter(Boolean).join(' · ')}
+          </AppText>
+          {data.address_text && (
+            <AppText variant="caption" tone="muted">
+              {data.address_text}
+            </AppText>
+          )}
           {data.verification_state === 'admin_verified' && (
-            <>
-              <View style={[styles.dot, { backgroundColor: colors.textFaint }]} />
-              <MaterialCommunityIcons name="check-decagram" size={14} color={colors.live} />
-              <AppText variant="caption" style={{ color: colors.liveText }}>
-                Verified
+            <View style={styles.inline}>
+              <MaterialCommunityIcons name="check-decagram" size={15} color={colors.textMuted} />
+              <AppText variant="caption" tone="muted">
+                Checked by Drop In
               </AppText>
-            </>
+            </View>
           )}
         </View>
 
-        {data.address_text && (
-          <AppText variant="caption" tone="muted">
-            {data.address_text}
-          </AppText>
-        )}
-
-        <View style={styles.chipRow}>
-          {(data.sport_slugs ?? []).map((slug, index) => (
-            <Chip
-              key={slug}
-              label={(data.sport_names ?? [])[index] ?? slug}
-              icon={sportIcon(slug) as IconName}
-            />
-          ))}
+        <View style={styles.scoreboard}>
+          <View style={[styles.board, { borderColor: colors.border }]}>
+            {/* With a next game to show, the two counts take only the room they
+                need so the time fits on one line beside them. */}
+            <View style={nextRun ? styles.count : styles.stat}>
+              <Stat value={hereNow} label="Here now" tone={hereNow > 0 ? 'live' : 'quiet'} />
+            </View>
+            <View
+              style={[
+                nextRun ? styles.count : styles.stat,
+                styles.statDivided,
+                { borderLeftColor: colors.border },
+              ]}
+            >
+              <Stat
+                value={headingThere}
+                label="On the way"
+                tone={headingThere > 0 ? 'soon' : 'quiet'}
+              />
+            </View>
+            {nextRun && (
+              <View style={[styles.stat, styles.statDivided, { borderLeftColor: colors.border }]}>
+                <Stat
+                  value={timeOfDay(nextRun.starts_at)}
+                  label={`Next · ${dayLabel(nextRun.starts_at)}`}
+                />
+              </View>
+            )}
+          </View>
+          {hereNow > 0 && (
+            <AppText variant="micro" tone="faint">
+              Updated {relativeTime(data.last_activity_at).toLowerCase()}
+            </AppText>
+          )}
+          {data.pulse && <Tag label={PULSE_LABEL[data.pulse]} tone={PULSE_TONE[data.pulse]} />}
+          {liveConditions.length > 0 && (
+            <View style={styles.conditions}>
+              {liveConditions.map((condition) => (
+                <ConditionChip
+                  key={condition.id}
+                  icon={CONDITION_ICON[condition.kind] as IconName}
+                  label={`${CONDITION_LABEL[condition.kind]} · ${relativeTime(condition.created_at).toLowerCase()}`}
+                  blocking={CONDITION_IS_BLOCKING[condition.kind]}
+                />
+              ))}
+            </View>
+          )}
         </View>
-      </View>
 
-      <PresenceCard venueId={data.venue_id} />
-      {/* --- Activity --- */}
-      <View
-        style={[
-          styles.card,
-          { backgroundColor: colors.surface, borderColor: colors.border },
-          elevation.card,
-        ]}
-      >
-        <View style={styles.statRow}>
-          <ScoreStat value={hereNow} label="Here now" tone={hereNow > 0 ? 'live' : 'quiet'} />
-          <View style={[styles.divider, { backgroundColor: colors.border }]} />
-          <ScoreStat
-            value={headingThere}
-            label="Heading there"
-            tone={headingThere > 0 ? 'soon' : 'quiet'}
-          />
-        </View>
-
-        {data.pulse && (
-          <Chip
-            label={PULSE_LABEL[data.pulse]}
-            tone={PULSE_TONE[data.pulse]}
-            icon="bullhorn-outline"
-          />
-        )}
-
-        <AppText variant="micro" tone="faint">
-          {hereNow > 0
-            ? `Updated ${relativeTime(data.last_activity_at).toLowerCase()}`
-            : 'No recent activity'}
-        </AppText>
+        <PresenceCard venueId={data.venue_id} />
 
         {checkIns.length > 0 && (
-          <View style={{ gap: space.sm }}>
+          <View>
+            <AppText variant="label" tone="muted">
+              Here now
+            </AppText>
             {checkIns.map((row, index) => (
-              <View key={`${row.display_name}-${index}`} style={styles.playerRow}>
-                <View style={[styles.avatar, { backgroundColor: colors.liveSoft }]}>
-                  <AppText variant="caption" style={{ color: colors.liveText, fontWeight: '700' }}>
-                    {row.display_name.slice(0, 1).toUpperCase()}
-                  </AppText>
-                </View>
+              <View
+                key={`${row.display_name}-${index}`}
+                style={[styles.player, { borderBottomColor: colors.border }]}
+              >
+                <Avatar name={row.display_name} size={36} />
                 <View style={{ flex: 1 }}>
                   <AppText variant="bodyStrong">
                     {row.display_name}
-                    {row.party_size > 1 ? ` +${row.party_size - 1}` : ''}
+                    {row.party_size > 1 && <AppText tone="muted"> +{row.party_size - 1}</AppText>}
                   </AppText>
-                  {row.note ? (
-                    <AppText variant="caption" tone="muted">
-                      {row.note}
-                    </AppText>
-                  ) : (
-                    <AppText variant="caption" tone="muted">
-                      {row.sport_slug} · {relativeTime(row.started_at).toLowerCase()}
-                    </AppText>
-                  )}
+                  <AppText variant="caption" tone="muted">
+                    {row.note ??
+                      `${sportName(row.sport_slug)} · ${relativeTime(row.started_at).toLowerCase()}`}
+                  </AppText>
                 </View>
               </View>
             ))}
@@ -306,76 +284,83 @@ export function VenueDetailScreen() {
         )}
 
         {intents.length > 0 && (
-          <View style={[styles.intentBlock, { borderColor: colors.border }]}>
-            <AppText variant="micro" tone="soon" style={{ textTransform: 'uppercase' }}>
+          <View>
+            <AppText variant="label" tone="muted">
               On the way
             </AppText>
             {intents.map((row, index) => (
-              <AppText key={index} variant="caption" tone="muted">
-                {row.display_name} · {row.sport_slug}
-              </AppText>
+              <View key={index} style={[styles.player, { borderBottomColor: colors.border }]}>
+                <Avatar name={row.display_name} size={36} />
+                <View style={{ flex: 1 }}>
+                  <AppText variant="bodyStrong">{row.display_name}</AppText>
+                  <AppText variant="caption" tone="muted">
+                    {sportName(row.sport_slug)}
+                  </AppText>
+                </View>
+              </View>
             ))}
           </View>
         )}
-      </View>
 
-      {liveConditions.length > 0 && (
-        <View style={{ gap: space.sm }}>
-          <AppText variant="heading">Conditions</AppText>
-          <View style={styles.chipRow}>
-            {liveConditions.map((condition) => (
-              <ConditionChip
-                key={condition.id}
-                icon={CONDITION_ICON[condition.kind] as IconName}
-                label={`${CONDITION_LABEL[condition.kind]} · ${relativeTime(condition.created_at).toLowerCase()}`}
-                blocking={CONDITION_IS_BLOCKING[condition.kind]}
-              />
-            ))}
+        {upcoming.length > 0 && (
+          <View>
+            <AppText variant="label" tone="muted">
+              Coming up here
+            </AppText>
+            {!!joinError && <Notice tone="error" message={joinError} />}
+            {upcoming.map((run) => {
+              const response = attendance.data?.find(
+                (row) =>
+                  row.run_series_id === run.run_series_id &&
+                  row.occurrence_date === run.occurrence_date,
+              );
+              return (
+                <SessionRow
+                  key={`${run.run_series_id}-${run.occurrence_date}`}
+                  item={run}
+                  response={response}
+                  hosting={run.organizer_id === session?.user.id}
+                  pending={join.isPending && join.variables?.runSeriesId === run.run_series_id}
+                  attendanceUnavailable={loadPhase(attendance) !== 'ready'}
+                  onOpen={
+                    response?.session_id
+                      ? () => router.push(`/session/${response.session_id}`)
+                      : undefined
+                  }
+                  onRespond={(value) => void respond(run, value)}
+                />
+              );
+            })}
           </View>
-        </View>
-      )}
+        )}
 
-      {(runs.data ?? []).length > 0 && (
-        <View style={{ gap: space.sm }}>
-          <AppText variant="heading">Coming up here</AppText>
-          {!!joinError && <AppText tone="alert">{joinError}</AppText>}
-          {(runs.data ?? []).slice(0, 4).map((run) => {
-            const response = attendance.data?.find(
-              (row) =>
-                row.run_series_id === run.run_series_id &&
-                row.occurrence_date === run.occurrence_date,
-            );
-            return (
-              <SessionCard
-                key={`${run.run_series_id}-${run.occurrence_date}`}
-                item={run}
-                response={response}
-                pending={join.isPending && join.variables?.runSeriesId === run.run_series_id}
-                attendanceUnavailable={attendance.isError}
-                onOpen={
-                  response?.session_id
-                    ? () => router.push(`/session/${response.session_id}`)
-                    : undefined
-                }
-                onRespond={(value) => void respond(run, value)}
-              />
-            );
-          })}
-        </View>
-      )}
+        <ListSection>
+          <ListRow icon="directions" title="Directions" external onPress={openDirections} />
+          <ListRow
+            icon="calendar-plus"
+            title="Create a session here"
+            onPress={() =>
+              router.push({ pathname: '/run/new', params: { venueId: data.venue_id } })
+            }
+          />
+        </ListSection>
+        {!!directionError && <Notice tone="error" message={directionError} />}
+      </ScrollView>
 
-      <View style={{ gap: space.sm }}>
+      <ActionBar>
         <Button
           label="Check in here"
           icon="map-marker-check"
+          tone="live"
+          style={styles.action}
           onPress={() =>
             router.push({ pathname: '/check-in/[venueId]', params: { venueId: data.venue_id } })
           }
         />
         <Button
           label="I'm on my way"
-          icon="walk"
           variant="outline"
+          style={styles.action}
           onPress={() =>
             router.push({
               pathname: '/check-in/[venueId]',
@@ -383,54 +368,36 @@ export function VenueDetailScreen() {
             })
           }
         />
-        <Button
-          label="Create a session here"
-          icon="calendar-plus"
-          onPress={() => router.push({ pathname: '/run/new', params: { venueId: data.venue_id } })}
-        />
-        {!session && (
-          <Button
-            label="Sign in to join"
-            icon="login"
-            variant="outline"
-            tone="neutral"
-            onPress={() => router.push('/sign-in')}
-          />
-        )}
-        {!!directionError && <AppText tone="alert">{directionError}</AppText>}
-
-        <Button
-          label="Directions"
-          icon="directions"
-          tone="neutral"
-          variant="soft"
-          onPress={openDirections}
-        />
-      </View>
-    </ScrollView>
+      </ActionBar>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  card: {
-    borderRadius: radius.xl,
-    borderWidth: StyleSheet.hairlineWidth,
+  state: { flex: 1, padding: space.lg, gap: space.md },
+  content: {
     padding: space.lg,
-    gap: space.md,
+    paddingBottom: space.xxl,
+    width: '100%',
+    maxWidth: 760,
+    alignSelf: 'center',
+    gap: space.xl,
   },
-  notice: { borderRadius: radius.lg, padding: space.md },
-  metaRow: { flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' },
-  chipRow: { flexDirection: 'row', gap: 6, flexWrap: 'wrap' },
-  statRow: { flexDirection: 'row', alignItems: 'center', gap: space.xl },
-  divider: { width: StyleSheet.hairlineWidth, height: 36 },
-  playerRow: { flexDirection: 'row', alignItems: 'center', gap: space.md },
-  avatar: {
-    width: 34,
-    height: 34,
-    borderRadius: 999,
+  map: { height: 180, borderRadius: radius.lg, overflow: 'hidden' },
+  identity: { gap: space.xs },
+  inline: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingTop: 2 },
+  scoreboard: { gap: space.sm },
+  board: { flexDirection: 'row', borderTopWidth: 1, borderBottomWidth: 1 },
+  stat: { flex: 1, paddingVertical: space.md },
+  count: { paddingVertical: space.md, paddingRight: space.lg },
+  statDivided: { borderLeftWidth: 1, paddingLeft: space.lg },
+  conditions: { flexDirection: 'row', flexWrap: 'wrap', columnGap: space.lg, rowGap: space.xs },
+  player: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    gap: space.md,
+    paddingVertical: space.md,
+    borderBottomWidth: 1,
   },
-  intentBlock: { borderTopWidth: StyleSheet.hairlineWidth, paddingTop: space.md, gap: 2 },
-  dot: { width: 3, height: 3, borderRadius: 3 },
+  action: { flex: 1 },
 });

@@ -2,14 +2,15 @@ import type { ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
 import type { StyleProp, ViewStyle } from 'react-native';
 
-import { elevation, radius, space, usePalette } from '../../theme';
+import { radius, space, usePalette } from '../../theme';
 import { PressableSurface } from './primitives';
 
 const PADDING = { none: 0, sm: space.md, md: space.lg, lg: space.xl } as const;
 
 /**
- * A white surface on the off-white page. Cards group content that belongs
- * together; they are not decoration, so a screen of plain text needs none.
+ * An outlined panel for the few things that are one object rather than a row
+ * in a list: a profile summary, a numbered step. Most content needs none —
+ * rows divided by rules carry a list better than a stack of cards.
  *
  * Pass `onPress` for a card that opens something — the whole surface then
  * becomes one target with a single accessible label.
@@ -35,7 +36,6 @@ export function Card({
       style={[
         styles.card,
         { padding: PADDING[padding], backgroundColor: colors.surface, borderColor: colors.border },
-        elevation.card,
         style,
       ]}
     >
@@ -58,7 +58,7 @@ export function Card({
 const styles = StyleSheet.create({
   card: {
     borderRadius: radius.lg,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: 1,
     gap: space.md,
   },
 });

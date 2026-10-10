@@ -5,27 +5,35 @@ import { View } from 'react-native';
 import { useFonts } from 'expo-font';
 import { useEffect, useRef } from 'react';
 import { sportIcon } from '../ui/primitives';
-import { palettes, sportColor } from '../../theme/tokens';
+import { fonts, palettes } from '../../theme/tokens';
 import type { ThemeName } from '../../theme/tokens';
 import { env } from '../../lib/env';
+import { MAP_STYLE_URL, PIN } from './types';
 import type { MapMarker, VenueMapProps } from './types';
 
 function markerHtml(marker: MapMarker, scheme: ThemeName): string {
   const colors = palettes[scheme];
   const session = marker.kind === 'session';
-  const fill = sportColor(marker.sportSlug);
-  const ring = marker.selected ? colors.text : '#FFFFFF';
+  const inset = (PIN.box - PIN.size) / 2;
   const glyph =
     MaterialCommunityIcons.glyphMap[
       marker.sportSlug ? sportIcon(marker.sportSlug) : 'map-marker-outline'
     ];
+  const body = session
+    ? `background:${colors.surface};color:${colors.text};border:2px solid ${colors.text}`
+    : `background:${colors.text};color:${colors.textInverse};border:2px solid ${colors.surface}`;
+  const ring = marker.selected
+    ? `outline:3px solid ${colors.borderStrong};outline-offset:2px;`
+    : '';
+  const badgeBase = `position:absolute;right:0;top:0;box-sizing:border-box;border:2px solid ${colors.surface}`;
   const badge =
     marker.count > 0
-      ? `<span style="position:absolute;right:-3px;top:-4px;min-width:16px;height:16px;padding:0 3px;box-sizing:border-box;border-radius:8px;background:${colors.live};color:white;font:700 10px/16px system-ui;text-align:center;border:1px solid white">${Math.min(marker.count, 99)}</span>`
-      : '';
-  return `<div style="position:relative;width:48px;height:${session ? 56 : 44}px">
-    <div style="position:absolute;left:6px;top:6px;width:36px;height:36px;box-sizing:border-box;background:${fill};border:2px solid ${ring};border-radius:${session ? '50% 50% 3px 50%' : '10px'};transform:${session ? 'rotate(45deg)' : 'none'};box-shadow:0 4px 10px #102B2640"></div>
-    <span style="position:absolute;left:11px;top:11px;width:26px;height:26px;display:flex;align-items:center;justify-content:center;border-radius:50%;background:${session ? '#FFFFFF' : 'transparent'};color:${session ? fill : '#FFFFFF'};font:20px '${MaterialCommunityIcons.getFontFamily()}';">&#${glyph};</span>
+      ? `<span style="${badgeBase};min-width:${PIN.badge + 2}px;height:${PIN.badge + 2}px;padding:0 4px;border-radius:${PIN.badge}px;background:${colors.live};color:${colors.textInverse};font:15px/${PIN.badge - 2}px '${fonts.display}';text-align:center">${Math.min(marker.count, 99)}</span>`
+      : marker.isPending && !session
+        ? `<span style="${badgeBase};width:12px;height:12px;border-radius:6px;background:${colors.soon}"></span>`
+        : '';
+  return `<div style="position:relative;width:${PIN.box}px;height:${PIN.box}px">
+    <div style="position:absolute;left:${inset}px;top:${inset}px;width:${PIN.size}px;height:${PIN.size}px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;border-radius:${PIN.radius}px;${body};${ring}box-shadow:0 3px 8px rgba(15,26,22,.28);font:${PIN.glyph}px '${MaterialCommunityIcons.getFontFamily()}'">&#${glyph};</div>
     ${badge}
   </div>`;
 }
@@ -59,7 +67,7 @@ export default function VenueMap({
       maxZoom: 19,
       scrollZoom: true,
       touchZoomRotate: true,
-      style: 'mapbox://styles/mapbox/streets-v12',
+      style: MAP_STYLE_URL,
       center: [region.longitude, region.latitude],
       zoom: Math.log2(360 / Math.max(region.longitudeDelta, 0.0001)),
     });
@@ -103,12 +111,7 @@ export default function VenueMap({
         event.stopPropagation();
         onSelectMarker?.(marker.id);
       });
-      const pin = new mapboxgl.Marker({
-        element,
-        anchor: marker.kind === 'session' ? 'bottom' : 'center',
-        offset: marker.kind === 'session' ? [0, 7] : [0, -2],
-        draggable: marker.draggable,
-      })
+      const pin = new mapboxgl.Marker({ element, anchor: 'center', draggable: marker.draggable })
         .setLngLat([marker.longitude, marker.latitude])
         .addTo(map);
       pin.on('dragend', () => {

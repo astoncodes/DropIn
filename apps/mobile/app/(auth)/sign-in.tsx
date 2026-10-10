@@ -3,7 +3,6 @@ import { StyleSheet, View } from 'react-native';
 
 import { Screen } from '../../src/components/screen';
 import { BrandMark } from '../../src/components/ui/brand';
-import { CourtArt } from '../../src/components/ui/court-art';
 import { Notice } from '../../src/components/ui/notice';
 import { AppText, Button } from '../../src/components/ui/primitives';
 import { SignInForm } from '../../src/features/auth/sign-in-form';
@@ -36,18 +35,19 @@ export default function SignInScreen() {
       {accountDeleted === 'true' && (
         <Notice tone="success" message="Your account and its data have been deleted." />
       )}
-      <View style={{ paddingVertical: space.md }}>
-        <BrandMark size={36} showTagline />
-      </View>
-      <CourtArt height={220} />
-      <View style={{ gap: space.sm, paddingVertical: space.md }}>
-        <AppText variant="display">Good games.{'\n'}Great company.</AppText>
+      <View style={styles.hero}>
+        <BrandMark size={26} />
+        <View accessibilityRole="header">
+          <AppText variant="display" style={styles.headline}>
+            Find a game.{'\n'}Meet your people.
+          </AppText>
+        </View>
         <AppText tone="muted">
-          Find local sports, join a session, and meet your people. Everyone starts somewhere.
+          See where people are playing right now, and join the sessions coming up near you.
         </AppText>
       </View>
       <SignInForm />
-      <AppText variant="caption" tone="muted" style={{ textAlign: 'center' }}>
+      <AppText variant="caption" tone="muted">
         By continuing, you agree to the{' '}
         <AppText
           variant="caption"
@@ -70,22 +70,15 @@ export default function SignInScreen() {
       </AppText>
       <Button
         label="Explore without an account"
-        icon="arrow-right"
-        tone="neutral"
-        variant="outline"
+        variant="ghost"
         onPress={() => router.replace('/')}
       />
-      <AppText
-        variant="caption"
-        tone="muted"
-        style={{ textAlign: 'center', paddingVertical: space.md }}
-      >
-        Local sports. Real people. Right now.
-      </AppText>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  link: { fontWeight: '700', textDecorationLine: 'underline' },
+  hero: { gap: space.md, paddingTop: space.lg, paddingBottom: space.xl },
+  headline: { fontSize: 46, lineHeight: 46, paddingTop: space.lg },
+  link: { fontWeight: '600', textDecorationLine: 'underline' },
 });

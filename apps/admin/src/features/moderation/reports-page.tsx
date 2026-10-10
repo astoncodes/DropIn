@@ -83,20 +83,20 @@ export function ReportsPage({ onSaved }: { onSaved: (message: string) => void })
         </select>
       </div>
       {reports.isPending && (
-        <div className="card wide" role="status">
+        <div className="card" role="status">
           Loading reports…
         </div>
       )}
       {reports.error && (
-        <div className="card wide error" role="alert">
-          {userMessage(reports.error, 'Could not load reports. Try again.')}
+        <div className="card error" role="alert">
+          <p>{userMessage(reports.error, 'Could not load reports. Try again.')}</p>
           <button className="secondary" onClick={() => void reports.refetch()}>
             Try again
           </button>
         </div>
       )}
       {reports.data && (
-        <section className="card wide table-card">
+        <section className="card table-card">
           <table>
             <thead>
               <tr>
@@ -171,7 +171,7 @@ export function OpenReportsSummary({ onOpen }: { onOpen: () => void }) {
     },
   });
   return (
-    <section className="card wide">
+    <section className="card">
       <div className="section-heading">
         <div>
           <h2>Player reports</h2>
@@ -186,7 +186,7 @@ export function OpenReportsSummary({ onOpen }: { onOpen: () => void }) {
           </p>
         </div>
         <button className={count.data ? undefined : 'secondary'} onClick={onOpen}>
-          Review reports →
+          Review reports
         </button>
       </div>
     </section>

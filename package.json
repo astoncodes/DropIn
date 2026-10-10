@@ -36,6 +36,7 @@
     "test:browser:venues": "node scripts/tests/browser-venue-review.mjs",
     "test:browser:location": "node scripts/tests/browser-location-gate.mjs",
     "test:browser:unreachable": "node scripts/tests/browser-unreachable.mjs",
+    "test:browser:signed-in": "node scripts/tests/browser-signed-in.mjs",
     "test:presence": "node scripts/tests/live-presence.mjs"
   },
   "devDependencies": {

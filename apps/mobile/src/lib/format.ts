@@ -69,11 +69,11 @@ export const PULSE_LABEL: Record<VenuePulse, string> = {
   wrapping_up: 'Wrapping up',
 };
 
-export const PULSE_TONE: Record<VenuePulse, 'live' | 'soon' | 'info'> = {
+export const PULSE_TONE: Record<VenuePulse, 'live' | 'soon' | 'neutral'> = {
   need_players: 'soon',
   game_on: 'live',
-  full_next_game: 'info',
-  wrapping_up: 'info',
+  full_next_game: 'neutral',
+  wrapping_up: 'neutral',
 };
 
 export const CONDITION_LABEL: Record<ConditionKind, string> = {
@@ -130,28 +130,26 @@ export function activitySummary(input: {
   return { label: 'Quiet', tone: 'quiet' };
 }
 
-export function weekdayGroup(iso: string, now = new Date()): 'today' | 'tomorrow' | 'week' {
+/** Whole calendar days from `now` to `iso` on the device's calendar: 0 is today. */
+function calendarDaysAhead(iso: string, now: Date): number {
   const date = new Date(iso);
   const startOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
-  const dayDiff = Math.round((startOfDay(date) - startOfDay(now)) / 86_400_000);
+  return Math.round((startOfDay(date) - startOfDay(now)) / 86_400_000);
+}
 
-  if (dayDiff <= 0) return 'today';
-  if (dayDiff === 1) return 'tomorrow';
-  return 'week';
+/** The day a session is on, as a player would say it: "Today", "Tomorrow", "Sat 12 Oct". */
+export function dayLabel(iso: string, now = new Date()): string {
+  const dayDiff = calendarDaysAhead(iso, now);
+
+  if (dayDiff === 0) return 'Today';
+  if (dayDiff === 1) return 'Tomorrow';
+  return new Date(iso).toLocaleDateString(undefined, {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+  });
 }
 
 export function timeOfDay(iso: string): string {
   return new Date(iso).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
-}
-
-export function weekdayName(iso: string): string {
-  return new Date(iso).toLocaleDateString(undefined, { weekday: 'long' });
-}
-
-/** Tomorrow's date on the device's calendar as YYYY-MM-DD, for date-field examples. */
-export function tomorrowDate(now = new Date()): string {
-  const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
-  const month = String(tomorrow.getMonth() + 1).padStart(2, '0');
-  const day = String(tomorrow.getDate()).padStart(2, '0');
-  return `${tomorrow.getFullYear()}-${month}-${day}`;
 }

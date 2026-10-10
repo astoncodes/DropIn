@@ -20,8 +20,10 @@ const ICONS: Record<NoticeTone, IconName> = {
  * state, a confirmation that stays until the screen changes. For a brief
  * confirmation that should not take up room, use a toast instead.
  *
- * Errors and warnings use the alert role so screen readers announce them the
- * moment they appear, without the player having to find them.
+ * The tone shows in the icon and the title only; the message stays ink on a
+ * quiet grey, so a screen with a notice on it does not turn into a block of
+ * colour. Errors and warnings use the alert role so screen readers announce
+ * them the moment they appear, without the player having to find them.
  */
 export function Notice({
   tone = 'info',
@@ -35,11 +37,11 @@ export function Notice({
   action?: ReactNode;
 }) {
   const colors = usePalette();
-  const palette = {
-    info: { bg: colors.infoSoft, fg: colors.info, text: colors.text },
-    success: { bg: colors.liveSoft, fg: colors.liveText, text: colors.text },
-    warning: { bg: colors.soonSoft, fg: colors.soonText, text: colors.soonText },
-    error: { bg: colors.alertSoft, fg: colors.alert, text: colors.text },
+  const accent = {
+    info: colors.text,
+    success: colors.live,
+    warning: colors.soon,
+    error: colors.alert,
   }[tone];
   const urgent = tone === 'error' || tone === 'warning';
 
@@ -47,19 +49,17 @@ export function Notice({
     <View
       accessibilityRole={urgent ? 'alert' : 'summary'}
       accessibilityLiveRegion={urgent ? 'assertive' : 'polite'}
-      style={[styles.notice, { backgroundColor: palette.bg }]}
+      style={[styles.notice, { backgroundColor: colors.surfaceMuted }]}
     >
-      <MaterialCommunityIcons name={ICONS[tone]} size={20} color={palette.fg} />
+      <MaterialCommunityIcons name={ICONS[tone]} size={20} color={accent} style={styles.icon} />
       <View style={styles.copy}>
         {title && (
-          <AppText variant="bodyStrong" style={{ color: palette.text }}>
+          <AppText variant="bodyStrong" style={{ color: accent }}>
             {title}
           </AppText>
         )}
-        <AppText variant="body" style={{ color: palette.text }}>
-          {message}
-        </AppText>
-        {action}
+        <AppText variant="body">{message}</AppText>
+        {action && <View style={styles.action}>{action}</View>}
       </View>
     </View>
   );
@@ -70,8 +70,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: space.md,
-    padding: space.lg,
+    padding: space.md,
     borderRadius: radius.md,
   },
+  icon: { marginTop: 1 },
   copy: { flex: 1, gap: space.xs },
+  action: { alignItems: 'flex-start', paddingTop: space.xs },
 });

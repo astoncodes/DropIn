@@ -1,6 +1,6 @@
 import { View } from 'react-native';
 
-import { usePalette } from '../../theme';
+import { fonts, usePalette } from '../../theme';
 import { AppText } from './primitives';
 
 /** Up to two initials from a display name: "Sam Rivera" → "SR", "sam" → "S". */
@@ -29,15 +29,18 @@ export function Avatar({ name, size = 40 }: { name: string; size?: number }) {
         width: size,
         height: size,
         borderRadius: size / 2,
-        backgroundColor: colors.liveSoft,
+        backgroundColor: colors.surfaceMuted,
         alignItems: 'center',
         justifyContent: 'center',
         flexShrink: 0,
       }}
     >
       <AppText
-        tone="live"
-        style={{ fontSize: Math.round(size * 0.38), lineHeight: size * 0.5, fontWeight: '700' }}
+        style={{
+          fontFamily: fonts.displayMedium,
+          fontSize: Math.round(size * 0.44),
+          lineHeight: Math.round(size * 0.52),
+        }}
       >
         {initials(name)}
       </AppText>

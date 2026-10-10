@@ -38,15 +38,10 @@ export function ProfileAccountScreen() {
       ) : (
         <Card>
           <EmptyState
-            icon="account-outline"
             title="Your people are out there"
             body="Sign in to join sessions, chat with players and keep your sports in one place."
             action={
-              <Button
-                label="Sign in or create account"
-                icon="arrow-right"
-                onPress={() => router.push('/sign-in')}
-              />
+              <Button label="Sign in or create account" onPress={() => router.push('/sign-in')} />
             }
           />
         </Card>
@@ -66,7 +61,7 @@ export function ProfileAccountScreen() {
         />
       </ListSection>
       <View style={styles.footer}>
-        <BrandMark size={24} showTagline />
+        <BrandMark size={22} />
         <AppText variant="caption" tone="faint">
           Version {Constants.expoConfig?.version ?? 'unknown'}
         </AppText>
