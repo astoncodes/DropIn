@@ -59,9 +59,8 @@ export function SessionRow({
             {item.venue_name}
           </AppText>
           {going && (
-            <AppText variant="caption" tone="muted">
-              {' · '}
-              {going}
+            <AppText variant="caption" tone="muted" numberOfLines={1} style={styles.going}>
+              {` · ${going}`}
             </AppText>
           )}
         </View>
@@ -128,5 +127,6 @@ const styles = StyleSheet.create({
   copy: { flex: 1, gap: space.xs },
   meta: { flexDirection: 'row' },
   venue: { flexShrink: 1 },
+  going: { flexShrink: 0 },
   tags: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, paddingTop: 2 },
 });

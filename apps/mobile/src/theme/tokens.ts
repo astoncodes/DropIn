@@ -1,7 +1,7 @@
 /**
  * Semantic design tokens.
  *
- * The interface is ink on warm paper, like a printed scorecard. Colour is not
+ * The interface is ink on white, like a printed box score. Colour is not
  * decoration here: it marks state, and the state that matters most is `live`.
  *
  *   live   (green)  people are playing right now, or the action that puts you
@@ -16,19 +16,18 @@
 
 const brand = {
   ink: '#0F1A16',
-  paper: '#F3F1EA',
   courtGreen: '#00865C',
 } as const;
 
 export type ThemeName = 'light';
 
 export type Palette = {
-  /** The page: warm paper. Content sits directly on it, divided by rules. */
+  /** The page: white. Content sits directly on it, divided by rules. */
   background: string;
   backgroundElevated: string;
-  /** White, for things that float over the page or the map, and for inputs. */
+  /** Things that float over the page or the map, and inputs. */
   surface: string;
-  /** A shade deeper than paper, for quiet fills such as skeletons and avatars. */
+  /** A grey leaning slightly green, for quiet fills such as skeletons and avatars. */
   surfaceMuted: string;
   surfaceInverse: string;
   /** Hairline rules between rows. */
@@ -55,10 +54,10 @@ export type Palette = {
 
 export const palettes: Record<ThemeName, Palette> = {
   light: {
-    background: brand.paper,
+    background: '#FFFFFF',
     backgroundElevated: '#FFFFFF',
     surface: '#FFFFFF',
-    surfaceMuted: '#E6E2D6',
+    surfaceMuted: '#ECEFEC',
     surfaceInverse: brand.ink,
     border: 'rgba(15,26,22,0.13)',
     borderStrong: 'rgba(15,26,22,0.32)',

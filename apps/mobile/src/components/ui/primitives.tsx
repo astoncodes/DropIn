@@ -216,9 +216,9 @@ export function Button({
   }[tone];
   const ink = { neutral: colors.text, live: colors.liveText, alert: colors.alert }[tone];
 
-  // Fading ink over paper turns it olive, so a solid button that cannot be
-  // pressed is redrawn as a muted block. A loading one keeps its colour: it is
-  // busy, not unavailable.
+  // A faded ink button reads as a grey button that still works, so a solid
+  // button that cannot be pressed is redrawn as a muted block instead. A
+  // loading one keeps its colour: it is busy, not unavailable.
   const unavailable = variant === 'solid' && disabled && !loading;
   const background = unavailable
     ? colors.surfaceMuted

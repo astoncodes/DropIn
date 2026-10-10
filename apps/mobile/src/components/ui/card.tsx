@@ -8,9 +8,9 @@ import { PressableSurface } from './primitives';
 const PADDING = { none: 0, sm: space.md, md: space.lg, lg: space.xl } as const;
 
 /**
- * A white panel on the paper page, for the few things that are one object
- * rather than a row in a list: a profile summary, a numbered step. Most content
- * needs none — rows divided by rules carry a list better than a stack of cards.
+ * An outlined panel for the few things that are one object rather than a row
+ * in a list: a profile summary, a numbered step. Most content needs none —
+ * rows divided by rules carry a list better than a stack of cards.
  *
  * Pass `onPress` for a card that opens something — the whole surface then
  * becomes one target with a single accessible label.

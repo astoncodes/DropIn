@@ -8,8 +8,8 @@ them.
 ## The idea
 
 Drop In is a scoreboard for the neighbourhood: where people are playing now, and
-what is on later. The interface is built like a printed scorecard — ink on warm
-paper, ruled rows, large condensed numerals — so that the one thing it adds,
+what is on later. The interface is built like a printed box score — ink on
+white, ruled rows, large condensed numerals — so that the one thing it adds,
 colour, can carry the one thing that matters.
 
 ## Principles
@@ -26,7 +26,7 @@ colour, can carry the one thing that matters.
   labels and buttons. The platform's own font carries sentences.
 - **Rows, not cards.** A list is rows divided by rules, sitting on the page. A
   card is for the rare thing that is one object rather than a line in a list.
-  Only surfaces that float over the page or the map are white and cast a shadow.
+  Only surfaces that float over the page or the map cast a shadow.
 - **One primary action per screen.** Detail screens pin it at the bottom in an
   `ActionBar`. A row carries at most one control. Two solid buttons side by side
   means one of them should be outlined.
@@ -48,7 +48,7 @@ colour, can carry the one thing that matters.
 
 | Token       | Values                                                                                              | Use                                                             |
 | ----------- | --------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
-| `palettes`  | paper `background`, white `surface`, ink `text`, `live`, `soon`, `alert`                            | Colour by meaning; see Principles                               |
+| `palettes`  | white `background` and `surface`, grey `surfaceMuted`, ink `text`, `live`, `soon`, `alert`          | Colour by meaning; see Principles                               |
 | `space`     | 2, 4, 8, 12, 16, 24, 32, 48                                                                         | All padding, gaps and margins; the page gutter is 16            |
 | `radius`    | xs 4, sm 6, md 10, lg 14, xl 18                                                                     | Tags xs; chips sm; controls md; maps and cards lg; sheets xl    |
 | `fonts`     | `display` (Barlow Condensed Bold), `displayMedium` (SemiBold)                                       | Loaded in the root layout; never combined with `fontWeight`     |
