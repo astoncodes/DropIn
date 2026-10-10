@@ -158,16 +158,20 @@ npx playwright install chromium
 npm run test:browser
 npm run test:browser:location
 npm run test:browser:unreachable
+npm run test:browser:signed-in
 npm run test:browser:supabase -- --project-ref=YOUR_PROJECT_REF
 npm run test:presence -- --project-ref=YOUR_PROJECT_REF --browser
 node scripts/tests/account-deletion.mjs --project-ref=YOUR_PROJECT_REF
 npm run test:browser:venues -- --project-ref=YOUR_PROJECT_REF
 ```
 
-The first three need no credentials: the public test stubs email delivery, the
-location test checks which screens require location, and the unreachable test
+The first four need no credentials: the public test stubs email delivery, the
+location test checks which screens require location, the unreachable test
 refuses every API request in the browser to check what players see when the
-server cannot be reached. The hosted tests need a
+server cannot be reached, and the signed-in test stores a session and stubs the
+API to check the request each signed-in action sends (check-in, creating a
+session, answering, chat, leaving, cancelling, profile and sign-out). The hosted
+tests need a
 Supabase management token (`SUPABASE_ACCESS_TOKEN`) and an explicit project
 matching the root configuration; they create temporary accounts, exercise the UI
 with two accounts, and clean up in `finally`. The admin website test is described
