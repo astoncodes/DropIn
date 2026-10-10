@@ -7,7 +7,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useSession } from './lib/auth-context';
 import { supabase } from './lib/supabase';
 import { useIsAdmin } from './lib/use-is-admin';
-import { Brand, Icon } from './components/brand';
+import { Brand } from './components/brand';
 
 /**
  * The protected shell.
@@ -63,9 +63,10 @@ export default function App() {
   return (
     <main className="shell">
       <header className="bar">
-        <span className="bar-title">
-          <Icon name="shield" /> Drop In administration
-        </span>
+        <a className="bar-home" href="#dashboard">
+          <Brand />
+          <span className="label">Admin</span>
+        </a>
         <span className="account-email">{session.user.email}</span>
         <button
           type="button"
@@ -73,7 +74,6 @@ export default function App() {
           onClick={() => void signOut()}
           disabled={signingOut}
         >
-          <Icon name="logout" />
           {signingOut ? 'Signing out…' : 'Sign out'}
         </button>
       </header>
@@ -86,14 +86,14 @@ export default function App() {
       {isAdminPending && (
         <div className="card access-card" role="status">
           <span className="spinner" />
-          Checking workspace access…
+          <p>Checking workspace access…</p>
         </div>
       )}
 
       {adminError && (
-        <div className="card access-card error" role="alert">
-          <h1>Let’s try that again.</h1>
-          {userMessage(adminError, 'Could not check your access. Try again.')}
+        <div className="card access-card" role="alert">
+          <h1>Could not check your access</h1>
+          <p>{userMessage(adminError, 'Try again in a moment.')}</p>
           <button
             className="secondary"
             onClick={() => void checkAccess()}
@@ -106,10 +106,6 @@ export default function App() {
 
       {isAdmin === false && (
         <div className="card access-card">
-          <span className="auth-symbol">
-            <Icon name="shield" />
-          </span>
-          <p className="eyebrow">DROP IN ADMIN</p>
           <h1>Admin access required</h1>
           <p>
             This account does not have admin access yet. Once the project owner grants access, check

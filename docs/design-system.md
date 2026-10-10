@@ -3,7 +3,8 @@
 How the mobile app looks and behaves, and where each rule lives in code. Tokens
 are in `apps/mobile/src/theme/tokens.ts`; components are in
 `apps/mobile/src/components/ui/`. A screen composes these — it does not restyle
-them.
+them. The admin website follows the same rules in plain CSS; see
+[Admin website](#admin-website).
 
 ## The idea
 
@@ -112,6 +113,19 @@ Feature components built from these and reused across screens: `VenueRow`
   repeat the header's title.
 - **The map** uses a muted basemap (`MAP_STYLE_URL`). Venue pins are solid ink,
   session pins are outlined, and a live count is the only saturated colour on it.
+
+## Admin website
+
+`apps/admin/src/index.css` applies the same language to the admin website: the
+wordmark, ink on white, Barlow Condensed (from `@fontsource/barlow-condensed`)
+for titles, figures, small-capital labels and buttons, ruled rows and tables in
+place of cards, and the dashboard totals as a row of scoreboard figures. Its
+colour variables mirror `tokens.ts` and are changed together with it.
+
+Nothing on the admin website is live, so the only green there is the full stop
+in the wordmark. Primary and publishing actions are ink, removing content is
+red, and a record waiting on a person is amber. Review panels show the evidence
+first and the decision under an ink rule.
 
 ## Working with Claude Design
 

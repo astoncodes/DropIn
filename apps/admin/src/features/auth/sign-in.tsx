@@ -3,7 +3,7 @@ import { useState } from 'react';
 import type { FormEvent } from 'react';
 
 import { supabase } from '../../lib/supabase';
-import { Brand, Icon } from '../../components/brand';
+import { Brand } from '../../components/brand';
 
 type Status =
   | { kind: 'idle' }
@@ -46,17 +46,10 @@ export function SignIn() {
         <Brand />
         {status.kind === 'sent' ? (
           <div className="auth-form" role="status">
-            <span className="auth-symbol">
-              <Icon name="mail" />
-            </span>
-            <p className="eyebrow">ONE MORE STEP</p>
             <h1>Check your email</h1>
             <p className="auth-description">
-              A sign-in link is on its way to <strong>{status.email}</strong>.
-            </p>
-            <p className="hint">
-              Open the link to continue to your workspace. If you don’t see it, check your spam
-              folder.
+              A sign-in link is on its way to <strong>{status.email}</strong>. If you don’t see it,
+              check your spam folder.
             </p>
             <button type="button" className="secondary" onClick={() => setStatus({ kind: 'idle' })}>
               Use a different address
@@ -64,13 +57,9 @@ export function SignIn() {
           </div>
         ) : (
           <form className="auth-form" onSubmit={handleSubmit} aria-busy={status.kind === 'sending'}>
-            <span className="auth-symbol">
-              <Icon name="shield" />
-            </span>
-            <p className="eyebrow">DROP IN / ADMIN</p>
             <h1>Admin sign in</h1>
             <p className="auth-description">
-              Sign in to approve new locations, manage published places, and review admin activity.
+              We’ll email you a link to sign in. There is no password.
             </p>
 
             <div className="auth-field">
@@ -95,17 +84,11 @@ export function SignIn() {
 
             <button type="submit" disabled={status.kind === 'sending'}>
               {status.kind === 'sending' ? 'Sending your link…' : 'Email me a sign-in link'}
-              <Icon name="arrow" />
             </button>
-            <p className="auth-security">
-              <Icon name="shield" /> Secure sign-in. No password to remember.
-            </p>
           </form>
         )}
         <p className="auth-footer">
-          This workspace is for authorized community admins.
-          <br />
-          Your access is checked securely after signing in.
+          For authorized Drop In admins. Access is checked after you sign in.
         </p>
       </section>
     </div>

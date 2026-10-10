@@ -159,52 +159,27 @@ export function AdminConsole() {
   const regionName = (id: number) => lookups.data?.regions.find((r) => r.id === id)?.name ?? '—';
   return (
     <div className="console">
-      <header className="site-navigation">
-        <a
-          className="brand"
-          href="#dashboard"
-          onClick={(event) => {
-            event.preventDefault();
-            navigate('Overview');
-          }}
-        >
-          <span className="brand-icon">D</span> Drop In <small>ADMIN</small>
-        </a>
-        <nav aria-label="Admin navigation">
-          {pages.map((p) => (
-            <a
-              key={p}
-              href={`#${pageSlugs[p]}`}
-              className={page === p ? 'nav-link selected' : 'nav-link'}
-              onClick={(event) => {
-                event.preventDefault();
-                navigate(p);
-              }}
-              aria-current={page === p ? 'page' : undefined}
-            >
-              {pageTitles[p]}
-            </a>
-          ))}
-        </nav>
-      </header>
+      <nav className="site-navigation" aria-label="Admin navigation">
+        {pages.map((p) => (
+          <a
+            key={p}
+            href={`#${pageSlugs[p]}`}
+            className={page === p ? 'nav-link selected' : 'nav-link'}
+            onClick={(event) => {
+              event.preventDefault();
+              navigate(p);
+            }}
+            aria-current={page === p ? 'page' : undefined}
+          >
+            {pageTitles[p]}
+          </a>
+        ))}
+      </nav>
       <div className="workspace">
         <header className="page-heading">
           <div>
-            <p className="eyebrow">ADMINISTRATION</p>
             <h1>{pageTitles[page]}</h1>
-            <p className="hint">
-              {page === 'Overview'
-                ? 'Review new locations and keep published places up to date.'
-                : page === 'Review queue'
-                  ? 'Check the location and sports, then approve, link a duplicate, or reject.'
-                  : page === 'Reports'
-                    ? 'Review reported posts, messages, sessions and names. Remove anything that breaks the community guidelines.'
-                    : page === 'Venues'
-                      ? 'Keep published places accurate and useful.'
-                      : page === 'Audit history'
-                        ? 'A record of admin decisions and venue changes.'
-                        : 'Reference lists for the regions and sports available in Drop In.'}
-            </p>
+            {pageHints[page] && <p className="hint">{pageHints[page]}</p>}
           </div>
           <button
             className="secondary"
@@ -249,14 +224,13 @@ export function AdminConsole() {
                     if (i === 1 || i === 3) setVenueFilter(i === 3 ? 'unverified' : 'active');
                   }}
                 >
-                  <span>{title}</span>
                   <strong>{stats.data?.[i] ?? '—'}</strong>
-                  <small>View records ↗</small>
+                  <span>{title}</span>
                 </button>
               ))}
             </div>
             <OpenReportsSummary onOpen={() => navigate('Reports')} />
-            <section className="card wide">
+            <section className="card">
               <div className="section-heading">
                 <div>
                   <h2>Next locations to review</h2>
@@ -265,7 +239,7 @@ export function AdminConsole() {
                   </p>
                 </div>
                 <button className="secondary" onClick={() => navigate('Review queue')}>
-                  View all approvals →
+                  All approvals
                 </button>
               </div>
               {recent.isPending && <p role="status">Loading submissions…</p>}
@@ -295,28 +269,6 @@ export function AdminConsole() {
                 </div>
               )}
             </section>
-            <div className="reference-grid">
-              <section className="card wide">
-                <h2>Keep locations accurate</h2>
-                <p className="hint">
-                  Edit names, addresses and sports. Verify checked locations or hide places that are
-                  no longer available.
-                </p>
-                <button className="secondary" onClick={() => navigate('Venues')}>
-                  Manage locations →
-                </button>
-              </section>
-              <section className="card wide">
-                <h2>Follow admin decisions</h2>
-                <p className="hint">
-                  See who approved a submission or changed a location, with the time and details of
-                  each change.
-                </p>
-                <button className="secondary" onClick={() => navigate('Audit history')}>
-                  View activity →
-                </button>
-              </section>
-            </div>
           </>
         )}
         {(page === 'Review queue' || page === 'Venues') && (
@@ -385,20 +337,20 @@ export function AdminConsole() {
           </div>
         )}
         {active?.isPending && (
-          <div className="card wide" role="status">
+          <div className="card" role="status">
             Loading records…
           </div>
         )}
         {active?.error && (
-          <div className="card wide error" role="alert">
-            {userMessage(active.error, 'Could not load these records. Try again.')}
+          <div className="card error" role="alert">
+            <p>{userMessage(active.error, 'Could not load these records. Try again.')}</p>
             <button className="secondary" onClick={() => void active.refetch()}>
               Try again
             </button>
           </div>
         )}
         {page === 'Review queue' && candidates.data && (
-          <section className="card wide table-card">
+          <section className="card table-card">
             <table>
               <thead>
                 <tr>
@@ -441,7 +393,7 @@ export function AdminConsole() {
           </section>
         )}
         {page === 'Venues' && venues.data && (
-          <section className="card wide table-card">
+          <section className="card table-card">
             <table>
               <thead>
                 <tr>
@@ -484,7 +436,7 @@ export function AdminConsole() {
         {page === 'Reports' && <ReportsPage onSaved={setNotice} />}
         {page === 'Regions & sports' && (
           <div className="reference-grid">
-            <section className="card wide">
+            <section className="card">
               <h2>Regions</h2>
               <p className="hint">Coverage is managed in the project configuration.</p>
               {lookups.isPending && <p>Loading…</p>}
@@ -498,7 +450,7 @@ export function AdminConsole() {
                 </div>
               ))}
             </section>
-            <section className="card wide">
+            <section className="card">
               <h2>Sports</h2>
               {lookups.data?.sports.map((s) => (
                 <div className="reference-row" key={s.id}>
@@ -510,7 +462,7 @@ export function AdminConsole() {
           </div>
         )}
         {page === 'Audit history' && audit.data && (
-          <section className="card wide">
+          <section className="card">
             {!audit.data.data.length && (
               <div className="empty">
                 <h2>No decisions yet</h2>
@@ -590,6 +542,14 @@ const pageTitles: Record<Page, string> = {
   Venues: 'Locations',
   'Regions & sports': 'Regions & sports',
   'Audit history': 'Activity',
+};
+/** A line under the title, only where the title alone does not say what to do. */
+const pageHints: Partial<Record<Page, string>> = {
+  'Review queue': 'Check the location and sports, then approve, link a duplicate, or reject.',
+  Reports:
+    'Review reported posts, messages, sessions and names. Remove anything that breaks the community guidelines.',
+  'Regions & sports': 'Reference lists for the regions and sports available in Drop In.',
+  'Audit history': 'A record of admin decisions and venue changes.',
 };
 function pageFromHash(): Page {
   return pages.find((page) => pageSlugs[page] === window.location.hash.slice(1)) ?? 'Overview';

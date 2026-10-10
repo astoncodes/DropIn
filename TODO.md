@@ -75,7 +75,6 @@ Account and configuration work is listed step by step in
       and desktop widths. The display typeface is loaded at startup with
       `expo-font`; check it, the map pins and the pinned action bars in iOS and
       Android builds.
-- [ ] **Redesign the admin website** to match. It still has its earlier look.
 - [ ] **Update the hosted browser scripts.** `browser-social.mjs`,
       `browser-venue-review.mjs`, `live-presence.mjs --browser` and
       `account-deletion.mjs` drive screens by label and cannot run without a
