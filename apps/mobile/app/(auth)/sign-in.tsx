@@ -1,5 +1,4 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useRef } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { Screen } from '../../src/components/screen';
@@ -7,8 +6,9 @@ import { BrandMark } from '../../src/components/ui/brand';
 import { CourtArt } from '../../src/components/ui/court-art';
 import { Notice } from '../../src/components/ui/notice';
 import { AppText, Button } from '../../src/components/ui/primitives';
-import { routeAfterSignIn } from '../../src/features/auth/route-after-sign-in';
 import { SignInForm } from '../../src/features/auth/sign-in-form';
+import { SignedInRouting } from '../../src/features/auth/signed-in-routing';
+import { usePostSignInRouting } from '../../src/features/auth/use-post-sign-in-routing';
 import { useSession } from '../../src/providers/auth-context';
 import { space } from '../../src/theme';
 
@@ -16,22 +16,21 @@ export default function SignInScreen() {
   const router = useRouter();
   const { accountDeleted } = useLocalSearchParams<{ accountDeleted?: string }>();
   const { session } = useSession();
-  const routed = useRef(false);
+  // A session can arrive here from native Apple/Google sign-in (the form never
+  // navigates away on its own) or from revisiting /sign-in with a session
+  // already restored. Both need the onboarding check that an email link gets
+  // on the callback screen.
+  const routing = usePostSignInRouting(session?.user.id);
 
-  useEffect(() => {
-    if (!session || routed.current) return;
-    routed.current = true;
-    // A session can arrive here from native Apple/Google sign-in (this screen
-    // never navigates away on its own) or from revisiting /sign-in with a
-    // session already restored — both need the same onboarding check magic
-    // link gets via the callback screen.
-    void routeAfterSignIn(router).catch((error: Error) => {
-      routed.current = false;
-      console.error('Failed to route after sign-in', error);
-    });
-  }, [session, router]);
-
-  if (session) return null;
+  if (session) {
+    return (
+      <SignedInRouting
+        failed={routing.failed}
+        retrying={routing.retrying}
+        onRetry={routing.retry}
+      />
+    );
+  }
   return (
     <Screen insetTop={false}>
       {accountDeleted === 'true' && (

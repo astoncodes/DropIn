@@ -3,7 +3,7 @@ import { useMemo, useState } from 'react';
 import { ScrollView, View, RefreshControl } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { EmptyState, Skeleton } from '../../components/ui/activity';
+import { EmptyState, LoadError, Skeleton } from '../../components/ui/activity';
 import { AppText, Button, Chip, IconButton, sportIcon } from '../../components/ui/primitives';
 import { ScreenHeader } from '../../components/ui/screen-header';
 import { SegmentedControl } from '../../components/ui/segmented-control';
@@ -15,7 +15,8 @@ import type { UpcomingRun } from '../venues/api';
 import { useJoinSession, useRunAttendance } from './api';
 import { MomentsFeed } from './feed-screen';
 import { SessionCard } from './session-card';
-import { userMessage } from '../../lib/errors';
+import { userMessage } from '@dropin/shared';
+import { loadPhase } from '../../lib/load-phase';
 
 export function DiscoverScreen() {
   const colors = usePalette();
@@ -34,6 +35,7 @@ export function DiscoverScreen() {
     session?.user.id,
   );
   const join = useJoinSession();
+  const runsPhase = loadPhase(runs);
   const responses = useMemo(
     () =>
       new Map(
@@ -187,17 +189,16 @@ export function DiscoverScreen() {
                 <AppText tone="alert">{error}</AppText>
               </View>
             )}
-            {runs.isPending ? (
+            {runsPhase === 'loading' ? (
               <>
                 <Skeleton height={220} />
                 <Skeleton height={220} />
               </>
-            ) : runs.isError ? (
-              <EmptyState
-                icon="wifi-off"
+            ) : runsPhase === 'failed' ? (
+              <LoadError
                 title="Could not load sessions"
-                body="Check your connection and try again."
-                action={<Button label="Try again" onPress={() => void runs.refetch()} />}
+                onRetry={() => void runs.refetch()}
+                retrying={runs.isFetching}
               />
             ) : matching.length ? (
               <>
@@ -210,7 +211,7 @@ export function DiscoverScreen() {
                       item={item}
                       response={response}
                       hosting={item.organizer_id === session?.user.id}
-                      attendanceUnavailable={attendance.isError || attendance.isPending}
+                      attendanceUnavailable={loadPhase(attendance) !== 'ready'}
                       pending={
                         join.isPending &&
                         join.variables?.runSeriesId === item.run_series_id &&

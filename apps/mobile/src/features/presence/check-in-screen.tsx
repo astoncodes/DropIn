@@ -1,9 +1,16 @@
-import { CHECK_IN_DURATION, CHECK_IN_NOTE_MAX_LENGTH, PARTY_SIZE } from '@dropin/shared';
+import {
+  CHECK_IN_DURATION,
+  CHECK_IN_NOTE_MAX_LENGTH,
+  PARTY_SIZE,
+  UserFacingError,
+  userMessage,
+} from '@dropin/shared';
 import { useRouter } from 'expo-router';
 import { useRef, useState } from 'react';
 import { View } from 'react-native';
 
 import { Screen } from '../../components/screen';
+import { LoadError } from '../../components/ui/activity';
 import { SportBadge } from '../../components/ui/brand';
 import { Notice } from '../../components/ui/notice';
 import { AppText, Button, Chip, IconButton, sportIcon } from '../../components/ui/primitives';
@@ -12,14 +19,16 @@ import { useSession } from '../../providers/auth-context';
 import { space } from '../../theme';
 import { useDeviceLocation } from '../location/use-device-location';
 import { useSports, useVenueDetail } from '../venues/api';
+import { SportsUnavailableNotice } from '../venues/sports-unavailable-notice';
 import { useOwnPresence, usePresenceAction } from './api';
-import { UserFacingError, userMessage } from '../../lib/errors';
+import { loadPhase } from '../../lib/load-phase';
 
 export function CheckInScreen({
   venueId,
   initialArrival = false,
 }: {
-  venueId: string;
+  /** Undefined when the link did not carry a usable venue id. */
+  venueId: string | undefined;
   initialArrival?: boolean;
 }) {
   const router = useRouter();
@@ -42,6 +51,7 @@ export function CheckInScreen({
     (sport) => venue.data?.sport_slugs?.includes(sport.slug) && sport.is_active,
   );
   const selected = available.find((sport) => sport.id === sportId) ?? available[0];
+  const venuePhase = venueId ? loadPhase(venue) : 'ready';
 
   async function submit() {
     if (!session || !selected || !venue.data || inFlight.current) return;
@@ -88,7 +98,7 @@ export function CheckInScreen({
     }
   }
 
-  if (isLoading || venue.isPending)
+  if (isLoading || venuePhase === 'loading')
     return (
       <Screen insetTop={false}>
         <AppText>Loading your venue…</AppText>
@@ -100,6 +110,16 @@ export function CheckInScreen({
         <AppText variant="display">Meet you on the court.</AppText>
         <AppText tone="muted">Sign in to check in or let players know you are on your way.</AppText>
         <Button label="Sign in" onPress={() => router.push('/sign-in')} />
+      </Screen>
+    );
+  if (venuePhase === 'failed')
+    return (
+      <Screen insetTop={false}>
+        <LoadError
+          title="Could not load this venue"
+          onRetry={() => void venue.refetch()}
+          retrying={venue.isFetching}
+        />
       </Screen>
     );
   if (!venue.data)
@@ -154,10 +174,8 @@ export function CheckInScreen({
           />
         ))}
       </View>
-      {sports.isError && (
-        <Button label="Retry sports" variant="outline" onPress={() => void sports.refetch()} />
-      )}
-      {!sports.isPending && !available.length && (
+      <SportsUnavailableNotice sports={sports} />
+      {loadPhase(sports) === 'ready' && !available.length && (
         <AppText tone="muted">This venue has no active sports available for check-in yet.</AppText>
       )}
       <AppText variant="heading">{arrival ? 'Arriving in' : 'How long are you staying?'}</AppText>

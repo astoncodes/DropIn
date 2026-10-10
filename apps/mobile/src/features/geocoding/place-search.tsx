@@ -8,7 +8,7 @@ import { TextField } from '../../components/ui/text-field';
 import { space } from '../../theme';
 import { searchPlaces } from './geoapify';
 import type { GeocodingResult } from './geoapify';
-import { userMessage } from '../../lib/errors';
+import { userMessage } from '@dropin/shared';
 
 export function PlaceSearch({ onSelect }: { onSelect: (place: GeocodingResult) => void }) {
   const [text, setText] = useState('');

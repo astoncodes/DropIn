@@ -53,7 +53,7 @@ them.
 | `useToast()`                              | Brief confirmation that something happened ("Report sent")                                                                                   |
 | `ScreenHeader`                            | The large title and actions at the top of a tab                                                                                              |
 | `Avatar`                                  | A player's initials                                                                                                                          |
-| `EmptyState`, `Skeleton`                  | Empty and loading states, shaped like the content they stand in for                                                                          |
+| `EmptyState`, `Skeleton`, `LoadError`     | Empty, loading and could-not-load states, shaped like the content they stand in for                                                          |
 | `ActivityBadge`, `LivePulse`, `ScoreStat` | Live activity signals; the pulse renders only when something is live                                                                         |
 | `AdaptiveGlassSurface`, `ResultsSheet`    | Map chrome and the draggable results panel                                                                                                   |
 | `BrandMark`, `SportBadge`                 | Brand lockup and sport identity                                                                                                              |
@@ -63,6 +63,10 @@ them.
 - **Errors:** pass the caught error through `userMessage(error, fallback)` and
   show it in a `Notice` (or a toast only when nothing on screen changed). Never
   render `error.message` directly.
+- **Loading and failure:** choose between `Skeleton`, `LoadError` and content
+  with `loadPhase(query)`, never `isPending` or `isError`. Loaded content stays
+  on screen when a refresh fails; `LoadError` stays on screen while retries run
+  and takes `retrying={query.isFetching}`.
 - **Destructive actions:** confirm in a `ConfirmDialog` whose confirm button
   says exactly what happens ("Delete permanently"). Disable dismissal while the
   action runs.
@@ -92,14 +96,17 @@ With the mobile web app on port 8081 and admin app on port 5173:
 npx playwright install chromium
 npm run test:browser
 npm run test:browser:location
+npm run test:browser:unreachable
 npm run test:browser:supabase -- --project-ref=YOUR_PROJECT_REF
 npm run test:presence -- --project-ref=YOUR_PROJECT_REF --browser
 node scripts/tests/account-deletion.mjs --project-ref=YOUR_PROJECT_REF
 npm run test:browser:venues -- --project-ref=YOUR_PROJECT_REF
 ```
 
-The first two need no credentials: the public test stubs email delivery, and the
-location test checks which screens require location. The hosted tests need a
+The first three need no credentials: the public test stubs email delivery, the
+location test checks which screens require location, and the unreachable test
+refuses every API request in the browser to check what players see when the
+server cannot be reached. The hosted tests need a
 Supabase management token (`SUPABASE_ACCESS_TOKEN`) and an explicit project
 matching the root configuration; they create temporary accounts, exercise the UI
 with two accounts, and clean up in `finally`. The admin website test is described

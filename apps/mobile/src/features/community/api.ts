@@ -2,7 +2,7 @@ import type { Tables } from '@dropin/database-types';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { supabase } from '../../lib/supabase';
-import { UserFacingError } from '../../lib/errors';
+import { UserFacingError } from '@dropin/shared';
 
 type RunSession = Tables<'run_sessions'>;
 type SessionPost = Tables<'session_posts'>;
@@ -206,8 +206,15 @@ export function useSessionOverview(sessionId?: string, userId?: string) {
     enabled: Boolean(sessionId),
     refetchInterval: 8_000,
     queryFn: async () => {
-      const result = await supabase.from('run_sessions').select('*').eq('id', sessionId!).single();
+      const result = await supabase
+        .from('run_sessions')
+        .select('*')
+        .eq('id', sessionId!)
+        .maybeSingle();
       if (result.error) throw result.error;
+      // No row means the session was removed or was never visible to this
+      // player. That is an answer, not a failure, so it is returned as data.
+      if (!result.data) return null;
       const labels = await sessionLabels([result.data]);
       const sport = labels.sports.get(result.data.sport_id);
       const organizerId = labels.series.get(result.data.run_series_id)?.organizer_id ?? null;

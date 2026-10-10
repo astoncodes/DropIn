@@ -1,3 +1,4 @@
+import { userMessage } from '@dropin/shared';
 import { useQuery } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
 
@@ -88,7 +89,7 @@ export function ReportsPage({ onSaved }: { onSaved: (message: string) => void })
       )}
       {reports.error && (
         <div className="card wide error" role="alert">
-          {reports.error.message}
+          {userMessage(reports.error, 'Could not load reports. Try again.')}
           <button className="secondary" onClick={() => void reports.refetch()}>
             Try again
           </button>

@@ -333,6 +333,7 @@ npm run test:supabase -- --project-ref=YOUR_PROJECT_REF
 | Symptom                                    | What to check                                                                                                 |
 | ------------------------------------------ | ------------------------------------------------------------------------------------------------------------- |
 | Missing Supabase URL/key                   | Fill in the root`.env` using the exact variable names above; restart the server.                              |
+| Every screen says it could not connect     | The Supabase project may be paused (free plan, after a week idle). Restore it in the dashboard.               |
 | Sign-in email never arrives                | Check spam, Supabase Auth logs and SMTP configuration; default delivery is limited to project-team addresses. |
 | Login returns to the wrong page            | Check the exact host, port and callback in Supabase's redirect allowlist.                                     |
 | Empty map or no sessions                   | An empty database is valid. Create a pin session; inspect any displayed network errors separately.            |

@@ -7,7 +7,7 @@ import { AppText, Button } from '../../components/ui/primitives';
 import { TextField } from '../../components/ui/text-field';
 import { space, useThemeName } from '../../theme';
 import type { EditSessionInput, useSessionOverview } from './api';
-import { userMessage } from '../../lib/errors';
+import { userMessage } from '@dropin/shared';
 
 type Session = NonNullable<ReturnType<typeof useSessionOverview>['data']>;
 

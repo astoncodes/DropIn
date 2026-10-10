@@ -4,10 +4,11 @@ import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { SportBadge } from '../../components/ui/brand';
-import { EmptyState, Skeleton } from '../../components/ui/activity';
+import { EmptyState, LoadError, Skeleton } from '../../components/ui/activity';
 import { AppText, Button, PressableSurface } from '../../components/ui/primitives';
 import { ScreenHeader } from '../../components/ui/screen-header';
 import { relativeTime, timeOfDay, weekdayName } from '../../lib/format';
+import { loadPhase } from '../../lib/load-phase';
 import { useSession } from '../../providers/auth-context';
 import { elevation, radius, space, usePalette } from '../../theme';
 import { useJoinedSessions } from './api';
@@ -18,6 +19,7 @@ export function ChatsScreen() {
   const router = useRouter();
   const { session, isLoading } = useSession();
   const chats = useJoinedSessions(session?.user.id);
+  const phase = loadPhase(chats);
 
   return (
     <ScrollView
@@ -43,7 +45,7 @@ export function ChatsScreen() {
         <ScreenHeader title="Chats" subtitle="Private conversations for sessions you joined." />
       </View>
 
-      {isLoading || (Boolean(session) && chats.isPending) ? (
+      {isLoading || (Boolean(session) && phase === 'loading') ? (
         <View style={styles.list}>
           {[0, 1, 2].map((key) => (
             <Skeleton key={key} height={88} />
@@ -56,12 +58,11 @@ export function ChatsScreen() {
           body="Your session conversations stay private to people who joined."
           action={<Button label="Sign in" onPress={() => router.push('/sign-in')} />}
         />
-      ) : chats.isError ? (
-        <EmptyState
-          icon="wifi-off"
+      ) : phase === 'failed' ? (
+        <LoadError
           title="Could not load chats"
-          body="Check your connection and try again."
-          action={<Button label="Try again" onPress={() => void chats.refetch()} />}
+          onRetry={() => void chats.refetch()}
+          retrying={chats.isFetching}
         />
       ) : chats.data?.length ? (
         <View style={styles.list}>

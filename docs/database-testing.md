@@ -142,6 +142,7 @@ apply migrations or fixtures. Database tests do not yet run automatically on PRs
 | ------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
 | Missing test configuration      | Run from the repository root and check both `SUPABASE_TEST_*` values in `.env`.                                       |
 | Target isolation error          | Keep the app reference separate; ensure the pooler username contains the test reference.                              |
+| `tenant/user … not found`       | The project is paused: free-plan projects pause after a week idle. Restore it from the dashboard, then rerun.         |
 | Connection timeout              | Check the test project's dashboard status, network access, and session pooler host/port.                              |
 | Password authentication failure | Retrieve the password from the local URL or update the URL after a reset.                                             |
 | Missing tables or functions     | Apply pending migrations to the test project.                                                                         |

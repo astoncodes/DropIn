@@ -4,10 +4,12 @@ import { useState } from 'react';
 import { View } from 'react-native';
 
 import { Body, Screen, Title } from '../../components/screen';
+import { LoadError } from '../../components/ui/activity';
 import { Notice } from '../../components/ui/notice';
 import { AppText, Button, Chip } from '../../components/ui/primitives';
 import { TextField } from '../../components/ui/text-field';
 import { useSports, useVenueDetail } from '../venues/api';
+import { SportsUnavailableNotice } from '../venues/sports-unavailable-notice';
 import { useRequiredLocation } from '../location/required-location';
 import VenueMap from '../../components/map/venue-map';
 import type { MapCoordinate, MapRegion } from '../../components/map/types';
@@ -16,12 +18,14 @@ import { useDeviceLocation } from '../location/use-device-location';
 import { supabase } from '../../lib/supabase';
 import { useSession } from '../../providers/auth-context';
 import { radius, space, useThemeName } from '../../theme';
-import { UserFacingError, userMessage } from '../../lib/errors';
+import { UserFacingError, userMessage } from '@dropin/shared';
 import { tomorrowDate } from '../../lib/format';
+import { combineLoadPhases, loadPhase } from '../../lib/load-phase';
+import { uuidParam } from '../../lib/route-params';
 
 export function NewRunScreen() {
   const initialLocation = useRequiredLocation();
-  const { venueId: initialVenueId } = useLocalSearchParams<{ venueId?: string }>();
+  const initialVenueId = uuidParam(useLocalSearchParams<{ venueId?: string }>().venueId);
   const [selectedVenueId, setSelectedVenueId] = useState<string>();
   const [venueSearch, setVenueSearch] = useState('');
   const [locationMode, setLocationMode] = useState<'pin' | 'venue'>(
@@ -133,6 +137,7 @@ export function NewRunScreen() {
         <Button label="Sign in" onPress={() => router.push('/sign-in')} />
       </Screen>
     );
+  const venueOptionsPhase = loadPhase(venueOptions);
   if (locationMode === 'venue' && !venueId)
     return (
       <Screen insetTop={false}>
@@ -149,18 +154,19 @@ export function NewRunScreen() {
           placeholder="Court, gym or park name"
           autoCorrect={false}
         />
-        {venueOptions.isPending ? (
+        {venueOptionsPhase === 'loading' ? (
           <Body>Loading venues…</Body>
-        ) : venueOptions.isError ? (
+        ) : venueOptionsPhase === 'failed' ? (
           <Notice
             tone="error"
-            message={userMessage(venueOptions.error, 'Could not load venues. Try again.')}
+            message="Could not load venues. Check your connection and try again."
             action={
               <Button
                 label="Try again"
                 size="sm"
                 tone="neutral"
                 variant="soft"
+                loading={venueOptions.isFetching}
                 onPress={() => void venueOptions.refetch()}
               />
             }
@@ -193,18 +199,46 @@ export function NewRunScreen() {
         />
       </Screen>
     );
-  if (locationMode === 'venue' && (venue.isPending || zone.isPending))
-    return (
-      <Screen insetTop={false}>
-        <Body>Loading venue…</Body>
-      </Screen>
+  if (locationMode === 'venue') {
+    // The form needs both the venue and the time zone its times are entered in.
+    const venuePhase = combineLoadPhases(loadPhase(venue), loadPhase(zone));
+    const dropPinInstead = (
+      <Button
+        label="Drop a pin instead"
+        icon="map-marker-plus-outline"
+        tone="neutral"
+        variant="outline"
+        onPress={() => setLocationMode('pin')}
+      />
     );
-  if (locationMode === 'venue' && (!venue.data || zone.isError))
-    return (
-      <Screen insetTop={false}>
-        <Body>Couldn’t load the venue. Go back and try again.</Body>
-      </Screen>
-    );
+    if (venuePhase === 'loading')
+      return (
+        <Screen insetTop={false}>
+          <Body>Loading venue…</Body>
+        </Screen>
+      );
+    if (venuePhase === 'failed')
+      return (
+        <Screen insetTop={false}>
+          <LoadError
+            title="Could not load this venue"
+            onRetry={() => {
+              void venue.refetch();
+              void zone.refetch();
+            }}
+            retrying={venue.isFetching || zone.isFetching}
+            secondaryAction={dropPinInstead}
+          />
+        </Screen>
+      );
+    if (!venue.data)
+      return (
+        <Screen insetTop={false}>
+          <Body>This venue is unavailable.</Body>
+          {dropPinInstead}
+        </Screen>
+      );
+  }
   const available = (sports.data ?? []).filter(
     (sport) =>
       sport.is_active && (locationMode === 'pin' || venue.data?.sport_slugs.includes(sport.slug)),
@@ -351,6 +385,7 @@ export function NewRunScreen() {
         />
       ))}
       <AppText variant="bodyStrong">Sport</AppText>
+      <SportsUnavailableNotice sports={sports} />
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.sm }}>
         {available.map((sport) => (
           <Chip

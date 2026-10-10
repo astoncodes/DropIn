@@ -1,5 +1,5 @@
 import * as Location from 'expo-location';
-import { UserFacingError } from '../../lib/errors';
+import { UserFacingError } from '@dropin/shared';
 
 /** Expo's web adapter defaults to an infinitely cached reading. Presence and
  * photo proximity checks need a new reading, with a bounded wait on all devices. */

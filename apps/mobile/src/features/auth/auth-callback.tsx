@@ -6,7 +6,7 @@ import { AppText, Button } from '../../components/ui/primitives';
 import { supabase } from '../../lib/supabase';
 import { space, usePalette } from '../../theme';
 import { routeAfterSignIn } from './route-after-sign-in';
-import { UserFacingError, userMessage } from '../../lib/errors';
+import { UserFacingError, userMessage } from '@dropin/shared';
 
 const EXPIRED_LINK = 'This sign-in link is invalid or has expired. Request a new one.';
 
@@ -32,7 +32,15 @@ export function AuthCallback() {
         if (!data.session) throw new UserFacingError(EXPIRED_LINK);
       }
 
-      await routeAfterSignIn(router);
+      try {
+        await routeAfterSignIn(router);
+      } catch (routingError) {
+        // The link worked and the player is signed in; only the profile lookup
+        // failed. The sign-in screen retries that, where this screen could only
+        // ask for a new link the player does not need.
+        console.error('[auth] Could not choose where to go after sign-in', routingError);
+        router.replace('/sign-in');
+      }
     }
 
     void finishSignIn().catch((callbackError: unknown) =>

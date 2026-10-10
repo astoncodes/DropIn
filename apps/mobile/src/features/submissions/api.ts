@@ -1,9 +1,9 @@
 import type { FunctionReturns } from '@dropin/database-types';
+import { UserFacingError } from '@dropin/shared';
 import type { IndoorState } from '@dropin/shared';
 import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { supabase } from '../../lib/supabase';
-import { UserFacingError } from '../../lib/errors';
 
 export type VenueSubmissionInput = {
   name: string;

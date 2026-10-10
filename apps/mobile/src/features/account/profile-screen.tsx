@@ -13,7 +13,8 @@ import { Notice } from '../../components/ui/notice';
 import { AppText, Button } from '../../components/ui/primitives';
 import { ScreenHeader } from '../../components/ui/screen-header';
 import { useToast } from '../../components/ui/toast';
-import { userMessage } from '../../lib/errors';
+import { userMessage } from '@dropin/shared';
+import { loadPhase } from '../../lib/load-phase';
 import { supabase } from '../../lib/supabase';
 import { useSession } from '../../providers/auth-context';
 import { space } from '../../theme';
@@ -113,6 +114,22 @@ function SignedInProfile({ userId, email }: { userId: string; email: string }) {
               tone="alert"
               variant="soft"
               onPress={() => setDeleting(true)}
+            />
+          }
+        />
+      )}
+      {loadPhase(profile) === 'failed' && (
+        <Notice
+          tone="error"
+          message="Could not load your profile. Check your connection and try again."
+          action={
+            <Button
+              label="Try again"
+              size="sm"
+              tone="neutral"
+              variant="soft"
+              loading={profile.isFetching}
+              onPress={() => void profile.refetch()}
             />
           }
         />

@@ -1,3 +1,4 @@
+import { userMessage } from '@dropin/shared';
 import { useEffect, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 
@@ -222,14 +223,14 @@ export function AdminConsole() {
         )}
         {lookups.error && (
           <p role="alert" className="error">
-            {lookups.error.message}
+            {userMessage(lookups.error, 'Could not load regions and sports. Refresh to try again.')}
           </p>
         )}
         {page === 'Overview' && (
           <>
             {stats.error && (
               <p className="error" role="alert">
-                {stats.error.message}
+                {userMessage(stats.error, 'Could not load the totals. Refresh to try again.')}
               </p>
             )}
             <div className="stats">
@@ -270,7 +271,7 @@ export function AdminConsole() {
               {recent.isPending && <p role="status">Loading submissions…</p>}
               {recent.error && (
                 <p className="error" role="alert">
-                  {recent.error.message}
+                  {userMessage(recent.error, 'Could not load submissions. Refresh to try again.')}
                 </p>
               )}
               {recent.data?.map((item) => (
@@ -390,7 +391,7 @@ export function AdminConsole() {
         )}
         {active?.error && (
           <div className="card wide error" role="alert">
-            {active.error.message}
+            {userMessage(active.error, 'Could not load these records. Try again.')}
             <button className="secondary" onClick={() => void active.refetch()}>
               Try again
             </button>

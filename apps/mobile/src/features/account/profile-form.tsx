@@ -8,7 +8,8 @@ import type { IconName } from '../../components/ui/primitives';
 import { useSports } from '../venues/api';
 import { space, usePalette } from '../../theme';
 import { useAccountProfile, useAccountSports, useUpdateAccount } from './api';
-import { userMessage } from '../../lib/errors';
+import { userMessage } from '@dropin/shared';
+import { combineLoadPhases, loadPhase } from '../../lib/load-phase';
 
 export function ProfileForm({
   userId,
@@ -24,16 +25,27 @@ export function ProfileForm({
   const selectedSports = useAccountSports(userId);
   const sports = useSports();
 
-  if (profile.isPending || selectedSports.isPending || sports.isPending) {
-    return <ActivityIndicator size="large" color={colors.live} />;
-  }
-
-  const loadError = profile.error ?? selectedSports.error ?? sports.error;
-  if (loadError)
+  const phase = combineLoadPhases(loadPhase(profile), loadPhase(selectedSports), loadPhase(sports));
+  if (phase === 'loading') return <ActivityIndicator size="large" color={colors.live} />;
+  if (phase === 'failed')
     return (
       <Notice
         tone="error"
-        message={userMessage(loadError, 'Could not load your profile. Try again in a moment.')}
+        message="Could not load your profile. Check your connection and try again."
+        action={
+          <Button
+            label="Try again"
+            size="sm"
+            tone="neutral"
+            variant="soft"
+            loading={profile.isFetching || selectedSports.isFetching || sports.isFetching}
+            onPress={() => {
+              void profile.refetch();
+              void selectedSports.refetch();
+              void sports.refetch();
+            }}
+          />
+        }
       />
     );
 

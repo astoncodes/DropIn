@@ -1,9 +1,9 @@
 import { Pressable, StyleSheet, View } from 'react-native';
 
-import { EmptyState, Skeleton } from '../../components/ui/activity';
-import { AppText, Button } from '../../components/ui/primitives';
-import { userMessage } from '../../lib/errors';
+import { EmptyState, LoadError, Skeleton } from '../../components/ui/activity';
+import { AppText } from '../../components/ui/primitives';
 import { relativeTime } from '../../lib/format';
+import { loadPhase } from '../../lib/load-phase';
 import { radius, space, usePalette } from '../../theme';
 import type { useSessionMessages } from './api';
 
@@ -24,17 +24,17 @@ export function SessionMessageList({
   viewerId: string | undefined;
   onModerate: (message: Message) => void;
 }) {
-  if (messages.isError) {
+  const phase = loadPhase(messages);
+  if (phase === 'failed') {
     return (
-      <EmptyState
-        icon="alert-circle-outline"
+      <LoadError
         title="Couldn’t load chat"
-        body={userMessage(messages.error, 'Check your connection and try again.')}
-        action={<Button label="Try again" onPress={() => void messages.refetch()} />}
+        onRetry={() => void messages.refetch()}
+        retrying={messages.isFetching}
       />
     );
   }
-  if (messages.isPending) return <Skeleton height={180} />;
+  if (phase === 'loading') return <Skeleton height={180} />;
   if (!messages.data?.length) {
     return (
       <EmptyState

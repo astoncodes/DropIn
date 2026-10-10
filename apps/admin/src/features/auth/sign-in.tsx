@@ -1,3 +1,4 @@
+import { userMessage } from '@dropin/shared';
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 
@@ -28,13 +29,13 @@ export function SignIn() {
         email: trimmed,
         options: { emailRedirectTo: window.location.origin },
       });
-      setStatus(
-        error ? { kind: 'error', message: error.message } : { kind: 'sent', email: trimmed },
-      );
+      if (error) throw error;
+      setStatus({ kind: 'sent', email: trimmed });
     } catch (error) {
+      console.error('[admin] Could not send the sign-in link', error);
       setStatus({
         kind: 'error',
-        message: error instanceof Error ? error.message : 'Unable to connect. Please try again.',
+        message: userMessage(error, 'Could not send your sign-in link. Try again.'),
       });
     }
   }

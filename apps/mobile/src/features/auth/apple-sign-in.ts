@@ -1,7 +1,7 @@
 import * as AppleAuthentication from 'expo-apple-authentication';
 import * as Crypto from 'expo-crypto';
 
-import { UserFacingError } from '../../lib/errors';
+import { UserFacingError } from '@dropin/shared';
 import { supabase } from '../../lib/supabase';
 
 /**

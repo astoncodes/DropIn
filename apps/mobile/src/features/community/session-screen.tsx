@@ -1,5 +1,6 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
+import type { ReactNode } from 'react';
 import {
   KeyboardAvoidingView,
   Linking,
@@ -12,7 +13,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import VenueMap from '../../components/map/venue-map';
-import { EmptyState, Skeleton } from '../../components/ui/activity';
+import { EmptyState, LoadError, Skeleton } from '../../components/ui/activity';
 import { ConfirmDialog } from '../../components/ui/dialog';
 import { Notice } from '../../components/ui/notice';
 import { AppText, Button, Chip, IconButton } from '../../components/ui/primitives';
@@ -35,7 +36,9 @@ import { SessionPhotoComposer } from './session-photo-composer';
 import { MomentsFeed } from './feed-screen';
 import { SessionEditForm } from './session-edit-form';
 import { SessionMessageList } from './session-chat';
-import { userMessage } from '../../lib/errors';
+import { userMessage } from '@dropin/shared';
+import { loadPhase } from '../../lib/load-phase';
+import { uuidParam } from '../../lib/route-params';
 
 type SessionTab = 'details' | 'chat' | 'photos';
 
@@ -61,8 +64,59 @@ const CONFIRM_COPY = {
 
 export function SessionScreen() {
   const { sessionId, tab } = useLocalSearchParams<{ sessionId: string; tab?: string }>();
-  const [activeTab, setActiveTab] = useState<SessionTab>(tab === 'chat' ? 'chat' : 'details');
+  const id = uuidParam(sessionId);
+  // An id that cannot name a session is "unavailable" without a request.
+  if (!id) return <SessionUnavailable />;
+  return <SessionContent sessionId={id} initialTab={tab === 'chat' ? 'chat' : 'details'} />;
+}
+
+/** Leaves the session screen, which has no navigation header of its own. */
+function useLeaveSession() {
+  const router = useRouter();
+  return () => (router.canGoBack() ? router.back() : router.replace('/feed'));
+}
+
+/**
+ * The screen while there is no session to show. It always carries the way
+ * back, because a loading or failed session has no other control on it.
+ */
+function SessionFrame({ children }: { children: ReactNode }) {
+  const colors = usePalette();
+  const insets = useSafeAreaInsets();
+  const leave = useLeaveSession();
+  return (
+    <View
+      style={[
+        styles.frame,
+        { backgroundColor: colors.background, paddingTop: insets.top + space.lg },
+      ]}
+    >
+      <View style={styles.headerBar}>
+        <IconButton icon="arrow-left" label="Go back" onPress={leave} />
+      </View>
+      {children}
+    </View>
+  );
+}
+
+function SessionUnavailable() {
+  const router = useRouter();
+  return (
+    <SessionFrame>
+      <EmptyState
+        icon="calendar-remove"
+        title="Session unavailable"
+        body="This session may have been removed, or the link is out of date."
+        action={<Button label="Back to Discover" onPress={() => router.replace('/feed')} />}
+      />
+    </SessionFrame>
+  );
+}
+
+function SessionContent({ sessionId, initialTab }: { sessionId: string; initialTab: SessionTab }) {
+  const [activeTab, setActiveTab] = useState<SessionTab>(initialTab);
   const [moderationSubject, setModerationSubject] = useState<ModerationSubject | null>(null);
+  const leave = useLeaveSession();
   const colors = usePalette();
   const scheme = useThemeName();
   const insets = useSafeAreaInsets();
@@ -136,32 +190,29 @@ export function SessionScreen() {
     setBody('');
   }
 
-  if (overview.isPending) {
+  const phase = loadPhase(overview);
+  if (phase === 'loading') {
     return (
-      <View
-        style={[
-          styles.loading,
-          { backgroundColor: colors.background, paddingTop: insets.top + space.lg },
-        ]}
-      >
+      <SessionFrame>
         <Skeleton height={150} />
         <Skeleton height={300} />
-      </View>
+      </SessionFrame>
     );
   }
 
-  if (!overview.data) {
+  if (phase === 'failed') {
     return (
-      <View style={[styles.loading, { backgroundColor: colors.background }]}>
-        <EmptyState
-          icon="calendar-remove"
-          title="Session unavailable"
-          body="This session may have been removed, or your connection was interrupted."
-          action={<Button label="Back to Discover" onPress={() => router.replace('/feed')} />}
+      <SessionFrame>
+        <LoadError
+          title="Could not load this session"
+          onRetry={() => void overview.refetch()}
+          retrying={overview.isFetching}
         />
-      </View>
+      </SessionFrame>
     );
   }
+
+  if (!overview.data) return <SessionUnavailable />;
 
   const item = overview.data;
   const counts = attendance.data?.find(
@@ -169,6 +220,7 @@ export function SessionScreen() {
       response.run_series_id === item.run_series_id &&
       response.occurrence_date === item.occurrence_date,
   );
+  const attendancePhase = loadPhase(attendance);
   const cancelled = Boolean(item.cancelled_at);
   const ended = new Date(item.ends_at).getTime() <= now;
   const busy = controls.cancel.isPending || controls.leave.isPending || controls.edit.isPending;
@@ -190,11 +242,7 @@ export function SessionScreen() {
       >
         <View style={styles.header}>
           <View style={styles.headerBar}>
-            <IconButton
-              icon="arrow-left"
-              label="Go back"
-              onPress={() => (router.canGoBack() ? router.back() : router.replace('/feed'))}
-            />
+            <IconButton icon="arrow-left" label="Go back" onPress={leave} />
             {item.organizerId && !item.isOrganizer && (
               <IconButton
                 icon="dots-horizontal"
@@ -217,9 +265,9 @@ export function SessionScreen() {
           </AppText>
           <View accessibilityLiveRegion="polite">
             <AppText variant="body" tone="muted">
-              {attendance.isPending
+              {attendancePhase === 'loading'
                 ? 'Loading attendance…'
-                : attendance.isError
+                : attendancePhase === 'failed'
                   ? 'Attendance counts unavailable'
                   : `${counts?.going_count ?? 0} going · ${counts?.maybe_count ?? 0} maybe`}
             </AppText>
@@ -468,7 +516,7 @@ export function SessionScreen() {
 }
 
 const styles = StyleSheet.create({
-  loading: { flex: 1, padding: space.lg, gap: space.md },
+  frame: { flex: 1, padding: space.lg, gap: space.md },
   header: { paddingHorizontal: space.lg, gap: space.sm },
   headerBar: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   tabs: { paddingHorizontal: space.lg, paddingTop: space.lg },

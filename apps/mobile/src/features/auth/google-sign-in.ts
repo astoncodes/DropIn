@@ -1,7 +1,7 @@
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
 
 import { env } from '../../lib/env';
-import { UserFacingError } from '../../lib/errors';
+import { UserFacingError } from '@dropin/shared';
 import { supabase } from '../../lib/supabase';
 
 let configured = false;
