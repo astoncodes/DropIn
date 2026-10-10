@@ -2,19 +2,19 @@ import { useSyncExternalStore } from 'react';
 import { AccessibilityInfo, Platform } from 'react-native';
 
 /**
- * Accessibility preferences, read live rather than once at startup.
+ * The Reduce Motion preference, read live rather than once at startup.
  *
- * Both can be toggled while the app is open — somebody turning on Reduce
- * Motion because our pulse animation is making them ill should not have to
- * restart. These are external mutable sources, so they are read with
- * `useSyncExternalStore` rather than mirrored into state inside an effect,
- * which would tear during concurrent rendering.
+ * It can be toggled while the app is open — somebody turning it on because our
+ * pulse animation is making them ill should not have to restart. It is an
+ * external mutable source, so it is read with `useSyncExternalStore` rather
+ * than mirrored into state inside an effect, which would tear during
+ * concurrent rendering.
  *
- * Every entry point is feature-detected. `isReduceTransparencyEnabled` is
- * iOS-only in React Native core and does not exist on react-native-web, so
- * calling it unguarded crashes the entire web app on first render. A missing
- * API means "this platform cannot express the preference" — different from
- * "the user has not set it", but both resolve to the same safe default.
+ * Every entry point is feature-detected, because react-native-web does not
+ * implement all of AccessibilityInfo and an unguarded call crashes the web app
+ * on first render. A missing API means "this platform cannot express the
+ * preference" — different from "the user has not set it", but both resolve to
+ * the same safe default.
  */
 
 type Store = {
@@ -24,7 +24,7 @@ type Store = {
 
 function createPreferenceStore(
   read: (() => Promise<boolean>) | undefined,
-  nativeEvent: 'reduceMotionChanged' | 'reduceTransparencyChanged',
+  nativeEvent: 'reduceMotionChanged',
   mediaQuery: string,
 ): Store {
   let value = false;
@@ -48,7 +48,7 @@ function createPreferenceStore(
     AccessibilityInfo.addEventListener(nativeEvent, publish);
   }
 
-  // react-native-web forwards neither preference, so the media queries are
+  // react-native-web does not forward the preference, so the media query is
   // read directly rather than the setting being silently ignored on web.
   if (Platform.OS === 'web' && typeof window !== 'undefined' && window.matchMedia) {
     const query = window.matchMedia(mediaQuery);
@@ -73,34 +73,11 @@ const reduceMotionStore = createPreferenceStore(
   '(prefers-reduced-motion: reduce)',
 );
 
-const reduceTransparencyStore = createPreferenceStore(
-  typeof AccessibilityInfo.isReduceTransparencyEnabled === 'function'
-    ? () => AccessibilityInfo.isReduceTransparencyEnabled()
-    : undefined,
-  'reduceTransparencyChanged',
-  '(prefers-reduced-transparency: reduce)',
-);
-
 /** True when the user has asked for less movement. Fade, don't slide. */
 export function useReduceMotion(): boolean {
   return useSyncExternalStore(
     reduceMotionStore.subscribe,
     reduceMotionStore.getSnapshot,
-    () => false,
-  );
-}
-
-/**
- * True when the user has asked for less transparency.
- *
- * The switch that turns every glass surface opaque. Ignoring it is how a
- * blurred navigation bar becomes unreadable for exactly the people who enabled
- * the setting because blurred chrome is hard for them to read.
- */
-export function useReduceTransparency(): boolean {
-  return useSyncExternalStore(
-    reduceTransparencyStore.subscribe,
-    reduceTransparencyStore.getSnapshot,
     () => false,
   );
 }

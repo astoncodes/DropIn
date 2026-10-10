@@ -54,10 +54,6 @@ Account and configuration work is listed step by step in
 
 ## Client gaps
 
-- [ ] **Session dates and times are typed as text** (`YYYY-MM-DD` and 24-hour
-      `HH:MM`) when creating or editing a session. Replace them with pickers;
-      decide between a date-picker dependency and chips for the coming days and
-      common times.
 - [ ] **Venue search sends a request on every keystroke** when choosing an
       existing venue for a session (the `session-venues` query in
       `new-run-screen.tsx`). Search on submit, as place search does, or debounce.
@@ -72,6 +68,22 @@ Account and configuration work is listed step by step in
 - [ ] **Avatars.** `profiles.avatar_path` is granted and returned by
       `venue_activity()`, but nothing uploads or displays a photo, so players
       appear as initials.
+
+## After the redesign
+
+- [ ] **See it on a phone.** The redesign was reviewed in the web build at phone
+      and desktop widths. The display typeface is loaded at startup with
+      `expo-font`; check it, the map pins and the pinned action bars in iOS and
+      Android builds.
+- [ ] **Redesign the admin website** to match. It still has its earlier look.
+- [ ] **Update the hosted browser scripts.** `browser-social.mjs`,
+      `browser-venue-review.mjs`, `live-presence.mjs --browser` and
+      `account-deletion.mjs` drive screens by label and cannot run without a
+      Supabase access token, so they were already behind the interface ("Edit
+      profile", "Yes, leave session") and are further behind now: session
+      creation uses a day strip and time chips instead of typed fields.
+- [ ] **App icon and splash screen** still use the earlier mark. Redraw them to
+      match the wordmark.
 
 ## Dependencies
 

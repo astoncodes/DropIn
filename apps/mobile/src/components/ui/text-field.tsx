@@ -43,12 +43,16 @@ export function TextField({
 }: TextFieldProps) {
   const colors = usePalette();
   const [focused, setFocused] = useState(false);
-  const borderColor = error ? colors.alert : focused ? colors.live : colors.borderStrong;
+  const borderColor = error ? colors.alert : focused ? colors.text : colors.borderStrong;
   const helper = error ?? hint;
 
   return (
     <View style={[styles.container, containerStyle]}>
-      {!labelHidden && <AppText variant="bodyStrong">{label}</AppText>}
+      {!labelHidden && (
+        <AppText variant="caption" style={styles.label}>
+          {label}
+        </AppText>
+      )}
       <TextInput
         {...inputProps}
         value={value}
@@ -101,12 +105,14 @@ export function TextField({
 }
 
 const styles = StyleSheet.create({
-  container: { gap: space.sm },
+  container: { gap: 6 },
+  label: { fontWeight: '600' },
   input: {
-    minHeight: 48,
-    borderWidth: 1,
+    minHeight: 50,
+    // A constant width, so focusing a field changes its colour and not its size.
+    borderWidth: 1.5,
     borderRadius: radius.md,
-    paddingHorizontal: space.lg,
+    paddingHorizontal: space.md,
     paddingVertical: space.md,
     // 16px keeps iOS Safari from zooming the page when the field is focused.
     fontSize: 16,

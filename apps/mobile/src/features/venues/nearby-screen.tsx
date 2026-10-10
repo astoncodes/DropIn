@@ -8,25 +8,23 @@ import VenueMap from '../../components/map/venue-map';
 import { isAwayFromLocation } from '../../components/map/location-distance';
 import type { MapRegion } from '../../components/map/types';
 import { EmptyState, LoadError, Skeleton } from '../../components/ui/activity';
-import { AdaptiveGlassSurface } from '../../components/ui/glass-surface';
 import {
   AppText,
+  Button,
   Chip,
   IconButton,
   PressableSurface,
   sportIcon,
 } from '../../components/ui/primitives';
-import { BrandMark } from '../../components/ui/brand';
 import { ResultsSheet } from '../../components/ui/results-sheet';
 import { usePublicSessionPins } from '../community/api';
 import { useAccountSports } from '../account/api';
 import { useRequiredLocation } from '../location/required-location';
 import { useNearbyVenues, useSports } from './api';
-import { VenueCard } from './venue-card';
+import { VenueRow } from './venue-row';
 import { loadPhase } from '../../lib/load-phase';
 import { useSession } from '../../providers/auth-context';
-import { radius, space, useThemeName, usePalette } from '../../theme';
-import type { IconName } from '../../components/ui/primitives';
+import { elevation, radius, space, useThemeName, usePalette } from '../../theme';
 
 /**
  * Live — "where can I play right now?"
@@ -117,22 +115,18 @@ export function NearbyScreen() {
     <FlatList
       data={venues.data ?? []}
       keyExtractor={(venue) => venue.venue_id}
-      contentContainerStyle={{
-        padding: space.lg,
-        paddingBottom: space.xl,
-        gap: space.md,
-      }}
+      contentContainerStyle={styles.list}
       showsVerticalScrollIndicator={false}
       refreshing={venues.isRefetching}
       onRefresh={() => void venues.refetch()}
       renderItem={({ item }) => (
-        <VenueCard venue={item} onPress={() => router.push(`/venue/${item.venue_id}`)} />
+        <VenueRow venue={item} onPress={() => router.push(`/venue/${item.venue_id}`)} />
       )}
       ListEmptyComponent={
         venuesPhase === 'loading' ? (
-          <View style={{ gap: space.md }}>
+          <View style={styles.skeletons}>
             {[0, 1, 2].map((key) => (
-              <Skeleton key={key} height={148} />
+              <Skeleton key={key} height={64} />
             ))}
           </View>
         ) : venuesPhase === 'failed' ? (
@@ -144,18 +138,39 @@ export function NearbyScreen() {
           />
         ) : (
           <EmptyState
-            icon="map-search-outline"
-            title="Nothing nearby yet"
+            title="No venues here"
             body={
               selectedSportIds.length > 0
-                ? 'No venues match these sports in this area. Try clearing a filter or moving the map.'
-                : 'No venues in range. Move the map, or add a spot you know about.'
+                ? 'Nothing in this area matches those sports. Clear a filter or move the map.'
+                : 'Move the map to look somewhere else.'
             }
           />
         )
       }
+      ListFooterComponent={
+        venuesPhase === 'ready' ? (
+          <View style={styles.footer}>
+            <AppText variant="caption" tone="muted" style={{ flex: 1 }}>
+              Know a court that isn’t listed?
+            </AppText>
+            <Button
+              label="Add a venue"
+              size="sm"
+              variant="ghost"
+              icon="map-marker-plus-outline"
+              onPress={() => router.push('/venue-submission/new')}
+            />
+          </View>
+        ) : null
+      }
     />
   );
+
+  const panel = [
+    styles.panel,
+    { backgroundColor: colors.surface, borderColor: colors.border },
+    elevation.floating,
+  ];
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
@@ -203,72 +218,54 @@ export function NearbyScreen() {
         </View>
       )}
 
-      {/* --- Floating chrome. Glass here, never on the content cards. --- */}
+      {/* Floating over the map: sport filters, then the one action. */}
       <View
         style={[
           styles.chrome,
-          { paddingTop: insets.top + space.sm, maxWidth: isWide ? 460 : undefined },
+          { paddingTop: insets.top + space.sm, maxWidth: isWide ? 520 : undefined },
         ]}
         pointerEvents="box-none"
       >
-        <AdaptiveGlassSurface style={styles.header} borderRadius={radius.xl}>
-          <View style={styles.headerRow}>
-            <View style={{ flex: 1 }}>
-              <BrandMark size={30} />
-              <View style={styles.regionRow}>
-                <MaterialCommunityIcons name="map-marker" size={12} color={colors.textMuted} />
-                <AppText variant="caption" tone="muted">
-                  Near you
-                </AppText>
-              </View>
-            </View>
-
-            <IconButton
-              icon="plus"
-              label="Create session"
-              tone="live"
-              onPress={() => router.push('/run/new')}
-            />
-            <IconButton
-              icon="map-marker-plus-outline"
-              label="Add a venue"
-              onPress={() => router.push('/venue-submission/new')}
-            />
-          </View>
-
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.chipRow}
-            accessibilityLabel="Filter by sport"
-          >
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.filters}
+          contentContainerStyle={styles.chipRow}
+          accessibilityLabel="Filter by sport"
+        >
+          <Chip
+            label="All"
+            selected={selectedSportIds.length === 0}
+            onPress={() => setFilterOverride({ userId: userId ?? null, sportIds: [] })}
+          />
+          {activeSports.map((sport) => (
             <Chip
-              label="All"
-              selected={selectedSportIds.length === 0}
-              onPress={() => setFilterOverride({ userId: userId ?? null, sportIds: [] })}
+              key={sport.id}
+              label={sport.name}
+              icon={sportIcon(sport.slug)}
+              selected={selectedSportIds.includes(sport.id)}
+              onPress={() => toggleSport(sport.id)}
             />
-            {activeSports.map((sport) => (
-              <Chip
-                key={sport.id}
-                label={sport.name}
-                icon={sportIcon(sport.slug) as IconName}
-                selected={selectedSportIds.includes(sport.id)}
-                onPress={() => toggleSport(sport.id)}
-              />
-            ))}
-          </ScrollView>
-        </AdaptiveGlassSurface>
+          ))}
+        </ScrollView>
+        <View style={[panel, styles.create]}>
+          <IconButton
+            icon="plus"
+            label="Create session"
+            filled
+            onPress={() => router.push('/run/new')}
+          />
+        </View>
       </View>
 
-      {/* --- Right-hand floating controls --- */}
       <View
         style={[
           styles.sideControls,
-          { top: insets.top + 144, right: isWide && view === 'map' ? 432 : space.md },
+          { top: insets.top + 68, right: isWide && view === 'map' ? 432 : space.md },
         ]}
         pointerEvents="box-none"
       >
-        <AdaptiveGlassSurface borderRadius={radius.pill} style={styles.controlStack}>
+        <View style={panel}>
           <PressableSurface
             onPress={() => setView(view === 'map' ? 'list' : 'map')}
             accessibilityLabel={view === 'map' ? 'Show list view' : 'Show map view'}
@@ -276,7 +273,7 @@ export function NearbyScreen() {
             <View style={styles.controlButton}>
               <MaterialCommunityIcons
                 name={view === 'map' ? 'format-list-bulleted' : 'map-outline'}
-                size={20}
+                size={22}
                 color={colors.text}
               />
             </View>
@@ -284,7 +281,7 @@ export function NearbyScreen() {
 
           {showRecenter && (
             <>
-              <View style={[styles.controlDivider, { backgroundColor: colors.glassBorder }]} />
+              <View style={[styles.controlDivider, { backgroundColor: colors.border }]} />
               <PressableSurface
                 onPress={() => {
                   setCenter(deviceLocation);
@@ -294,31 +291,31 @@ export function NearbyScreen() {
                 accessibilityLabel="Centre the map on my location"
               >
                 <View style={styles.controlButton}>
-                  <MaterialCommunityIcons name="crosshairs-gps" size={20} color={colors.info} />
+                  <MaterialCommunityIcons name="crosshairs-gps" size={22} color={colors.text} />
                 </View>
               </PressableSurface>
             </>
           )}
-        </AdaptiveGlassSurface>
+        </View>
       </View>
 
       {view === 'map' ? (
         <ResultsSheet
+          live={liveCount > 0}
           title={
             venuesPhase === 'loading'
               ? 'Finding venues…'
               : venuesPhase === 'failed'
                 ? 'Nearby venues'
                 : liveCount > 0
-                  ? `${liveCount} active now`
+                  ? `${liveCount} live now`
                   : `${venues.data?.length ?? 0} nearby`
           }
-          subtitle={liveCount > 0 ? 'Find your next game' : 'Your next game starts here'}
         >
           {listContent}
         </ResultsSheet>
       ) : (
-        <View style={{ flex: 1, paddingTop: insets.top + 208 }}>{listContent}</View>
+        <View style={{ flex: 1, paddingTop: insets.top + 68 }}>{listContent}</View>
       )}
     </View>
   );
@@ -330,21 +327,20 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     right: 0,
-    paddingHorizontal: space.md,
-    zIndex: 20,
-  },
-  header: { paddingBottom: space.sm },
-  headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: space.lg,
-    paddingTop: space.md,
-    gap: space.xs,
+    gap: space.sm,
+    paddingRight: space.md,
+    zIndex: 20,
   },
-  regionRow: { flexDirection: 'row', alignItems: 'center', gap: 3 },
-  chipRow: { paddingHorizontal: space.lg, paddingVertical: space.sm, gap: space.sm },
-  sideControls: { position: 'absolute', right: space.md, zIndex: 20 },
-  controlStack: { alignItems: 'center' },
-  controlButton: { width: 46, height: 46, alignItems: 'center', justifyContent: 'center' },
-  controlDivider: { height: StyleSheet.hairlineWidth, width: 28 },
+  filters: { flex: 1 },
+  chipRow: { paddingLeft: space.md, paddingRight: space.sm, paddingVertical: 3, gap: space.sm },
+  panel: { borderRadius: radius.md, borderWidth: 1 },
+  create: { borderWidth: 0 },
+  sideControls: { position: 'absolute', zIndex: 20 },
+  controlButton: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
+  controlDivider: { height: 1, marginHorizontal: space.sm },
+  list: { paddingHorizontal: space.lg, paddingBottom: space.xl },
+  skeletons: { gap: space.md, paddingTop: space.lg },
+  footer: { flexDirection: 'row', alignItems: 'center', gap: space.md, paddingTop: space.md },
 });

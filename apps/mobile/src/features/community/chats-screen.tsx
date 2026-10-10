@@ -7,12 +7,13 @@ import { SportBadge } from '../../components/ui/brand';
 import { EmptyState, LoadError, Skeleton } from '../../components/ui/activity';
 import { AppText, Button, PressableSurface } from '../../components/ui/primitives';
 import { ScreenHeader } from '../../components/ui/screen-header';
-import { relativeTime, timeOfDay, weekdayName } from '../../lib/format';
+import { dayLabel, relativeTime, timeOfDay } from '../../lib/format';
 import { loadPhase } from '../../lib/load-phase';
 import { useSession } from '../../providers/auth-context';
-import { elevation, radius, space, usePalette } from '../../theme';
+import { space, usePalette } from '../../theme';
 import { useJoinedSessions } from './api';
 
+/** The chats of every session the player has joined, most recent session first. */
 export function ChatsScreen() {
   const colors = usePalette();
   const insets = useSafeAreaInsets();
@@ -24,39 +25,30 @@ export function ChatsScreen() {
   return (
     <ScrollView
       style={{ flex: 1, backgroundColor: colors.background }}
-      contentContainerStyle={{
-        paddingTop: insets.top + space.lg,
-        paddingBottom: space.xxl,
-        width: '100%',
-        maxWidth: 760,
-        alignSelf: 'center',
-      }}
+      contentContainerStyle={[styles.content, { paddingTop: insets.top + space.md }]}
       refreshControl={
         session ? (
           <RefreshControl
             refreshing={chats.isRefetching}
             onRefresh={() => void chats.refetch()}
-            tintColor={colors.live}
+            tintColor={colors.text}
           />
         ) : undefined
       }
     >
-      <View style={styles.heading}>
-        <ScreenHeader title="Chats" subtitle="Private conversations for sessions you joined." />
-      </View>
+      <ScreenHeader title="Chats" />
 
       {isLoading || (Boolean(session) && phase === 'loading') ? (
-        <View style={styles.list}>
+        <View style={styles.skeletons}>
           {[0, 1, 2].map((key) => (
-            <Skeleton key={key} height={88} />
+            <Skeleton key={key} height={56} />
           ))}
         </View>
       ) : !session ? (
         <EmptyState
-          icon="message-lock-outline"
-          title="Sign in to see chats"
-          body="Your session conversations stay private to people who joined."
-          action={<Button label="Sign in" onPress={() => router.push('/sign-in')} />}
+          title="Sign in to see your chats"
+          body="Each session has a chat that only the people who joined can read."
+          action={<Button label="Sign in" size="sm" onPress={() => router.push('/sign-in')} />}
         />
       ) : phase === 'failed' ? (
         <LoadError
@@ -65,7 +57,7 @@ export function ChatsScreen() {
           retrying={chats.isFetching}
         />
       ) : chats.data?.length ? (
-        <View style={styles.list}>
+        <View style={[styles.list, { borderTopColor: colors.border }]}>
           {chats.data.map((chat) => (
             <PressableSurface
               key={chat.id}
@@ -77,41 +69,37 @@ export function ChatsScreen() {
               }
               accessibilityLabel={`Open ${chat.title} chat`}
             >
-              <View
-                style={[
-                  styles.card,
-                  { backgroundColor: colors.surface, borderColor: colors.border },
-                  elevation.card,
-                ]}
-              >
-                <SportBadge slug={chat.sportSlug} size={48} />
-                <View style={{ flex: 1, gap: 3 }}>
-                  <AppText variant="heading" numberOfLines={1}>
-                    {chat.cancelled_at ? `Cancelled · ${chat.title}` : chat.title}
+              <View style={[styles.row, { borderBottomColor: colors.border }]}>
+                <SportBadge slug={chat.sportSlug} />
+                <View style={styles.copy}>
+                  {/* Sessions in one series share a title; the date tells them apart. */}
+                  <AppText variant="label" tone="muted">
+                    {dayLabel(chat.starts_at)} · {timeOfDay(chat.starts_at)}
                   </AppText>
-                  <AppText variant="caption" tone="muted" numberOfLines={1}>
-                    {chat.lastMessage?.body ??
-                      `${chat.venueName} · ${weekdayName(chat.starts_at)} ${timeOfDay(chat.starts_at)}`}
-                  </AppText>
-                </View>
-                <View style={{ alignItems: 'flex-end', gap: 8 }}>
-                  {chat.lastMessage && (
-                    <AppText variant="micro" tone="faint">
-                      {relativeTime(chat.lastMessage.created_at)}
+                  <View style={styles.titleLine}>
+                    <AppText variant="heading" numberOfLines={1} style={styles.title}>
+                      {chat.title}
                     </AppText>
-                  )}
-                  <MaterialCommunityIcons name="chevron-right" size={22} color={colors.textFaint} />
+                    {chat.lastMessage && (
+                      <AppText variant="micro" tone="faint">
+                        {relativeTime(chat.lastMessage.created_at)}
+                      </AppText>
+                    )}
+                  </View>
+                  <AppText variant="caption" tone="muted" numberOfLines={1}>
+                    {chat.cancelled_at ? 'Cancelled' : (chat.lastMessage?.body ?? chat.venueName)}
+                  </AppText>
                 </View>
+                <MaterialCommunityIcons name="chevron-right" size={22} color={colors.textFaint} />
               </View>
             </PressableSurface>
           ))}
         </View>
       ) : (
         <EmptyState
-          icon="calendar-heart"
-          title="No session chats yet"
-          body="Join a session in Discover and its private chat will appear here."
-          action={<Button label="Browse sessions" onPress={() => router.push('/feed')} />}
+          title="No chats yet"
+          body="Join a session and its chat appears here."
+          action={<Button label="Browse sessions" size="sm" onPress={() => router.push('/feed')} />}
         />
       )}
     </ScrollView>
@@ -119,15 +107,23 @@ export function ChatsScreen() {
 }
 
 const styles = StyleSheet.create({
-  heading: { paddingHorizontal: space.lg, gap: 3, marginBottom: space.xl },
-  list: { paddingHorizontal: space.lg, gap: space.md },
-  card: {
+  content: {
+    paddingHorizontal: space.lg,
+    paddingBottom: space.xxl,
+    width: '100%',
+    maxWidth: 760,
+    alignSelf: 'center',
+  },
+  skeletons: { gap: space.md, paddingTop: space.lg },
+  list: { marginTop: space.md, borderTopWidth: 1 },
+  row: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: space.md,
-    borderRadius: radius.xl,
-    borderWidth: StyleSheet.hairlineWidth,
-    padding: space.md,
+    paddingVertical: space.md,
+    borderBottomWidth: 1,
   },
-  icon: { width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center' },
+  copy: { flex: 1, gap: 2 },
+  titleLine: { flexDirection: 'row', alignItems: 'baseline', gap: space.sm },
+  title: { flex: 1 },
 });

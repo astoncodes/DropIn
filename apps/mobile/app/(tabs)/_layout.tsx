@@ -13,9 +13,9 @@ import { usePalette } from '../../src/theme';
  * triangle when `tabBarIcon` is omitted, which renders as a broken-looking ▼ in
  * every tab — worse than having no icon at all.
  *
- * Outline when inactive, solid when focused: the platform convention, and it
- * gives the active tab a second signal beyond colour, which matters for anyone
- * who cannot easily distinguish the accent from the muted tone.
+ * Outline when inactive, solid ink when focused: the platform convention, and
+ * a second signal beyond colour. The active tab is ink rather than green
+ * because green is reserved for live activity.
  */
 export default function TabsLayout() {
   const colors = usePalette();
@@ -26,10 +26,10 @@ export default function TabsLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: colors.live,
-        tabBarInactiveTintColor: colors.textMuted,
+        tabBarActiveTintColor: colors.text,
+        tabBarInactiveTintColor: colors.textFaint,
         tabBarStyle: {
-          backgroundColor: colors.surface,
+          backgroundColor: colors.background,
           borderTopColor: colors.border,
           height: 64 + insets.bottom,
           paddingTop: 6,

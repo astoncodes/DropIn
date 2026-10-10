@@ -1,39 +1,39 @@
 /**
  * Semantic design tokens.
  *
- * Colours are named for meaning, not appearance, so a screen never says
- * "green" — it says `live`. Swapping the palette then cannot silently change
- * what a colour communicates.
+ * The interface is ink on warm paper, like a printed scorecard. Colour is not
+ * decoration here: it marks state, and the state that matters most is `live`.
  *
- * The colour language, applied consistently:
- *   live   (green)  playable, happening now, verified
- *   soon   (amber)  heading there, upcoming, needs attention
- *   info   (blue)   navigation, neutral information
- *   alert  (coral)  errors, closures, destructive actions
- *   accent (lime)   sparing highlight on live surfaces only
+ *   live   (green)  people are playing right now, or the action that puts you
+ *                   among them (checking in, going)
+ *   soon   (amber)  on the way, starting soon, needs attention
+ *   alert  (red)    errors, closures, destructive actions
  *
- * Not every surface is coloured. Colour marks state; the rest is ink on paper.
+ * Everything else — text, buttons, icons, map pins — is ink. A screen with no
+ * live activity on it has no green on it, which is what makes the green mean
+ * something when it appears.
  */
 
 const brand = {
-  fieldInk: '#102B26',
-  fieldGreen: '#21BC89',
-  electricLime: '#C8F56A',
-  electricBlue: '#3B82F6',
-  gameAmber: '#FFB547',
-  liveCoral: '#FF5D5D',
-  offWhite: '#F7F7F2',
+  ink: '#0F1A16',
+  paper: '#F3F1EA',
+  courtGreen: '#00865C',
 } as const;
 
 export type ThemeName = 'light';
 
 export type Palette = {
+  /** The page: warm paper. Content sits directly on it, divided by rules. */
   background: string;
   backgroundElevated: string;
+  /** White, for things that float over the page or the map, and for inputs. */
   surface: string;
+  /** A shade deeper than paper, for quiet fills such as skeletons and avatars. */
   surfaceMuted: string;
   surfaceInverse: string;
+  /** Hairline rules between rows. */
   border: string;
+  /** Control outlines. */
   borderStrong: string;
 
   text: string;
@@ -47,55 +47,37 @@ export type Palette = {
   soon: string;
   soonSoft: string;
   soonText: string;
-  info: string;
-  infoSoft: string;
   alert: string;
   alertSoft: string;
-  accent: string;
-
-  /** Translucent fill for glass surfaces before blur is applied. */
-  glassFill: string;
-  glassBorder: string;
-  /** Opaque stand-in when blur is unavailable or Reduce Transparency is on. */
-  glassOpaque: string;
 
   scrim: string;
-  mapOverlayInk: string;
 };
 
 export const palettes: Record<ThemeName, Palette> = {
   light: {
-    background: brand.offWhite,
+    background: brand.paper,
     backgroundElevated: '#FFFFFF',
     surface: '#FFFFFF',
-    surfaceMuted: '#EEF0EA',
-    surfaceInverse: brand.fieldInk,
-    border: '#E3E7DF',
-    borderStrong: '#C3CBBB',
+    surfaceMuted: '#E6E2D6',
+    surfaceInverse: brand.ink,
+    border: 'rgba(15,26,22,0.13)',
+    borderStrong: 'rgba(15,26,22,0.32)',
 
-    text: brand.fieldInk,
-    textMuted: '#5E706A',
-    textFaint: '#6D7D76',
-    textInverse: brand.offWhite,
+    text: brand.ink,
+    textMuted: '#525D58',
+    textFaint: '#69736E',
+    textInverse: '#FFFFFF',
 
-    live: '#00865C',
-    liveSoft: '#E4F3EB',
+    live: brand.courtGreen,
+    liveSoft: '#D9EFE3',
     liveText: '#006B49',
-    soon: '#B9720A',
-    soonSoft: '#FFF0D6',
-    soonText: '#7A4A00',
-    info: '#2563EB',
-    infoSoft: '#DEE9FF',
+    soon: '#B4610A',
+    soonSoft: '#F8E7CC',
+    soonText: '#7A4300',
     alert: '#C2302F',
-    alertSoft: '#FFE2E2',
-    accent: '#7FB625',
+    alertSoft: '#F8E0DD',
 
-    glassFill: 'rgba(255,255,255,0.72)',
-    glassBorder: 'rgba(8,19,15,0.08)',
-    glassOpaque: '#FFFFFF',
-
-    scrim: 'rgba(8,19,15,0.45)',
-    mapOverlayInk: brand.fieldInk,
+    scrim: 'rgba(15,26,22,0.5)',
   },
 };
 
@@ -112,28 +94,53 @@ export const space = {
 } as const;
 
 /**
- * Corners soften without turning every surface into a pill: controls use md,
- * cards and grouped lists lg, and only floating panels (sheets, dialogs) xl.
+ * Corners are crisp. Tags are nearly square, controls slightly rounded, and
+ * only surfaces that float (sheets, dialogs, map panels) are rounder. Nothing
+ * is a pill: pills on every element is what made the old interface generic.
  */
 export const radius = {
-  sm: 8,
-  md: 12,
-  lg: 16,
-  xl: 20,
-  pill: 999,
+  xs: 4,
+  sm: 6,
+  md: 10,
+  lg: 14,
+  xl: 18,
+} as const;
+
+/**
+ * Two voices. Barlow Condensed, an athletic signage face, carries titles,
+ * numbers, labels and buttons; the platform's own font carries sentences, so
+ * anything read at length stays as legible as the rest of the phone.
+ *
+ * The condensed faces are loaded by name in the root layout. Their weight is
+ * part of the face, so styles that use them never set `fontWeight`.
+ */
+export const fonts = {
+  display: 'BarlowCondensed_700Bold',
+  displayMedium: 'BarlowCondensed_600SemiBold',
 } as const;
 
 export const typeScale = {
-  /** Page titles. Matches the platform large-title size so tabs feel native. */
-  display: { fontSize: 34, lineHeight: 40, fontWeight: '800' as const, letterSpacing: -1 },
-  title: { fontSize: 28, lineHeight: 34, fontWeight: '700' as const, letterSpacing: -0.8 },
-  heading: { fontSize: 18, lineHeight: 24, fontWeight: '700' as const, letterSpacing: -0.2 },
-  body: { fontSize: 15, lineHeight: 21, fontWeight: '400' as const },
-  bodyStrong: { fontSize: 15, lineHeight: 21, fontWeight: '600' as const },
-  caption: { fontSize: 13, lineHeight: 17, fontWeight: '500' as const },
-  micro: { fontSize: 11, lineHeight: 14, fontWeight: '700' as const, letterSpacing: 0.4 },
-  /** Live counts should read like a scoreboard, not body copy. */
-  score: { fontSize: 28, lineHeight: 30, fontWeight: '800' as const, letterSpacing: -1 },
+  /** Screen titles. */
+  display: { fontFamily: fonts.display, fontSize: 40, lineHeight: 40 },
+  /** The subject of a detail screen, and dialog-sized headings. */
+  title: { fontFamily: fonts.display, fontSize: 32, lineHeight: 34 },
+  /** Row titles and section headings. */
+  heading: { fontFamily: fonts.displayMedium, fontSize: 22, lineHeight: 26 },
+  /** Small capitals for section labels, stat labels and tags. */
+  label: {
+    fontFamily: fonts.displayMedium,
+    fontSize: 13,
+    lineHeight: 16,
+    letterSpacing: 1.1,
+    textTransform: 'uppercase' as const,
+  },
+  button: { fontFamily: fonts.displayMedium, fontSize: 19, lineHeight: 22, letterSpacing: 0.2 },
+  body: { fontSize: 16, lineHeight: 23, fontWeight: '400' as const },
+  bodyStrong: { fontSize: 16, lineHeight: 23, fontWeight: '600' as const },
+  caption: { fontSize: 14, lineHeight: 19, fontWeight: '400' as const },
+  micro: { fontSize: 12, lineHeight: 16, fontWeight: '500' as const },
+  /** Live counts and times read like a scoreboard, not like body copy. */
+  score: { fontFamily: fonts.display, fontSize: 44, lineHeight: 42 },
 } as const;
 
 /**
@@ -152,34 +159,13 @@ export const motion = {
   pressScale: 0.97,
 } as const;
 
+/** Only things that float above the page or the map cast a shadow. */
 export const elevation = {
-  card: {
-    shadowColor: '#08130F',
-    shadowOpacity: 0.035,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 3,
-  },
   floating: {
-    shadowColor: '#08130F',
-    shadowOpacity: 0.16,
-    shadowRadius: 20,
-    shadowOffset: { width: 0, height: 8 },
+    shadowColor: '#0F1A16',
+    shadowOpacity: 0.14,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 6 },
     elevation: 8,
   },
 } as const;
-
-/** The same sport identity is used on filters, cards and both map renderers. */
-export const sportColors: Record<string, string> = {
-  basketball: '#F26A21',
-  soccer: '#00865C',
-  volleyball: '#7951D4',
-  pickleball: '#D69A00',
-  tennis: '#2378DD',
-  badminton: '#B3327A',
-  'ice-hockey': '#397EA0',
-};
-
-export function sportColor(slug: string | null | undefined): string {
-  return (slug && sportColors[slug]) || '#226B56';
-}

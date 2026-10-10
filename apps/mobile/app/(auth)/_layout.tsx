@@ -1,5 +1,5 @@
 import { Stack } from 'expo-router';
-import { usePalette } from '../../src/theme';
+import { fonts, usePalette } from '../../src/theme';
 
 export default function AuthLayout() {
   const colors = usePalette();
@@ -9,6 +9,7 @@ export default function AuthLayout() {
         headerShown: true,
         headerStyle: { backgroundColor: colors.background },
         headerTintColor: colors.text,
+        headerTitleStyle: { fontFamily: fonts.displayMedium, fontSize: 20 },
         headerShadowVisible: false,
       }}
     >

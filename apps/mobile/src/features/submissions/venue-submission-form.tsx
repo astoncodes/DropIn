@@ -16,7 +16,7 @@ import type { GeocodingResult } from '../geocoding/geoapify';
 import { useNearbyVenues, useSports } from '../venues/api';
 import { SportsUnavailableNotice } from '../venues/sports-unavailable-notice';
 import { useSession } from '../../providers/auth-context';
-import { elevation, radius, space, usePalette, useThemeName } from '../../theme';
+import { radius, space, usePalette, useThemeName } from '../../theme';
 import type { IconName } from '../../components/ui/primitives';
 import { useSubmitVenue } from './api';
 import { useDeviceLocation } from '../location/use-device-location';
@@ -267,7 +267,7 @@ export function VenueSubmissionForm() {
               accessibilityLabel={`Use ${result.label}`}
             >
               <View style={[styles.result, { borderBottomColor: colors.border }]}>
-                <MaterialCommunityIcons name="map-marker-outline" size={20} color={colors.info} />
+                <MaterialCommunityIcons name="map-marker-outline" size={20} color={colors.text} />
                 <AppText variant="caption" style={{ flex: 1 }}>
                   {result.label}
                 </AppText>
@@ -458,7 +458,6 @@ const styles = StyleSheet.create({
     borderRadius: radius.xl,
     padding: space.lg,
     gap: space.md,
-    ...elevation.card,
   },
   nearbyRow: { minHeight: 50, flexDirection: 'row', alignItems: 'center', gap: space.sm },
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },

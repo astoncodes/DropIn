@@ -46,7 +46,6 @@ export function BlockedPlayersScreen() {
         <Skeleton height={120} />
       ) : !session ? (
         <EmptyState
-          icon="account-lock-outline"
           title="Sign in to manage blocks"
           body="Blocks belong to your account."
           action={<Button label="Sign in" onPress={() => router.push('/sign-in')} />}
@@ -80,7 +79,6 @@ export function BlockedPlayersScreen() {
         </ListSection>
       ) : (
         <EmptyState
-          icon="account-check-outline"
           title="No one is blocked"
           body="To block someone, open the menu on their post or press and hold one of their messages."
         />

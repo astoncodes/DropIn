@@ -1,8 +1,15 @@
+import {
+  BarlowCondensed_600SemiBold,
+  BarlowCondensed_700Bold,
+} from '@expo-google-fonts/barlow-condensed';
+import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
+import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
+import { useEffect } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
-import { usePalette } from '../src/theme';
+import { fonts, usePalette } from '../src/theme';
 
 import { AppProviders } from '../src/providers';
 import { ToastProvider } from '../src/components/ui/toast';
@@ -17,9 +24,26 @@ import { LocationAccessProvider } from '../src/features/location/location-access
  * signing in, browsing and account settings never depend on location consent.
  * Account authentication is separately required for actions such as checking
  * in, posting a run and submitting a venue.
+ *
+ * The splash screen stays up until the display typeface has loaded, so titles
+ * never flash in the system font first. If it cannot be loaded the app still
+ * opens; those styles fall back to the system font.
  */
+void SplashScreen.preventAutoHideAsync();
+
 export default function RootLayout() {
   const colors = usePalette();
+  const [fontsLoaded, fontError] = useFonts({
+    [fonts.display]: BarlowCondensed_700Bold,
+    [fonts.displayMedium]: BarlowCondensed_600SemiBold,
+  });
+  const ready = fontsLoaded || fontError !== null;
+
+  useEffect(() => {
+    if (ready) void SplashScreen.hideAsync();
+  }, [ready]);
+
+  if (!ready) return null;
   return (
     <SafeAreaProvider>
       <AppProviders>
@@ -31,6 +55,7 @@ export default function RootLayout() {
                 headerShown: false,
                 headerStyle: { backgroundColor: colors.background },
                 headerTintColor: colors.text,
+                headerTitleStyle: { fontFamily: fonts.displayMedium, fontSize: 20 },
                 headerShadowVisible: false,
                 contentStyle: { backgroundColor: colors.background },
               }}

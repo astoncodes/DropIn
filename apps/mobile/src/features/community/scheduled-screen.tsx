@@ -1,28 +1,24 @@
+import { userMessage } from '@dropin/shared';
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import { RefreshControl, ScrollView, View } from 'react-native';
+import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { EmptyState, LoadError, Skeleton } from '../../components/ui/activity';
 import { SportBadge } from '../../components/ui/brand';
-import {
-  AppText,
-  Button,
-  Chip,
-  IconButton,
-  PressableSurface,
-} from '../../components/ui/primitives';
+import { Notice } from '../../components/ui/notice';
+import { AppText, Button, IconButton, PressableSurface, Tag } from '../../components/ui/primitives';
 import { ScreenHeader } from '../../components/ui/screen-header';
 import { SegmentedControl } from '../../components/ui/segmented-control';
-import { useJoinedSessions, useJoinSession, useRunAttendance } from './api';
-import { SessionCard } from './session-card';
+import { dayLabel, timeOfDay } from '../../lib/format';
+import { combineLoadPhases, loadPhase } from '../../lib/load-phase';
+import { useSession } from '../../providers/auth-context';
+import { space, usePalette } from '../../theme';
 import { useUpcomingRuns } from '../venues/api';
 import type { UpcomingRun } from '../venues/api';
-import { timeOfDay, weekdayName, weekdayGroup } from '../../lib/format';
-import { radius, space, usePalette } from '../../theme';
-import { useSession } from '../../providers/auth-context';
-import { userMessage } from '@dropin/shared';
-import { combineLoadPhases, loadPhase } from '../../lib/load-phase';
+import { useJoinedSessions, useJoinSession, useRunAttendance } from './api';
+import { SessionRow } from './session-row';
 
 /** Only hosted, Going and Maybe sessions belong in the player's schedule. */
 export function ScheduledScreen() {
@@ -63,11 +59,6 @@ export function ScheduledScreen() {
   const past = (history.data ?? [])
     .filter((item) => Boolean(item.cancelled_at) || new Date(item.ends_at).getTime() <= now)
     .sort((a, b) => b.starts_at.localeCompare(a.starts_at));
-  const groups = [
-    { id: 'today', title: 'Today' },
-    { id: 'tomorrow', title: 'Tomorrow' },
-    { id: 'week', title: 'Coming up' },
-  ];
   // Upcoming needs each run's attendance to know which ones are the player's;
   // with no runs there is nothing to look attendance up for.
   const phase =
@@ -96,25 +87,15 @@ export function ScheduledScreen() {
   }
   return (
     <View
-      style={{ flex: 1, backgroundColor: colors.background, paddingTop: insets.top + space.lg }}
+      style={{ flex: 1, backgroundColor: colors.background, paddingTop: insets.top + space.md }}
     >
-      <View
-        style={{
-          paddingHorizontal: space.xl,
-          gap: space.lg,
-          marginBottom: space.lg,
-          width: '100%',
-          maxWidth: 760,
-          alignSelf: 'center',
-        }}
-      >
+      <View style={styles.top}>
         <ScreenHeader
           title="Scheduled"
-          subtitle="Make time for a little play."
           actions={
             <IconButton
               icon="plus"
-              tone="live"
+              filled
               label="Create session"
               onPress={() => router.push('/run/new')}
             />
@@ -136,40 +117,30 @@ export function ScheduledScreen() {
             <RefreshControl
               refreshing={runs.isRefetching || history.isRefetching}
               onRefresh={refresh}
-              tintColor={colors.live}
+              tintColor={colors.text}
             />
           ) : undefined
         }
-        contentContainerStyle={{
-          paddingHorizontal: space.xl,
-          paddingBottom: space.xxl,
-          gap: space.md,
-          width: '100%',
-          maxWidth: 760,
-          alignSelf: 'center',
-        }}
+        contentContainerStyle={styles.content}
       >
-        {!!error && (
-          <View accessibilityRole="alert">
-            <AppText tone="alert">{error}</AppText>
-          </View>
-        )}
+        {!!error && <Notice tone="error" message={error} />}
         {isLoading ? (
-          <Skeleton height={180} />
+          <View style={styles.skeletons}>
+            <Skeleton height={72} />
+          </View>
         ) : !session ? (
           <EmptyState
-            icon="calendar-heart"
-            title="Good things on your calendar"
-            body="Sign in to keep track of sessions you host, join, or mark Maybe."
-            action={<Button label="Sign in" onPress={() => router.push('/sign-in')} />}
+            title="Your sessions, in one place"
+            body="Sign in to see the sessions you host, are going to, or marked Maybe."
+            action={<Button label="Sign in" size="sm" onPress={() => router.push('/sign-in')} />}
           />
         ) : phase === 'failed' ? (
           <LoadError title="Could not load your schedule" onRetry={refresh} retrying={retrying} />
         ) : phase === 'loading' ? (
-          <>
-            <Skeleton height={120} />
-            <Skeleton height={120} />
-          </>
+          <View style={styles.skeletons}>
+            <Skeleton height={72} />
+            <Skeleton height={72} />
+          </View>
         ) : tab === 'past' ? (
           past.length ? (
             past.map((item) => (
@@ -178,85 +149,59 @@ export function ScheduledScreen() {
                 onPress={() => router.push(`/session/${item.id}`)}
                 accessibilityLabel={`Open ${item.title}`}
               >
-                <View
-                  style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    gap: space.md,
-                    backgroundColor: colors.surface,
-                    padding: space.lg,
-                    borderRadius: radius.xl,
-                    borderWidth: 1,
-                    borderColor: colors.border,
-                  }}
-                >
+                <View style={[styles.pastRow, { borderBottomColor: colors.border }]}>
                   <SportBadge slug={item.sportSlug} />
-                  <View style={{ flex: 1, gap: 4 }}>
-                    <AppText variant="bodyStrong">{item.title}</AppText>
-                    <AppText variant="caption" tone="muted">
+                  <View style={styles.pastCopy}>
+                    <AppText variant="label" tone="muted">
+                      {dayLabel(item.starts_at)} · {timeOfDay(item.starts_at)}
+                    </AppText>
+                    <AppText variant="heading" numberOfLines={2}>
+                      {item.title}
+                    </AppText>
+                    <AppText variant="caption" tone="muted" numberOfLines={1}>
                       {item.venueName}
                     </AppText>
-                    <AppText variant="caption" tone="muted">
-                      {weekdayName(item.starts_at)} · {timeOfDay(item.starts_at)}
-                    </AppText>
-                    <Chip
-                      compact
-                      label={item.cancelled_at ? 'Cancelled' : 'Played'}
-                      tone={item.cancelled_at ? 'alert' : 'neutral'}
-                    />
+                    {item.cancelled_at && (
+                      <View style={styles.tags}>
+                        <Tag label="Cancelled" tone="alert" />
+                      </View>
+                    )}
                   </View>
+                  <MaterialCommunityIcons name="chevron-right" size={22} color={colors.textFaint} />
                 </View>
               </PressableSurface>
             ))
           ) : (
             <EmptyState
-              icon="calendar-check-outline"
-              title="Your story starts here"
-              body="Completed sessions will appear here so you can revisit their conversations and memories."
+              title="Nothing played yet"
+              body="Sessions you joined stay here afterwards, with their chat and photos."
             />
           )
         ) : mine.length ? (
-          groups.map((group) => {
-            const items = mine.filter((item) => weekdayGroup(item.starts_at) === group.id);
-            if (!items.length) return null;
+          mine.map((item) => {
+            const response = responses.get(`${item.run_series_id}-${item.occurrence_date}`);
             return (
-              <View key={group.id} style={{ gap: space.md }}>
-                <AppText variant="heading" style={{ marginTop: space.sm }}>
-                  {group.title}
-                </AppText>
-                {items.map((item) => {
-                  const response = responses.get(`${item.run_series_id}-${item.occurrence_date}`);
-                  return (
-                    <SessionCard
-                      key={`${item.run_series_id}-${item.occurrence_date}`}
-                      compact
-                      item={item}
-                      response={response}
-                      hosting={item.organizer_id === session.user.id}
-                      pending={join.isPending}
-                      onRespond={(value) => void open(item, value)}
-                      onOpen={
-                        response?.session_id
-                          ? () => router.push(`/session/${response.session_id}`)
-                          : undefined
-                      }
-                    />
-                  );
-                })}
-              </View>
+              <SessionRow
+                key={`${item.run_series_id}-${item.occurrence_date}`}
+                item={item}
+                response={response}
+                hosting={item.organizer_id === session.user.id}
+                pending={join.isPending}
+                onRespond={(value) => void open(item, value)}
+                onOpen={
+                  response?.session_id
+                    ? () => router.push(`/session/${response.session_id}`)
+                    : undefined
+                }
+              />
             );
           })
         ) : (
           <EmptyState
-            icon="calendar-plus"
-            title="Room for a good game"
-            body="Discover a session and choose Going or Maybe to add it here. Sessions you host appear here too."
+            title="Nothing scheduled"
+            body="Join a session in Discover, or start one, and it appears here."
             action={
-              <Button
-                label="Discover sessions"
-                icon="arrow-right"
-                onPress={() => router.push('/feed')}
-              />
+              <Button label="Browse sessions" size="sm" onPress={() => router.push('/feed')} />
             }
           />
         )}
@@ -264,3 +209,30 @@ export function ScheduledScreen() {
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  top: {
+    paddingHorizontal: space.lg,
+    gap: space.md,
+    width: '100%',
+    maxWidth: 760,
+    alignSelf: 'center',
+  },
+  content: {
+    paddingHorizontal: space.lg,
+    paddingBottom: space.xxl,
+    width: '100%',
+    maxWidth: 760,
+    alignSelf: 'center',
+  },
+  skeletons: { gap: space.md, paddingTop: space.lg },
+  pastRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.md,
+    paddingVertical: space.lg,
+    borderBottomWidth: 1,
+  },
+  pastCopy: { flex: 1, gap: space.xs },
+  tags: { flexDirection: 'row', paddingTop: 2 },
+});
