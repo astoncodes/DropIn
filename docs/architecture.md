@@ -53,6 +53,43 @@ There is **no API path that grants admin** — no INSERT policy on `admin_users`
 including admins. Promotion requires a privileged connection (`npm run db:admin`), which is what
 makes escalation auditable.
 
+### Moderation
+
+Session posts and media are public, even signed out; chat is member-only. Players
+report content through `report_content()`, which records a snapshot of what the
+reporter could see and only admits chat messages the reporter could read.
+`content_reports` is readable by admins alone. `admin_resolve_reports()` removes
+or dismisses every open report on a target in one transaction and writes
+`admin_audit_log`; removed post media is then deleted through the Storage API by
+the admin client, which an admin-only storage policy allows.
+
+Blocks are rows in `user_blocks`, private to the blocker. The signed-in read
+policies on posts, media and messages exclude blocked authors through
+`is_blocked_by_viewer()`; the signed-out policies are separate and unchanged, so
+anonymous reads never touch `user_blocks`. Profiles, sessions and check-ins stay
+visible to blockers.
+
+---
+
+## Client conventions
+
+**Location is requested only where a screen needs a position.**
+`LocationAccessProvider` tracks permission and the live position app-wide
+without blocking anything; `RequiredLocation` gates the live map, session
+creation and venue submission. Sign-in, browsing, chat, Profile and account
+deletion work without location consent, and nothing falls back to a guessed
+location.
+
+**Errors shown to players go through `userMessage()`** (`apps/mobile/src/lib/errors.ts`).
+Business-rule messages raised by database functions (SQLSTATE 22023, 42501,
+P0001, P0002) pass through; RLS violations, constraint names, PostgREST and
+Auth internals become the caller's fallback text. App code throws
+`UserFacingError` for its own validation messages.
+
+**Policies and support pages are app routes** (`/privacy`, `/terms`, `/support`,
+`/delete-account`), so the app and the hosted web build serve one copy of each.
+Their owner-specific values live in `features/legal/legal-config.ts`.
+
 ---
 
 ## Venue data lifecycle

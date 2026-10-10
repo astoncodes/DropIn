@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { supabase } from '../../lib/supabase';
+import { OpenReportsSummary, ReportsPage } from '../moderation/reports-page';
 import { CandidatePanel } from './candidate-panel';
 import { VenuePanel } from './venue-panel';
 import { label, date, pages } from './console-shared';
@@ -195,11 +196,13 @@ export function AdminConsole() {
                 ? 'Review new locations and keep published places up to date.'
                 : page === 'Review queue'
                   ? 'Check the location and sports, then approve, link a duplicate, or reject.'
-                  : page === 'Venues'
-                    ? 'Keep published places accurate and useful.'
-                    : page === 'Audit history'
-                      ? 'A record of admin decisions and venue changes.'
-                      : 'Reference lists for the regions and sports available in Drop In.'}
+                  : page === 'Reports'
+                    ? 'Review reported posts, messages, sessions and names. Remove anything that breaks the community guidelines.'
+                    : page === 'Venues'
+                      ? 'Keep published places accurate and useful.'
+                      : page === 'Audit history'
+                        ? 'A record of admin decisions and venue changes.'
+                        : 'Reference lists for the regions and sports available in Drop In.'}
             </p>
           </div>
           <button
@@ -251,6 +254,7 @@ export function AdminConsole() {
                 </button>
               ))}
             </div>
+            <OpenReportsSummary onOpen={() => navigate('Reports')} />
             <section className="card wide">
               <div className="section-heading">
                 <div>
@@ -476,6 +480,7 @@ export function AdminConsole() {
             )}
           </section>
         )}
+        {page === 'Reports' && <ReportsPage onSaved={setNotice} />}
         {page === 'Regions & sports' && (
           <div className="reference-grid">
             <section className="card wide">
@@ -572,6 +577,7 @@ export function AdminConsole() {
 const pageSlugs: Record<Page, string> = {
   Overview: 'dashboard',
   'Review queue': 'approvals',
+  Reports: 'reports',
   Venues: 'locations',
   'Regions & sports': 'coverage',
   'Audit history': 'activity',
@@ -579,6 +585,7 @@ const pageSlugs: Record<Page, string> = {
 const pageTitles: Record<Page, string> = {
   Overview: 'Dashboard',
   'Review queue': 'Location approvals',
+  Reports: 'Reports',
   Venues: 'Locations',
   'Regions & sports': 'Regions & sports',
   'Audit history': 'Activity',

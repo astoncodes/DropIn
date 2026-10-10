@@ -1,6 +1,7 @@
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
 
 import { env } from '../../lib/env';
+import { UserFacingError } from '../../lib/errors';
 import { supabase } from '../../lib/supabase';
 
 let configured = false;
@@ -19,7 +20,7 @@ function ensureConfigured(): void {
  * Supabase session. Resolves with `null` if the user cancelled, so callers
  * can tell "cancelled" apart from "failed" without a thrown error.
  */
-export async function signInWithGoogle(): Promise<{ error: string | null }> {
+export async function signInWithGoogle(): Promise<{ error: Error | null }> {
   ensureConfigured();
   await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
 
@@ -28,9 +29,11 @@ export async function signInWithGoogle(): Promise<{ error: string | null }> {
 
   const idToken = response.data.idToken;
   if (!idToken) {
-    return { error: 'Google did not return a usable sign-in token. Try again.' };
+    return {
+      error: new UserFacingError('Google did not return a usable sign-in token. Try again.'),
+    };
   }
 
   const { error } = await supabase.auth.signInWithIdToken({ provider: 'google', token: idToken });
-  return { error: error?.message ?? null };
+  return { error };
 }

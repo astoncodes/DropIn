@@ -70,6 +70,10 @@ EXPO_PUBLIC_GEOAPIFY_API_KEY=YOUR_GEOAPIFY_KEY
 
 # Mapbox public token: native and web maps
 EXPO_PUBLIC_MAPBOX_ACCESS_TOKEN=YOUR_MAPBOX_PUBLIC_TOKEN
+
+# Support contact shown in the app, the privacy policy and the terms.
+# Optional locally; production builds refuse to start without it.
+EXPO_PUBLIC_SUPPORT_EMAIL=you@example.com
 ```
 
 The variable names still say `ANON_KEY`, but accept a Supabase publishable key.
@@ -261,6 +265,12 @@ tapping it centers the map and hides the button. The distance threshold ignores
 small GPS fluctuations. Verify panning, recentering, permission denial, and draggable
 meeting pins on a device with a configured Mapbox token.
 
+## Releasing
+
+[Releasing Drop In](docs/release.md) covers the account setup, EAS configuration,
+Supabase settings, public policy pages and store-listing answers needed to ship
+to the App Store and Google Play.
+
 ## Optional admin and maintenance tools
 
 To grant admin access, the user must first have an account. Set server-only
@@ -329,6 +339,7 @@ npm run test:supabase -- --project-ref=YOUR_PROJECT_REF
 | Search reports authentication/quota errors | Check the Geoapify key, its restrictions and project usage.                                                   |
 | Mapbox map is blank                        | Check the public Mapbox token, network access and native build; Expo Go is unsupported.                       |
 | Port is already in use                     | Use the existing server or stop it before restarting; alternate ports also need matching auth callbacks.      |
+| Production build is missing …              | Add the named values as EAS environment variables for production; see the release guide.                      |
 | Missing tables/functions on a new project  | Apply committed migrations to the intended hosted project, then regenerate types.                             |
 
 ## Repository layout
@@ -339,7 +350,7 @@ npm run test:supabase -- --project-ref=YOUR_PROJECT_REF
 - `packages/shared`: shared constants mirroring database rules.
 - `supabase/migrations`: schema source of truth.
 - `supabase/tests`: pgTAP checks and isolated-project fixtures.
-- `docs`: architecture, admin guide and UI documentation.
+- `docs`: architecture, admin guide, design system, database testing and release guide.
 
 See [open work](TODO.md), [architecture](docs/architecture.md), and
 [contributor instructions](CLAUDE.md) for further details.

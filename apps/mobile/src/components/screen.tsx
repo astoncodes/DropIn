@@ -1,11 +1,18 @@
 import type { ReactNode } from 'react';
-import { ScrollView, StyleSheet, Text } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { space as spacing, usePalette } from '../theme';
+import { AppText } from './ui/primitives';
 
-/** Standard page frame: safe-area aware, scrollable, themed. */
-export function Screen({ children }: { children: ReactNode }) {
+/**
+ * Standard page frame: safe-area aware, scrollable, themed.
+ *
+ * Pass `insetTop={false}` for a screen shown under a navigation header — the
+ * header already clears the status bar, and adding the inset again leaves a
+ * blank band above the content.
+ */
+export function Screen({ children, insetTop = true }: { children: ReactNode; insetTop?: boolean }) {
   const colors = usePalette();
   const insets = useSafeAreaInsets();
 
@@ -15,7 +22,10 @@ export function Screen({ children }: { children: ReactNode }) {
       style={{ backgroundColor: colors.background }}
       contentContainerStyle={[
         styles.content,
-        { paddingTop: insets.top + spacing.lg, paddingBottom: insets.bottom + spacing.lg },
+        {
+          paddingTop: (insetTop ? insets.top : 0) + spacing.lg,
+          paddingBottom: insets.bottom + spacing.lg,
+        },
       ]}
     >
       {children}
@@ -23,14 +33,18 @@ export function Screen({ children }: { children: ReactNode }) {
   );
 }
 
+/** The page heading for a Screen, announced as a header. */
 export function Title({ children }: { children: ReactNode }) {
-  const colors = usePalette();
-  return <Text style={[styles.title, { color: colors.text }]}>{children}</Text>;
+  return (
+    <View accessibilityRole="header">
+      <AppText variant="display">{children}</AppText>
+    </View>
+  );
 }
 
+/** Supporting copy under a Title. */
 export function Body({ children }: { children: ReactNode }) {
-  const colors = usePalette();
-  return <Text style={[styles.body, { color: colors.textMuted }]}>{children}</Text>;
+  return <AppText tone="muted">{children}</AppText>;
 }
 
 const styles = StyleSheet.create({
@@ -41,14 +55,5 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     flexGrow: 1,
     gap: spacing.md,
-  },
-  title: {
-    fontSize: 32,
-    letterSpacing: -1,
-    fontWeight: '700',
-  },
-  body: {
-    fontSize: 15,
-    lineHeight: 22,
   },
 });

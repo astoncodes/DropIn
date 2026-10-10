@@ -1,12 +1,12 @@
-import * as Location from 'expo-location';
-import { createContext, useContext, useEffect, useRef, useState } from 'react';
+import { createContext, useContext, useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
-import { ActivityIndicator, AppState, Linking, Platform, View } from 'react-native';
+import { ActivityIndicator, Linking, Platform, View } from 'react-native';
+
 import { Screen } from '../../components/screen';
 import { BrandMark } from '../../components/ui/brand';
 import { AppText, Button } from '../../components/ui/primitives';
 import { space, usePalette } from '../../theme';
-import { useDeviceLocation } from './use-device-location';
+import { useLocationAccess } from './location-access';
 import type { LocationState } from './use-device-location';
 
 type Coordinates = Extract<LocationState, { status: 'granted' }>['coords'];
@@ -18,94 +18,54 @@ export function useRequiredLocation() {
   return location;
 }
 
-export function RequiredLocation({ children }: { children: ReactNode }) {
-  const { state, request } = useDeviceLocation({ live: true });
+/**
+ * Gate for a screen that cannot work without a real device position.
+ *
+ * There is deliberately no fallback location: a map centred on a guessed city
+ * would show someone games they cannot reach. Until a fix arrives, the screen is
+ * replaced by an explanation and a way to grant access, plus an optional
+ * `alternative` that leads somewhere useful without location.
+ */
+export function RequiredLocation({
+  children,
+  reason = 'Drop In uses your location to show nearby venues and games.',
+  alternative,
+  insetTop = true,
+}: {
+  children: ReactNode;
+  /** One sentence on why this screen needs a position. */
+  reason?: string;
+  alternative?: ReactNode;
+  /** False when the gated screen sits under a navigation header. */
+  insetTop?: boolean;
+}) {
+  const { state, request } = useLocationAccess();
   const colors = usePalette();
-  const currentState = useRef(state);
-  useEffect(() => {
-    currentState.current = state;
-  }, [state]);
   const [settingsError, setSettingsError] = useState(false);
 
   useEffect(() => {
-    void request();
-    let disposed = false;
-    let checking = false;
-    let permission: PermissionStatus | undefined;
-    const checkPermission = async () => {
-      if (checking || currentState.current.status === 'requesting') return;
-      checking = true;
-      try {
-        const [access, services] = await Promise.all([
-          Location.getForegroundPermissionsAsync(),
-          Location.hasServicesEnabledAsync(),
-        ]);
-        if (disposed) return;
-        const wasGranted = currentState.current.status === 'granted';
-        if (
-          (wasGranted && (access.status !== 'granted' || !services)) ||
-          (!wasGranted && access.status === 'granted' && services)
-        )
-          await request();
-      } catch {
-        if (!disposed) await request();
-      } finally {
-        checking = false;
-      }
-    };
-    const listener = AppState.addEventListener('change', (next) => {
-      if (next === 'active') void checkPermission();
-    });
-    const timer = setInterval(() => {
-      // Polling exists to catch permission being granted while this screen is
-      // up. Once granted, it can only be revoked from outside the app, which
-      // always comes back through the AppState listener above or, on web, the
-      // permissions change event below — so stop making two native calls every
-      // five seconds for the remaining life of the app.
-      if (currentState.current.status === 'granted') return;
-      if (AppState.currentState === 'active' || AppState.currentState == null)
-        void checkPermission();
-    }, 5000);
-    if (Platform.OS === 'web' && typeof navigator !== 'undefined' && navigator.permissions) {
-      void navigator.permissions
-        .query({ name: 'geolocation' })
-        .then((result) => {
-          if (disposed) return;
-          permission = result;
-          permission.addEventListener('change', checkPermission);
-        })
-        .catch(() => {
-          /* The foreground check also supports browsers without this API. */
-        });
-    }
-    return () => {
-      disposed = true;
-      listener.remove();
-      clearInterval(timer);
-      permission?.removeEventListener('change', checkPermission);
-    };
-  }, [request]);
+    if (state.status === 'idle') void request();
+  }, [state.status, request]);
+
+  if (state.status === 'granted') {
+    return <RequiredLocationContext value={state.coords}>{children}</RequiredLocationContext>;
+  }
 
   const mustUseSettings = state.status === 'denied' && !state.canAskAgain;
   const openLocationSettings = () => {
     setSettingsError(false);
     void Linking.openSettings().catch(() => setSettingsError(true));
   };
-
-  if (state.status === 'granted') {
-    return <RequiredLocationContext value={state.coords}>{children}</RequiredLocationContext>;
-  }
   const loading = state.status === 'idle' || state.status === 'requesting';
   return (
-    <Screen>
+    <Screen insetTop={insetTop}>
       <View style={{ gap: space.lg, paddingVertical: space.xxl }}>
         <BrandMark size={40} />
         <AppText variant="display">
           {loading ? 'Finding your location' : 'Enable location to play'}
         </AppText>
         <AppText tone="muted">
-          Drop In needs your location to show nearby venues and games. Turn on location services and
-          allow access to continue.
+          {reason} Turn on location services and allow access to continue.
         </AppText>
         {loading ? (
           <ActivityIndicator color={colors.live} accessibilityLabel="Finding your location" />
@@ -140,6 +100,7 @@ export function RequiredLocation({ children }: { children: ReactNode }) {
                 Open your device settings and allow location for Drop In.
               </AppText>
             )}
+            {alternative}
           </>
         )}
       </View>

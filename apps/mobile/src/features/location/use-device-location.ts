@@ -2,6 +2,7 @@ import * as Location from 'expo-location';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AppState } from 'react-native';
 import { readDevicePosition } from './read-device-position';
+import { userMessage } from '../../lib/errors';
 
 export type LocationState =
   | { status: 'idle' }
@@ -14,8 +15,9 @@ export type LocationState =
   | { status: 'unavailable'; message: string };
 
 /**
- * Foreground location with explicit denied/unavailable outcomes. The root
- * RequiredLocation boundary requires a successful reading before opening the app.
+ * Foreground location with explicit denied/unavailable outcomes. The app-wide
+ * instance lives in LocationAccessProvider; RequiredLocation gates the screens
+ * that need a successful reading.
  */
 export function useDeviceLocation({ live = false }: { live?: boolean } = {}) {
   const [state, setState] = useState<LocationState>({ status: 'idle' });
@@ -99,7 +101,10 @@ export function useDeviceLocation({ live = false }: { live?: boolean } = {}) {
       // mode. None of these should look like a bug to the user.
       setState({
         status: 'unavailable',
-        message: error instanceof Error ? error.message : 'Location is unavailable right now.',
+        message: userMessage(
+          error,
+          'Location is unavailable right now. Check that location services are on.',
+        ),
       });
       return null;
     }

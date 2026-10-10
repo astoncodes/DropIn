@@ -2,13 +2,25 @@ import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { useVideoPlayer, VideoView } from 'expo-video';
+import { useState } from 'react';
 import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { EmptyState, Skeleton } from '../../components/ui/activity';
-import { AppText, Button, Chip, PressableSurface, sportIcon } from '../../components/ui/primitives';
+import { Avatar } from '../../components/ui/avatar';
+import {
+  AppText,
+  Button,
+  Chip,
+  IconButton,
+  PressableSurface,
+  sportIcon,
+} from '../../components/ui/primitives';
 import { relativeTime, timeOfDay, weekdayName } from '../../lib/format';
+import { useSession } from '../../providers/auth-context';
 import { elevation, radius, space, usePalette } from '../../theme';
+import { ModerationSheet } from '../moderation/moderation-sheet';
+import type { ModerationSubject } from '../moderation/api';
 import { useCommunityFeed } from './api';
 
 function ClipPlayer({ url }: { url: string }) {
@@ -24,7 +36,9 @@ export function MomentsFeed({ sessionId }: { sessionId?: string } = {}) {
   const colors = usePalette();
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const { session } = useSession();
   const feed = useCommunityFeed(undefined, sessionId);
+  const [moderationSubject, setModerationSubject] = useState<ModerationSubject | null>(null);
 
   return (
     <ScrollView
@@ -67,11 +81,7 @@ export function MomentsFeed({ sessionId }: { sessionId?: string } = {}) {
                 ]}
               >
                 <View style={styles.authorRow}>
-                  <View style={[styles.avatar, { backgroundColor: colors.liveSoft }]}>
-                    <AppText variant="bodyStrong" tone="live">
-                      {post.authorName.slice(0, 1).toUpperCase()}
-                    </AppText>
-                  </View>
+                  <Avatar name={post.authorName} />
                   <View style={{ flex: 1 }}>
                     <AppText variant="bodyStrong">{post.authorName}</AppText>
                     <AppText variant="caption" tone="muted">
@@ -79,6 +89,20 @@ export function MomentsFeed({ sessionId }: { sessionId?: string } = {}) {
                     </AppText>
                   </View>
                   <Chip label={post.sportName} icon={sportIcon(post.sportSlug)} compact />
+                  {post.author_id !== session?.user.id && (
+                    <IconButton
+                      icon="dots-horizontal"
+                      label={`Report or block ${post.authorName}`}
+                      onPress={() =>
+                        setModerationSubject({
+                          kind: 'session_post',
+                          id: post.id,
+                          authorId: post.author_id,
+                          authorName: post.authorName,
+                        })
+                      }
+                    />
+                  )}
                 </View>
 
                 {firstMedia && (
@@ -132,6 +156,7 @@ export function MomentsFeed({ sessionId }: { sessionId?: string } = {}) {
           />
         </View>
       )}
+      <ModerationSheet subject={moderationSubject} onClose={() => setModerationSubject(null)} />
     </ScrollView>
   );
 }
@@ -141,13 +166,6 @@ const styles = StyleSheet.create({
   list: { paddingHorizontal: space.md, gap: space.lg },
   card: { borderRadius: radius.xl, borderWidth: StyleSheet.hairlineWidth, overflow: 'hidden' },
   authorRow: { flexDirection: 'row', alignItems: 'center', gap: space.sm, padding: space.md },
-  avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   mediaFrame: { height: 270, backgroundColor: '#D9E1DA' },
   copy: { padding: space.md, gap: space.md },
   sessionCard: {

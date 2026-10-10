@@ -7,6 +7,7 @@ import {
   relativeTime,
   remainingTime,
   timeOfDay,
+  tomorrowDate,
   weekdayGroup,
   weekdayName,
 } from '../src/lib/format';
@@ -160,5 +161,15 @@ describe('activitySummary', () => {
       label: 'Quiet',
       tone: 'quiet',
     });
+  });
+});
+
+describe('tomorrowDate', () => {
+  it('uses the local calendar and pads month and day', () => {
+    expect(tomorrowDate(new Date(2026, 8, 26, 23, 30))).toBe('2026-09-27');
+  });
+
+  it('rolls over months and years', () => {
+    expect(tomorrowDate(new Date(2026, 11, 31, 9, 0))).toBe('2027-01-01');
   });
 });

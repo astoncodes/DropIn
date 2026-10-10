@@ -3,6 +3,43 @@
 Open work only. Anything listed here is genuinely unbuilt or unverified — if it
 is done, delete the entry rather than leaving a ticked box behind.
 
+## Verify moderation with real accounts
+
+`20260926120000_content_moderation.sql` is applied to the test and app projects
+(`npm run db:test` passes; `npm run db:types` is unchanged).
+
+- [ ] Report, block and remove content end to end with real accounts,
+      including deleting a removed post's files from Storage.
+
+## Store release
+
+Account and configuration work is listed step by step in
+[docs/release.md](docs/release.md).
+
+- [ ] Apple Developer Program and Google Play Console accounts; start the Play
+      closed test early if the account is a new personal one.
+- [ ] `eas init`, then commit `owner` and `extra.eas.projectId` in `app.config.ts`.
+- [ ] EAS production environment variables, custom SMTP, provider settings,
+      the Android OAuth client with signing-key SHA-1s, and a published Google
+      consent screen.
+- [ ] Host the web build so `/privacy`, `/terms`, `/support` and
+      `/delete-account` are public; set `EXPO_PUBLIC_SITE_URL`.
+- [ ] Confirm the choices in `features/legal/legal-config.ts`: minimum age 16,
+      Prince Edward Island governing law, 24-hour report review, operator name.
+
+## Moderation gaps
+
+- [ ] **Sign in with Apple token revocation.** Apple asks apps to revoke a
+      deleted account's Apple tokens through its REST API. `delete-account`
+      does not; it needs the authorization code from a fresh Apple sign-in and
+      the Sign in with Apple key as function secrets.
+- [ ] **Check-in notes are not reportable.** They are visible to signed-in
+      players while a check-in is active, but `report_target` has no kind for
+      them.
+- [ ] **No automatic filtering.** Reports and blocks act after content is
+      posted. Decide whether names, titles and captions need a blocked-term
+      check at write time.
+
 ## Run database tests in CI
 
 - [ ] Add `SUPABASE_TEST_PROJECT_REF`, `SUPABASE_TEST_DB_URL`, and `SUPABASE_ACCESS_TOKEN` to a GitHub

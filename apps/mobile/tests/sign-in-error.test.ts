@@ -182,3 +182,30 @@ describe('isCancellation', () => {
     expect(isCancellation(new Error('subscription cancellation is not supported'))).toBe(false);
   });
 });
+
+describe('describeSignInFailure with Supabase Auth failures', () => {
+  // Supabase returns these from signInWithOtp / signInWithIdToken. Their raw
+  // text names internals ("Passed nonce and nonce in id_token…"), so only a
+  // recognised code may produce anything other than the fallback.
+  const authError = (code: string, status: number, message: string) =>
+    Object.assign(new Error(message), { name: 'AuthApiError', code, status, __isAuthError: true });
+
+  it('tells people to wait when magic links are rate limited', () => {
+    expect(
+      describeSignInFailure(
+        authError('over_email_send_rate_limit', 429, 'email rate limit exceeded'),
+      ),
+    ).toMatch(/wait/i);
+  });
+
+  it('never shows the raw text of an unrecognised Auth failure', () => {
+    const message = describeSignInFailure(
+      authError(
+        'bad_oauth_callback',
+        400,
+        'Passed nonce and nonce in id_token should either both exist or not.',
+      ),
+    );
+    expect(message).toBe(SIGN_IN_FALLBACK_MESSAGE);
+  });
+});

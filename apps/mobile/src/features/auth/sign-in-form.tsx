@@ -1,8 +1,10 @@
 import * as AppleAuthentication from 'expo-apple-authentication';
 import { useEffect, useRef, useState } from 'react';
-import { Platform, StyleSheet, TextInput, View } from 'react-native';
+import { Platform, StyleSheet, View } from 'react-native';
 
+import { Notice } from '../../components/ui/notice';
 import { AppText, Button } from '../../components/ui/primitives';
+import { TextField } from '../../components/ui/text-field';
 import { supabase } from '../../lib/supabase';
 import { radius, space, useIsDark, usePalette } from '../../theme';
 import { signInWithApple } from './apple-sign-in';
@@ -32,7 +34,7 @@ export function SignInForm() {
   /** Shared by email, Apple, and Google — only one sign-in attempt at a time. */
   async function runSignIn(
     method: SignInMethod,
-    action: () => Promise<{ error: string | null }>,
+    action: () => Promise<{ error: Error | null }>,
     onSuccess: () => void,
   ) {
     if (sending.current) return;
@@ -41,8 +43,9 @@ export function SignInForm() {
     setStatus({ kind: 'idle' });
     try {
       const { error } = await action();
-      if (error) setStatus({ kind: 'error', message: error });
-      else onSuccess();
+      if (!error) return onSuccess();
+      logSignInFailure(method, error);
+      setStatus({ kind: 'error', message: describeSignInFailure(error) });
     } catch (cause) {
       // Backing out of a provider sheet is not a failure and gets no message.
       if (isCancellation(cause)) {
@@ -74,7 +77,7 @@ export function SignInForm() {
             email: normalized,
             options: { emailRedirectTo: authRedirectUrl(), shouldCreateUser: true },
           })
-          .then(({ error }) => ({ error: error?.message ?? null })),
+          .then(({ error }) => ({ error })),
       () => setStatus({ kind: 'sent', email: normalized }),
     );
   }
@@ -104,8 +107,9 @@ export function SignInForm() {
 
   return (
     <View style={{ gap: space.md }}>
-      <AppText variant="bodyStrong">Your email address</AppText>
-      <TextInput
+      <TextField
+        label="Your email address"
+        accessibilityLabel="Email address"
         value={email}
         editable={activeMethod === null}
         onChangeText={setEmail}
@@ -116,14 +120,8 @@ export function SignInForm() {
         keyboardType="email-address"
         returnKeyType="send"
         placeholder="you@example.com"
-        placeholderTextColor={colors.textFaint}
-        accessibilityLabel="Email address"
-        style={[
-          styles.input,
-          { color: colors.text, backgroundColor: colors.surface, borderColor: colors.border },
-        ]}
       />
-      {status.kind === 'error' && <AppText tone="alert">{status.message}</AppText>}
+      {status.kind === 'error' && <Notice tone="error" message={status.message} />}
       <Button
         label="Continue with email"
         icon="email-fast-outline"
@@ -170,13 +168,6 @@ export function SignInForm() {
 }
 
 const styles = StyleSheet.create({
-  input: {
-    minHeight: 52,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: radius.lg,
-    paddingHorizontal: space.lg,
-    fontSize: 16,
-  },
   card: {
     borderWidth: StyleSheet.hairlineWidth,
     borderRadius: radius.xl,

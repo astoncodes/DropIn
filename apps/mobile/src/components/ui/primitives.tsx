@@ -2,7 +2,7 @@ import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { useState } from 'react';
 import type { ReactNode } from 'react';
 import { ActivityIndicator, Animated, Pressable, StyleSheet, Text, View } from 'react-native';
-import type { StyleProp, TextStyle, ViewStyle } from 'react-native';
+import type { Insets, StyleProp, TextStyle, ViewStyle } from 'react-native';
 
 import { useReduceMotion } from '../../lib/accessibility';
 import { motion, radius, space, sportColor, typeScale, usePalette } from '../../theme';
@@ -42,12 +42,17 @@ export function AppText({
   tone = 'default',
   style,
   numberOfLines,
+  onPress,
+  accessibilityRole,
 }: {
   children: ReactNode;
   variant?: TypeVariant;
   tone?: TextTone;
   style?: StyleProp<TextStyle>;
   numberOfLines?: number;
+  /** For an inline link inside running text; pair with accessibilityRole="link". */
+  onPress?: () => void;
+  accessibilityRole?: 'link';
 }) {
   const colors = usePalette();
   const toneColor: Record<TextTone, string> = {
@@ -63,6 +68,8 @@ export function AppText({
   return (
     <Text
       numberOfLines={numberOfLines}
+      onPress={onPress}
+      accessibilityRole={accessibilityRole}
       // Respects the OS text-size setting rather than locking the layout to
       // one font size, but capped so a card cannot grow past its container.
       maxFontSizeMultiplier={1.6}
@@ -107,18 +114,23 @@ function usePressFeedback() {
 export function PressableSurface({
   children,
   onPress,
+  onLongPress,
   style,
   disabled,
   selected,
+  hitSlop,
   accessibilityLabel,
   accessibilityHint,
   accessibilityRole = 'button',
 }: {
   children: ReactNode;
   onPress?: () => void;
+  /** Secondary actions for touch; always offer the same actions another way too. */
+  onLongPress?: () => void;
   style?: StyleProp<ViewStyle>;
   disabled?: boolean;
   selected?: boolean;
+  hitSlop?: Insets;
   accessibilityLabel?: string;
   accessibilityHint?: string;
   accessibilityRole?: 'button' | 'link' | 'tab';
@@ -128,6 +140,8 @@ export function PressableSurface({
   return (
     <Pressable
       onPress={onPress}
+      onLongPress={onLongPress}
+      hitSlop={hitSlop}
       onPressIn={onPressIn}
       onPressOut={onPressOut}
       disabled={disabled}
@@ -170,7 +184,8 @@ export function Button({
   onPress?: () => void;
   icon?: IconName;
   tone?: ButtonTone;
-  variant?: 'solid' | 'soft' | 'outline';
+  /** `ghost` is for tertiary actions beside a primary one, such as Cancel. */
+  variant?: 'solid' | 'soft' | 'outline' | 'ghost';
   size?: 'sm' | 'md' | 'lg';
   disabled?: boolean;
   loading?: boolean;
@@ -198,7 +213,9 @@ export function Button({
           : '#FFFFFF'
       : variant === 'soft'
         ? toneMap.text
-        : colors.text;
+        : variant === 'ghost' && tone === 'alert'
+          ? colors.alert
+          : colors.text;
 
   return (
     <PressableSurface

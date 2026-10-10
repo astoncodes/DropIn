@@ -111,16 +111,21 @@ export const space = {
   xxxl: 48,
 } as const;
 
+/**
+ * Corners soften without turning every surface into a pill: controls use md,
+ * cards and grouped lists lg, and only floating panels (sheets, dialogs) xl.
+ */
 export const radius = {
-  sm: 10,
-  md: 14,
-  lg: 18,
-  xl: 24,
+  sm: 8,
+  md: 12,
+  lg: 16,
+  xl: 20,
   pill: 999,
 } as const;
 
 export const typeScale = {
-  display: { fontSize: 36, lineHeight: 41, fontWeight: '800' as const, letterSpacing: -1.3 },
+  /** Page titles. Matches the platform large-title size so tabs feel native. */
+  display: { fontSize: 34, lineHeight: 40, fontWeight: '800' as const, letterSpacing: -1 },
   title: { fontSize: 28, lineHeight: 34, fontWeight: '700' as const, letterSpacing: -0.8 },
   heading: { fontSize: 18, lineHeight: 24, fontWeight: '700' as const, letterSpacing: -0.2 },
   body: { fontSize: 15, lineHeight: 21, fontWeight: '400' as const },

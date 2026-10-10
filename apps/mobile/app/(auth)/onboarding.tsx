@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
 
-import { Body, Screen, Title } from '../../src/components/screen';
+import { Body, Screen } from '../../src/components/screen';
 import { Button } from '../../src/components/ui/primitives';
 import { ProfileForm } from '../../src/features/account/profile-form';
 import { useSession } from '../../src/providers/auth-context';
@@ -10,8 +10,7 @@ export default function OnboardingScreen() {
   const { session, isLoading } = useSession();
 
   return (
-    <Screen>
-      <Title>Pick your sports</Title>
+    <Screen insetTop={false}>
       <Body>What you choose here becomes your default filter on the map.</Body>
       {!isLoading && !session && (
         <Button label="Sign in to continue" onPress={() => router.replace('/sign-in')} />

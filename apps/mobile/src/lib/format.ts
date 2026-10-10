@@ -147,3 +147,11 @@ export function timeOfDay(iso: string): string {
 export function weekdayName(iso: string): string {
   return new Date(iso).toLocaleDateString(undefined, { weekday: 'long' });
 }
+
+/** Tomorrow's date on the device's calendar as YYYY-MM-DD, for date-field examples. */
+export function tomorrowDate(now = new Date()): string {
+  const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+  const month = String(tomorrow.getMonth() + 1).padStart(2, '0');
+  const day = String(tomorrow.getDate()).padStart(2, '0');
+  return `${tomorrow.getFullYear()}-${month}-${day}`;
+}

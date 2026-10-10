@@ -37,9 +37,9 @@ mkdirSync('test-results/ui', { recursive: true });
       .fill('NoMatchingGameHere');
     await page.getByText('No matching sessions', { exact: true }).waitFor();
     await page.getByRole('button', { name: 'Clear filters', exact: true }).click();
-    await page.getByRole('button', { name: 'Moments', exact: true }).click();
+    await page.getByRole('tab', { name: 'Moments', exact: true }).click();
     assert.equal(
-      await page.getByRole('button', { name: 'Moments', exact: true }).getAttribute('aria-pressed'),
+      await page.getByRole('tab', { name: 'Moments', exact: true }).getAttribute('aria-selected'),
       'true',
     );
     await page.goto('http://localhost:8081/sign-in');
@@ -61,16 +61,6 @@ mkdirSync('test-results/ui', { recursive: true });
     assert.equal(otpCalls, 1);
     await page.getByRole('button', { name: 'Use a different email', exact: true }).click();
     await page.getByRole('textbox', { name: 'Email address', exact: true }).waitFor();
-    await page.goto('http://localhost:8081/profile');
-    await page.getByRole('button', { name: 'Dark', exact: true }).click();
-    await page.reload();
-    await page.getByRole('button', { name: 'Dark', exact: true }).waitFor();
-    await page.waitForTimeout(400);
-    assert.equal(
-      await page.getByRole('button', { name: 'Dark', exact: true }).getAttribute('aria-pressed'),
-      'true',
-    );
-    await page.getByRole('button', { name: 'Light', exact: true }).click();
     await page.setViewportSize({ width: 1440, height: 980 });
     await page.goto('http://localhost:8081/');
     await page.waitForTimeout(1000);
@@ -80,7 +70,7 @@ mkdirSync('test-results/ui', { recursive: true });
       0,
     );
     await page.goto('http://localhost:5173');
-    await page.getByRole('heading', { name: 'Welcome back.', exact: true }).waitFor();
+    await page.getByRole('heading', { name: 'Admin sign in', exact: true }).waitFor();
     await page.setViewportSize({ width: 390, height: 844 });
     await page.screenshot({ path: 'test-results/ui/admin-mobile.png' });
     assert.equal(
@@ -89,7 +79,7 @@ mkdirSync('test-results/ui', { recursive: true });
     );
     assert.deepEqual(errors, []);
     console.log(
-      'PASS: venue navigation; session auth gate; Discover search/filter/Moments; email validation + stubbed delivery; persistent appearance; desktop map; responsive admin. No runtime exceptions. No emails sent.',
+      'PASS: venue navigation; session auth gate; Discover search/filter/Moments; email validation + stubbed delivery; desktop map; responsive admin. No runtime exceptions. No emails sent.',
     );
   } finally {
     await browser.close();

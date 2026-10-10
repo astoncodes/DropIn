@@ -13,10 +13,15 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import VenueMap from '../../components/map/venue-map';
 import { EmptyState, Skeleton } from '../../components/ui/activity';
+import { ConfirmDialog } from '../../components/ui/dialog';
+import { Notice } from '../../components/ui/notice';
 import { AppText, Button, Chip, IconButton } from '../../components/ui/primitives';
-import { relativeTime, timeOfDay, weekdayName } from '../../lib/format';
+import { SegmentedControl } from '../../components/ui/segmented-control';
+import { timeOfDay, weekdayName } from '../../lib/format';
 import { useSession } from '../../providers/auth-context';
 import { radius, space, usePalette, useThemeName } from '../../theme';
+import { ModerationSheet } from '../moderation/moderation-sheet';
+import type { ModerationSubject } from '../moderation/api';
 import {
   useJoinSession,
   useRunAttendance,
@@ -29,12 +34,35 @@ import {
 import { SessionPhotoComposer } from './session-photo-composer';
 import { MomentsFeed } from './feed-screen';
 import { SessionEditForm } from './session-edit-form';
+import { SessionMessageList } from './session-chat';
+import { userMessage } from '../../lib/errors';
+
+type SessionTab = 'details' | 'chat' | 'photos';
+
+const TABS = [
+  { value: 'details', label: 'Details', icon: 'information-outline' },
+  { value: 'chat', label: 'Chat', icon: 'chat-outline' },
+  { value: 'photos', label: 'Photos', icon: 'image-outline' },
+] as const;
+
+const CONFIRM_COPY = {
+  cancel: {
+    title: 'Cancel this session?',
+    message:
+      'It is cancelled for everyone who joined. Other weeks stay scheduled. This cannot be undone.',
+    confirm: 'Cancel session',
+  },
+  leave: {
+    title: 'Leave this session?',
+    message: 'You will lose access to the chat. Your existing messages and posts stay.',
+    confirm: 'Leave session',
+  },
+} as const;
 
 export function SessionScreen() {
   const { sessionId, tab } = useLocalSearchParams<{ sessionId: string; tab?: string }>();
-  const [activeTab, setActiveTab] = useState<'details' | 'chat' | 'photos'>(
-    tab === 'chat' ? 'chat' : 'details',
-  );
+  const [activeTab, setActiveTab] = useState<SessionTab>(tab === 'chat' ? 'chat' : 'details');
+  const [moderationSubject, setModerationSubject] = useState<ModerationSubject | null>(null);
   const colors = usePalette();
   const scheme = useThemeName();
   const insets = useSafeAreaInsets();
@@ -64,9 +92,10 @@ export function SessionScreen() {
   const controls = useSessionControls(sessionId);
   const [editing, setEditing] = useState(false);
   const [confirmAction, setConfirmAction] = useState<'cancel' | 'leave' | null>(null);
+  const [confirmError, setConfirmError] = useState<string | null>(null);
   const [actionError, setActionError] = useState('');
   async function confirmControl() {
-    setActionError('');
+    setConfirmError(null);
     try {
       if (confirmAction === 'cancel') await controls.cancel.mutateAsync();
       else if (confirmAction === 'leave') {
@@ -75,19 +104,12 @@ export function SessionScreen() {
       }
       setConfirmAction(null);
     } catch (error) {
-      setActionError(
-        error instanceof Error
-          ? error.message
-          : ((error as { message?: string })?.message ?? 'Please try again.'),
-      );
+      setConfirmError(userMessage(error, 'Could not update this session. Please try again.'));
     }
   }
 
   function reportError(error: unknown) {
-    setActionError(
-      (error as { message?: string })?.message ??
-        'Could not complete that action. Please try again.',
-    );
+    setActionError(userMessage(error, 'Could not complete that action. Please try again.'));
   }
 
   async function handleJoin(attendance: 'going' | 'maybe') {
@@ -167,11 +189,27 @@ export function SessionScreen() {
         }}
       >
         <View style={styles.header}>
-          <IconButton
-            icon="arrow-left"
-            label="Go back"
-            onPress={() => (router.canGoBack() ? router.back() : router.replace('/feed'))}
-          />
+          <View style={styles.headerBar}>
+            <IconButton
+              icon="arrow-left"
+              label="Go back"
+              onPress={() => (router.canGoBack() ? router.back() : router.replace('/feed'))}
+            />
+            {item.organizerId && !item.isOrganizer && (
+              <IconButton
+                icon="dots-horizontal"
+                label="Report or block"
+                onPress={() =>
+                  setModerationSubject({
+                    kind: 'run_session',
+                    id: item.id,
+                    authorId: item.organizerId!,
+                    authorName: item.organizerName,
+                  })
+                }
+              />
+            )}
+          </View>
           <Chip label={item.sportName} compact />
           <AppText variant={activeTab === 'details' ? 'display' : 'heading'}>{item.title}</AppText>
           <AppText variant="body" tone="muted">
@@ -188,56 +226,48 @@ export function SessionScreen() {
           </View>
         </View>
 
-        <View
-          style={{
-            flexDirection: 'row',
-            paddingHorizontal: space.lg,
-            paddingTop: space.lg,
-            gap: space.sm,
-          }}
-        >
-          <Chip
-            label="Details"
-            selected={activeTab === 'details'}
-            onPress={() => setActiveTab('details')}
-          />
-          <Chip label="Chat" selected={activeTab === 'chat'} onPress={() => setActiveTab('chat')} />
-          <Chip
-            label="Photos"
-            selected={activeTab === 'photos'}
-            onPress={() => setActiveTab('photos')}
+        <View style={styles.tabs}>
+          <SegmentedControl
+            segments={TABS}
+            value={activeTab}
+            onChange={setActiveTab}
+            accessibilityLabel="Session sections"
           />
         </View>
         {!!actionError && (
-          <View accessibilityRole="alert" style={{ padding: space.lg }}>
-            <AppText tone="alert">{actionError}</AppText>
+          <View style={styles.notice}>
+            <Notice tone="error" message={actionError} />
           </View>
         )}
         {activeTab === 'details' && (
           <View>
             {cancelled && (
-              <View style={styles.joinBlock}>
-                <AppText variant="heading">Session cancelled</AppText>
-                <AppText variant="body" tone="muted">
-                  This session is no longer happening. Existing chat and posts are kept for
-                  reference.
-                </AppText>
+              <View style={styles.notice}>
+                <Notice
+                  tone="warning"
+                  title="Session cancelled"
+                  message="This session is no longer happening. Its chat and posts are kept for reference."
+                />
               </View>
             )}
 
             {!cancelled && !ended && item.isMember && (
-              <View style={styles.tools}>
-                <Button
-                  label={item.attendance === 'going' ? 'Going ✓' : 'Going +1'}
-                  onPress={() => handleJoin('going')}
-                  disabled={join.isPending}
-                />
-                <Button
-                  label={item.attendance === 'maybe' ? 'Maybe ✓' : 'Maybe'}
-                  tone="neutral"
-                  onPress={() => handleJoin('maybe')}
-                  disabled={join.isPending}
-                />
+              <View style={styles.attendance} accessibilityLabel="Your attendance">
+                {(['going', 'maybe'] as const).map((response) => {
+                  const selected = item.attendance === response;
+                  return (
+                    <Button
+                      key={response}
+                      label={response === 'going' ? 'Going' : 'Maybe'}
+                      icon={selected ? 'check' : undefined}
+                      tone={selected ? 'live' : 'neutral'}
+                      variant={selected ? 'solid' : 'outline'}
+                      onPress={() => handleJoin(response)}
+                      disabled={join.isPending}
+                      style={{ flex: 1 }}
+                    />
+                  );
+                })}
               </View>
             )}
             <View style={{ padding: space.lg, gap: space.sm }}>
@@ -264,8 +294,8 @@ export function SessionScreen() {
                     disabled={busy}
                     onPress={() => {
                       setConfirmAction('cancel');
+                      setConfirmError(null);
                       setEditing(false);
-                      setActionError('');
                     }}
                   />
                 </>
@@ -279,37 +309,9 @@ export function SessionScreen() {
                   disabled={busy}
                   onPress={() => {
                     setConfirmAction('leave');
-                    setActionError('');
+                    setConfirmError(null);
                   }}
                 />
-              )}
-              {confirmAction && (
-                <>
-                  <AppText variant="body">
-                    {confirmAction === 'cancel'
-                      ? 'Cancel this occurrence for everyone? Other weeks stay scheduled. This cannot be undone.'
-                      : 'Leave this session? You will lose chat access. Your existing messages and posts will remain.'}
-                  </AppText>
-                  {actionError ? (
-                    <View accessibilityRole="alert">
-                      <AppText variant="body">{actionError}</AppText>
-                    </View>
-                  ) : null}
-                  <Button
-                    label={
-                      confirmAction === 'cancel' ? 'Yes, cancel session' : 'Yes, leave session'
-                    }
-                    loading={busy}
-                    onPress={() => void confirmControl()}
-                  />
-                  <Button
-                    label="Keep session"
-                    tone="neutral"
-                    variant="soft"
-                    disabled={busy}
-                    onPress={() => setConfirmAction(null)}
-                  />
-                </>
               )}
             </View>
             {editing && item.isOrganizer && !cancelled && (
@@ -399,47 +401,18 @@ export function SessionScreen() {
             {activeTab === 'photos' && <MomentsFeed sessionId={sessionId} />}
             {activeTab === 'chat' && (
               <View style={styles.messages}>
-                <AppText variant="heading">Session chat</AppText>
-                {messages.isError ? (
-                  <EmptyState
-                    icon="alert-circle-outline"
-                    title="Couldn’t load chat"
-                    body={messages.error.message}
-                    action={<Button label="Try again" onPress={() => void messages.refetch()} />}
-                  />
-                ) : messages.isPending ? (
-                  <Skeleton height={180} />
-                ) : messages.data?.length ? (
-                  messages.data.map((message) => {
-                    const mine = message.user_id === session?.user.id;
-                    return (
-                      <View
-                        key={message.id}
-                        style={[styles.messageRow, mine && { alignItems: 'flex-end' }]}
-                      >
-                        <AppText variant="micro" tone="muted">
-                          {mine ? 'You' : message.authorName} · {relativeTime(message.created_at)}
-                        </AppText>
-                        <View
-                          style={[
-                            styles.bubble,
-                            { backgroundColor: mine ? colors.live : colors.surfaceMuted },
-                          ]}
-                        >
-                          <AppText variant="body" tone={mine ? 'inverse' : 'default'}>
-                            {message.body}
-                          </AppText>
-                        </View>
-                      </View>
-                    );
-                  })
-                ) : (
-                  <EmptyState
-                    icon="message-outline"
-                    title="Start the conversation"
-                    body="Ask what to bring or where everyone is meeting."
-                  />
-                )}
+                <SessionMessageList
+                  messages={messages}
+                  viewerId={session?.user.id}
+                  onModerate={(message) =>
+                    setModerationSubject({
+                      kind: 'session_message',
+                      id: message.id,
+                      authorId: message.user_id,
+                      authorName: message.authorName,
+                    })
+                  }
+                />
               </View>
             )}
           </>
@@ -478,6 +451,18 @@ export function SessionScreen() {
           />
         </View>
       )}
+      <ConfirmDialog
+        visible={confirmAction !== null}
+        title={confirmAction ? CONFIRM_COPY[confirmAction].title : ''}
+        message={confirmAction ? CONFIRM_COPY[confirmAction].message : undefined}
+        confirmLabel={confirmAction ? CONFIRM_COPY[confirmAction].confirm : ''}
+        cancelLabel="Keep session"
+        busy={busy}
+        error={confirmError}
+        onConfirm={() => void confirmControl()}
+        onCancel={() => setConfirmAction(null)}
+      />
+      <ModerationSheet subject={moderationSubject} onClose={() => setModerationSubject(null)} />
     </KeyboardAvoidingView>
   );
 }
@@ -485,16 +470,18 @@ export function SessionScreen() {
 const styles = StyleSheet.create({
   loading: { flex: 1, padding: space.lg, gap: space.md },
   header: { paddingHorizontal: space.lg, gap: space.sm },
+  headerBar: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  tabs: { paddingHorizontal: space.lg, paddingTop: space.lg },
+  notice: { paddingHorizontal: space.lg, paddingTop: space.lg },
+  attendance: {
+    flexDirection: 'row',
+    gap: space.sm,
+    paddingHorizontal: space.lg,
+    paddingTop: space.lg,
+  },
   joinBlock: { padding: space.lg, gap: space.lg },
   tools: { paddingHorizontal: space.lg, paddingVertical: space.lg, gap: space.sm },
-  messages: { paddingHorizontal: space.lg, gap: space.lg },
-  messageRow: { gap: 4, alignItems: 'flex-start' },
-  bubble: {
-    maxWidth: '84%',
-    paddingHorizontal: space.md,
-    paddingVertical: 10,
-    borderRadius: radius.lg,
-  },
+  messages: { paddingHorizontal: space.lg, paddingTop: space.lg, gap: space.md },
   composer: {
     position: 'absolute',
     bottom: 0,

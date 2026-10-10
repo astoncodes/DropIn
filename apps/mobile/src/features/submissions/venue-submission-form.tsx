@@ -3,20 +3,14 @@ import type { IndoorState } from '@dropin/shared';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { useRouter } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import {
-  ActivityIndicator,
-  Linking,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { ActivityIndicator, Linking, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import VenueMap from '../../components/map/venue-map';
 import type { MapCoordinate, MapRegion } from '../../components/map/types';
+import { Notice } from '../../components/ui/notice';
 import { AppText, Button, Chip, PressableSurface, sportIcon } from '../../components/ui/primitives';
+import { TextField } from '../../components/ui/text-field';
 import { searchPlaces } from '../geocoding/geoapify';
 import type { GeocodingResult } from '../geocoding/geoapify';
 import { useNearbyVenues, useSports } from '../venues/api';
@@ -26,6 +20,7 @@ import type { IconName } from '../../components/ui/primitives';
 import { useSubmitVenue } from './api';
 import { useDeviceLocation } from '../location/use-device-location';
 import { useRequiredLocation } from '../location/required-location';
+import { userMessage } from '../../lib/errors';
 
 export function VenueSubmissionForm() {
   const initialLocation = useRequiredLocation();
@@ -112,7 +107,8 @@ export function VenueSubmissionForm() {
       setSearchResults(results);
       if (results.length === 0) setSearchError('No matching places found. Try a broader search.');
     } catch (error) {
-      if ((error as Error).name !== 'AbortError') setSearchError((error as Error).message);
+      if ((error as Error).name !== 'AbortError')
+        setSearchError(userMessage(error, 'Place search is unavailable right now.'));
     } finally {
       if (searchController.current === controller) setIsSearching(false);
     }
@@ -194,12 +190,10 @@ export function VenueSubmissionForm() {
         gap: space.lg,
       }}
     >
-      <View style={{ gap: space.xs }}>
-        <AppText variant="display">Add a venue</AppText>
-        <AppText variant="body" tone="muted">
-          Search for a place or use your location, then adjust the pin to the exact spot.
-        </AppText>
-      </View>
+      <AppText variant="body" tone="muted">
+        Search for a place or use your location, then adjust the pin to the exact spot. A moderator
+        reviews every venue before it appears for other players.
+      </AppText>
 
       <Button
         label="Use my location"
@@ -208,28 +202,29 @@ export function VenueSubmissionForm() {
         loading={locationState.status === 'requesting'}
       />
       {locationState.status === 'denied' && (
-        <AppText tone="alert">Enable location services and allow access to continue.</AppText>
+        <Notice
+          tone="warning"
+          message="Enable location services and allow access to use your location."
+        />
       )}
       {locationState.status === 'unavailable' && (
-        <AppText tone="alert">
-          Could not find your location. Try again, search for a place or tap the map.
-        </AppText>
+        <Notice
+          tone="warning"
+          message="Could not find your location. Try again, search for a place or tap the map."
+        />
       )}
 
       <View style={styles.searchRow}>
-        <TextInput
+        <TextField
+          label="Address or place"
+          labelHidden
+          containerStyle={{ flex: 1 }}
           value={query}
           onChangeText={setQuery}
           onSubmitEditing={handleSearch}
-          placeholder="Address or place in Canada"
-          placeholderTextColor={colors.textFaint}
+          placeholder="Address or place"
           maxLength={160}
           returnKeyType="search"
-          accessibilityLabel="Address or place"
-          style={[
-            styles.input,
-            { color: colors.text, backgroundColor: colors.surface, borderColor: colors.border },
-          ]}
         />
         <Button label="Search" icon="magnify" onPress={handleSearch} loading={isSearching} />
       </View>
@@ -258,7 +253,7 @@ export function VenueSubmissionForm() {
           © OpenStreetMap contributors
         </Text>
       </AppText>
-      {searchError && <AppText tone="alert">{searchError}</AppText>}
+      {searchError && <Notice tone="error" message={searchError} />}
 
       {searchResults.length > 0 && (
         <View style={[styles.resultList, { borderColor: colors.border }]}>
@@ -306,10 +301,19 @@ export function VenueSubmissionForm() {
           {nearby.isPending ? (
             <ActivityIndicator color={colors.live} />
           ) : nearby.isError ? (
-            <View style={{ gap: space.sm }}>
-              <AppText tone="alert">Nearby venues could not be checked. Try again.</AppText>
-              <Button label="Retry nearby venues" onPress={() => void nearby.refetch()} />
-            </View>
+            <Notice
+              tone="error"
+              message="Nearby venues could not be checked. Try again."
+              action={
+                <Button
+                  label="Retry nearby venues"
+                  size="sm"
+                  tone="neutral"
+                  variant="soft"
+                  onPress={() => void nearby.refetch()}
+                />
+              }
+            />
           ) : nearby.data?.length ? (
             nearby.data.map((venue) => (
               <PressableSurface
@@ -342,31 +346,22 @@ export function VenueSubmissionForm() {
         </View>
       ) : (
         <View style={{ gap: space.lg }}>
-          <View style={{ gap: space.sm }}>
+          <View style={{ gap: space.md }}>
             <AppText variant="heading">Venue details</AppText>
-            <TextInput
+            <TextField
+              label="Venue name"
               value={name}
               onChangeText={setName}
               maxLength={120}
-              placeholder="Venue name"
-              placeholderTextColor={colors.textFaint}
-              accessibilityLabel="Venue name"
-              style={[
-                styles.input,
-                { color: colors.text, backgroundColor: colors.surface, borderColor: colors.border },
-              ]}
+              placeholder="e.g. Victoria Park courts"
             />
-            <TextInput
+            <TextField
+              label="Address (optional)"
+              accessibilityLabel="Address"
               value={address}
               onChangeText={setAddress}
               maxLength={240}
-              placeholder="Address (optional)"
-              placeholderTextColor={colors.textFaint}
-              accessibilityLabel="Address"
-              style={[
-                styles.input,
-                { color: colors.text, backgroundColor: colors.surface, borderColor: colors.border },
-              ]}
+              placeholder="Street address, if it has one"
             />
           </View>
 
@@ -410,12 +405,15 @@ export function VenueSubmissionForm() {
           </View>
 
           {!session && (
-            <AppText variant="caption" tone="soon">
-              You’ll need to sign in before submitting this venue.
-            </AppText>
+            <Notice tone="info" message="You’ll need to sign in before submitting this venue." />
           )}
-          {validationError && <AppText tone="alert">{validationError}</AppText>}
-          {submitVenue.isError && <AppText tone="alert">{submitVenue.error.message}</AppText>}
+          {validationError && <Notice tone="error" message={validationError} />}
+          {submitVenue.isError && (
+            <Notice
+              tone="error"
+              message={userMessage(submitVenue.error, 'Could not submit this venue. Try again.')}
+            />
+          )}
           <Button
             label={session ? 'Submit for review' : 'Sign in to submit'}
             icon={session ? 'send' : 'login'}
@@ -431,14 +429,6 @@ export function VenueSubmissionForm() {
 
 const styles = StyleSheet.create({
   searchRow: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
-  input: {
-    minHeight: 48,
-    flex: 1,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: radius.lg,
-    paddingHorizontal: space.lg,
-    fontSize: 15,
-  },
   resultList: {
     borderWidth: StyleSheet.hairlineWidth,
     borderRadius: radius.lg,

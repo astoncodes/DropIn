@@ -16,6 +16,9 @@ type Extra = {
   mapboxAccessToken?: string;
   googleWebClientId?: string;
   googleIosClientId?: string;
+  supportEmail?: string;
+  operatorName?: string;
+  siteUrl?: string;
 };
 
 const extra = (Constants.expoConfig?.extra ?? {}) as Extra;
@@ -38,4 +41,10 @@ export const env = {
   mapboxAccessToken: extra.mapboxAccessToken?.trim() || '',
   googleWebClientId: extra.googleWebClientId?.trim() || '',
   googleIosClientId: extra.googleIosClientId?.trim() || '',
+  /** Published support contact. Required for store builds (see app.config.ts). */
+  supportEmail: extra.supportEmail?.trim() || '',
+  /** Who operates Drop In, as named in the privacy policy and terms. */
+  operatorName: extra.operatorName?.trim() || '',
+  /** Public web address of the Drop In website, without a trailing slash. */
+  siteUrl: extra.siteUrl?.trim().replace(/\/+$/, '') || '',
 } as const;

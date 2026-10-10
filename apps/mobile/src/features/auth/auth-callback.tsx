@@ -6,13 +6,18 @@ import { AppText, Button } from '../../components/ui/primitives';
 import { supabase } from '../../lib/supabase';
 import { space, usePalette } from '../../theme';
 import { routeAfterSignIn } from './route-after-sign-in';
+import { UserFacingError, userMessage } from '../../lib/errors';
+
+const EXPIRED_LINK = 'This sign-in link is invalid or has expired. Request a new one.';
 
 export function AuthCallback() {
   const colors = usePalette();
   const router = useRouter();
   const params = useLocalSearchParams<{ code?: string; error_description?: string }>();
   const handled = useRef(false);
-  const [error, setError] = useState<string | null>(params.error_description ?? null);
+  // The provider's error_description is never displayed: anyone can craft a
+  // callback link, so its text is not ours to show.
+  const [error, setError] = useState<string | null>(params.error_description ? EXPIRED_LINK : null);
 
   useEffect(() => {
     if (handled.current || error) return;
@@ -24,13 +29,15 @@ export function AuthCallback() {
         if (exchangeError) throw exchangeError;
       } else {
         const { data } = await supabase.auth.getSession();
-        if (!data.session) throw new Error('This sign-in link is missing or has expired.');
+        if (!data.session) throw new UserFacingError(EXPIRED_LINK);
       }
 
       await routeAfterSignIn(router);
     }
 
-    void finishSignIn().catch((callbackError: Error) => setError(callbackError.message));
+    void finishSignIn().catch((callbackError: unknown) =>
+      setError(userMessage(callbackError, EXPIRED_LINK)),
+    );
   }, [error, params.code, router]);
 
   return (

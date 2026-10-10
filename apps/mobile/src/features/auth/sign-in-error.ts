@@ -11,10 +11,10 @@
  * developer-facing half.
  */
 
+import { CONNECTION_MESSAGE, isNetworkError, userMessage } from '../../lib/errors';
+
 export const SIGN_IN_FALLBACK_MESSAGE =
   'Something went wrong signing you in. Please try again in a moment.';
-
-const NETWORK_MESSAGE = 'Could not connect. Check your connection and try again.';
 
 const UNSUPPORTED_BUILD_MESSAGE =
   'This sign-in method is not available in this build of the app. Use your email address instead.';
@@ -84,15 +84,6 @@ function isMissingNativeModule(message: string): boolean {
   );
 }
 
-function isNetworkFailure(message: string): boolean {
-  return (
-    /network request failed/i.test(message) ||
-    /failed to fetch/i.test(message) ||
-    /network ?error/i.test(message) ||
-    /econnrefused|enotfound|etimedout/i.test(message)
-  );
-}
-
 /** True when the player dismissed the provider's sheet rather than failing. */
 export function isCancellation(cause: unknown): boolean {
   const code = errorCode(cause);
@@ -111,9 +102,11 @@ export function describeSignInFailure(cause: unknown): string {
   if (code && UNSUPPORTED_CODES.has(code)) return UNSUPPORTED_BUILD_MESSAGE;
   if (code && MISCONFIGURED_CODES.has(code)) return MISCONFIGURED_MESSAGE;
   if (isMissingNativeModule(message)) return UNSUPPORTED_BUILD_MESSAGE;
-  if (isNetworkFailure(message)) return NETWORK_MESSAGE;
+  if (isNetworkError(cause)) return CONNECTION_MESSAGE;
 
-  return SIGN_IN_FALLBACK_MESSAGE;
+  // Supabase Auth failures (rate limits, expired links, disabled providers)
+  // carry their own codes; anything still unrecognised gets the fallback.
+  return userMessage(cause, SIGN_IN_FALLBACK_MESSAGE);
 }
 
 /**

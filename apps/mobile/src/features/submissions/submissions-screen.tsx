@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
 import { View } from 'react-native';
-import { Screen, Title } from '../../components/screen';
+import { Screen } from '../../components/screen';
 import { AppText, Button } from '../../components/ui/primitives';
 import { EmptyState, Skeleton } from '../../components/ui/activity';
 import { useSession } from '../../providers/auth-context';
@@ -22,8 +22,7 @@ export function SubmissionsScreen() {
   const submissions = useOwnVenueSubmissions(session?.user.id);
   const items = submissions.data?.pages.flat() ?? [];
   return (
-    <Screen>
-      <Title>Your venue submissions</Title>
+    <Screen insetTop={false}>
       <AppText tone="muted">
         Follow the places you’ve suggested and see the reviewer’s decision.
       </AppText>
