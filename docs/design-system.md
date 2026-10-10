@@ -114,6 +114,18 @@ Feature components built from these and reused across screens: `VenueRow`
 - **The map** uses a muted basemap (`MAP_STYLE_URL`). Venue pins are solid ink,
   session pins are outlined, and a live count is the only saturated colour on it.
 
+## Icon, splash screen and favicons
+
+The app icon is the name stacked on ink. The splash screen is the wordmark on
+the page's white, so the first screen appears without a change of colour. Both
+favicons are the initial and its full stop on an ink tile.
+
+`node scripts/brand-assets.mjs` draws all of them from the brand colours in
+`tokens.ts` and the Barlow Condensed file the app loads. Change those and run
+it; do not edit the images by hand. The colours behind the Android icon and the
+splash image are set in `apps/mobile/app.config.ts`, and a native project picks
+up any of this only after `npx expo prebuild`.
+
 ## Admin website
 
 `apps/admin/src/index.css` applies the same language to the admin website: the

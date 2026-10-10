@@ -120,9 +120,8 @@ const config: ExpoConfig = {
   android: {
     package: APP_IDENTIFIER,
     adaptiveIcon: {
-      backgroundColor: '#F7F7F2',
+      backgroundColor: '#0F1A16',
       foregroundImage: './assets/images/android-icon-foreground.png',
-      backgroundImage: './assets/images/android-icon-background.png',
       monochromeImage: './assets/images/android-icon-monochrome.png',
     },
     predictiveBackGestureEnabled: false,
@@ -181,9 +180,11 @@ const config: ExpoConfig = {
     [
       'expo-splash-screen',
       {
-        backgroundColor: '#F7F7F2',
+        backgroundColor: '#FFFFFF',
         image: './assets/images/splash-icon.png',
-        imageWidth: 140,
+        // The size of Android's splash image box, which crops anything larger.
+        // The wordmark spans a little over half of the square image.
+        imageWidth: 288,
       },
     ],
   ],

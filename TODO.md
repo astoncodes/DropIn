@@ -74,15 +74,14 @@ Account and configuration work is listed step by step in
 - [ ] **See it on a phone.** The redesign was reviewed in the web build at phone
       and desktop widths. The display typeface is loaded at startup with
       `expo-font`; check it, the map pins and the pinned action bars in iOS and
-      Android builds.
+      Android builds. The redrawn icon and splash screen appear only after
+      `npx expo prebuild`; check them on a home screen and at launch.
 - [ ] **Update the hosted browser scripts.** `browser-social.mjs`,
       `browser-venue-review.mjs`, `live-presence.mjs --browser` and
       `account-deletion.mjs` drive screens by label and cannot run without a
       Supabase access token, so they were already behind the interface ("Edit
       profile", "Yes, leave session") and are further behind now: session
       creation uses a day strip and time chips instead of typed fields.
-- [ ] **App icon and splash screen** still use the earlier mark. Redraw them to
-      match the wordmark.
 
 ## Dependencies
 
