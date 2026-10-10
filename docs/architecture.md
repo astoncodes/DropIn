@@ -80,6 +80,22 @@ creation and venue submission. Sign-in, browsing, chat, Profile and account
 deletion work without location consent, and nothing falls back to a guessed
 location.
 
+**Screens draw from `loadPhase()`, not `isPending` or `isError`**
+(`apps/mobile/src/lib/load-phase.ts`). React Query returns a query that has no
+data to `pending`, with its error cleared, at the start of every fetch —
+polls included. `loadPhase()` answers what the screen has to show instead:
+`ready` whenever there is data, even if the latest refresh failed; `failed` when
+there is none and an attempt has failed, which holds while later attempts run;
+`loading` only before anything has failed. A failed screen shows `LoadError`
+with a retry, and polling recovers it without a tap once the server answers. A
+lookup that finds nothing returns `null` as data, so "not found" and "could not
+load" are different states. Record ids from the route pass through `uuidParam()`
+first; a malformed id is "not found" without a request.
+
+**React Query is the only retry layer.** The mobile Supabase client is created
+with `db.retry` off, so a failed read costs two requests about a second apart
+before the screen can say so.
+
 **Errors shown to players go through `userMessage()`** (`apps/mobile/src/lib/errors.ts`).
 Business-rule messages raised by database functions (SQLSTATE 22023, 42501,
 P0001, P0002) pass through; RLS violations, constraint names, PostgREST and

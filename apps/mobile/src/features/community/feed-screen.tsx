@@ -6,17 +6,17 @@ import { useState } from 'react';
 import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { EmptyState, Skeleton } from '../../components/ui/activity';
+import { EmptyState, LoadError, Skeleton } from '../../components/ui/activity';
 import { Avatar } from '../../components/ui/avatar';
 import {
   AppText,
-  Button,
   Chip,
   IconButton,
   PressableSurface,
   sportIcon,
 } from '../../components/ui/primitives';
 import { relativeTime, timeOfDay, weekdayName } from '../../lib/format';
+import { loadPhase } from '../../lib/load-phase';
 import { useSession } from '../../providers/auth-context';
 import { elevation, radius, space, usePalette } from '../../theme';
 import { ModerationSheet } from '../moderation/moderation-sheet';
@@ -38,6 +38,7 @@ export function MomentsFeed({ sessionId }: { sessionId?: string } = {}) {
   const router = useRouter();
   const { session } = useSession();
   const feed = useCommunityFeed(undefined, sessionId);
+  const phase = loadPhase(feed);
   const [moderationSubject, setModerationSubject] = useState<ModerationSubject | null>(null);
 
   return (
@@ -54,18 +55,17 @@ export function MomentsFeed({ sessionId }: { sessionId?: string } = {}) {
         <RefreshControl refreshing={feed.isRefetching} onRefresh={() => feed.refetch()} />
       }
     >
-      {feed.isPending ? (
+      {phase === 'loading' ? (
         <View style={styles.list}>
           {[0, 1].map((key) => (
             <Skeleton key={key} height={390} />
           ))}
         </View>
-      ) : feed.isError ? (
-        <EmptyState
-          icon="wifi-off"
+      ) : phase === 'failed' ? (
+        <LoadError
           title="Could not load moments"
-          body="Check your connection and try again."
-          action={<Button label="Try again" onPress={() => void feed.refetch()} />}
+          onRetry={() => void feed.refetch()}
+          retrying={feed.isFetching}
         />
       ) : feed.data?.length ? (
         <View style={styles.list}>

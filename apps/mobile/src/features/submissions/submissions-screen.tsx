@@ -2,7 +2,8 @@ import { useRouter } from 'expo-router';
 import { View } from 'react-native';
 import { Screen } from '../../components/screen';
 import { AppText, Button } from '../../components/ui/primitives';
-import { EmptyState, Skeleton } from '../../components/ui/activity';
+import { EmptyState, LoadError, Skeleton } from '../../components/ui/activity';
+import { loadPhase } from '../../lib/load-phase';
 import { useSession } from '../../providers/auth-context';
 import { radius, space, usePalette } from '../../theme';
 import { useOwnVenueSubmissions } from './api';
@@ -21,12 +22,13 @@ export function SubmissionsScreen() {
   const { session, isLoading } = useSession();
   const submissions = useOwnVenueSubmissions(session?.user.id);
   const items = submissions.data?.pages.flat() ?? [];
+  const phase = loadPhase(submissions);
   return (
     <Screen insetTop={false}>
       <AppText tone="muted">
         Follow the places you’ve suggested and see the reviewer’s decision.
       </AppText>
-      {(isLoading || (session && submissions.isPending)) && <Skeleton height={160} />}
+      {(isLoading || (session && phase === 'loading')) && <Skeleton height={160} />}
       {!isLoading && !session && (
         <EmptyState
           icon="map-marker-outline"
@@ -37,17 +39,14 @@ export function SubmissionsScreen() {
       )}
       {session && (
         <>
-          {submissions.isError && (
-            <View style={{ gap: space.sm }}>
-              <AppText tone="alert">Could not refresh your submissions. Please try again.</AppText>
-              <Button
-                label="Retry submissions"
-                onPress={() => void submissions.refetch()}
-                loading={submissions.isFetching}
-              />
-            </View>
+          {phase === 'failed' && (
+            <LoadError
+              title="Could not load your submissions"
+              onRetry={() => void submissions.refetch()}
+              retrying={submissions.isFetching}
+            />
           )}
-          {submissions.isSuccess && !items.length && (
+          {phase === 'ready' && !items.length && (
             <EmptyState
               icon="map-marker-plus-outline"
               title="Know a great place to play?"

@@ -7,11 +7,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import VenueMap from '../../components/map/venue-map';
 import { isAwayFromLocation } from '../../components/map/location-distance';
 import type { MapRegion } from '../../components/map/types';
-import { EmptyState, Skeleton } from '../../components/ui/activity';
+import { EmptyState, LoadError, Skeleton } from '../../components/ui/activity';
 import { AdaptiveGlassSurface } from '../../components/ui/glass-surface';
 import {
   AppText,
-  Button,
   Chip,
   IconButton,
   PressableSurface,
@@ -24,6 +23,7 @@ import { useAccountSports } from '../account/api';
 import { useRequiredLocation } from '../location/required-location';
 import { useNearbyVenues, useSports } from './api';
 import { VenueCard } from './venue-card';
+import { loadPhase } from '../../lib/load-phase';
 import { useSession } from '../../providers/auth-context';
 import { radius, space, useThemeName, usePalette } from '../../theme';
 import type { IconName } from '../../components/ui/primitives';
@@ -101,6 +101,7 @@ export function NearbyScreen() {
     longitudeDelta: 0.06,
   };
 
+  const venuesPhase = loadPhase(venues);
   const liveCount = (venues.data ?? []).filter((v) => v.here_now > 0).length;
 
   function toggleSport(id: number) {
@@ -128,20 +129,18 @@ export function NearbyScreen() {
         <VenueCard venue={item} onPress={() => router.push(`/venue/${item.venue_id}`)} />
       )}
       ListEmptyComponent={
-        venues.isPending ? (
+        venuesPhase === 'loading' ? (
           <View style={{ gap: space.md }}>
             {[0, 1, 2].map((key) => (
               <Skeleton key={key} height={148} />
             ))}
           </View>
-        ) : venues.isError ? (
-          <EmptyState
-            icon="wifi-off"
+        ) : venuesPhase === 'failed' ? (
+          <LoadError
             title="Can't reach Drop In"
             body="Check your connection, then try again."
-            action={
-              <Button label="Try again" variant="soft" onPress={() => void venues.refetch()} />
-            }
+            onRetry={() => void venues.refetch()}
+            retrying={venues.isFetching}
           />
         ) : (
           <EmptyState
@@ -306,11 +305,13 @@ export function NearbyScreen() {
       {view === 'map' ? (
         <ResultsSheet
           title={
-            venues.isPending
+            venuesPhase === 'loading'
               ? 'Finding venues…'
-              : liveCount > 0
-                ? `${liveCount} active now`
-                : `${venues.data?.length ?? 0} nearby`
+              : venuesPhase === 'failed'
+                ? 'Nearby venues'
+                : liveCount > 0
+                  ? `${liveCount} active now`
+                  : `${venues.data?.length ?? 0} nearby`
           }
           subtitle={liveCount > 0 ? 'Find your next game' : 'Your next game starts here'}
         >

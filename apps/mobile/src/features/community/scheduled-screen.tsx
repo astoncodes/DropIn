@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { RefreshControl, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { EmptyState, Skeleton } from '../../components/ui/activity';
+import { EmptyState, LoadError, Skeleton } from '../../components/ui/activity';
 import { SportBadge } from '../../components/ui/brand';
 import {
   AppText,
@@ -22,6 +22,7 @@ import { timeOfDay, weekdayName, weekdayGroup } from '../../lib/format';
 import { radius, space, usePalette } from '../../theme';
 import { useSession } from '../../providers/auth-context';
 import { userMessage } from '../../lib/errors';
+import { combineLoadPhases, loadPhase } from '../../lib/load-phase';
 
 /** Only hosted, Going and Maybe sessions belong in the player's schedule. */
 export function ScheduledScreen() {
@@ -67,11 +68,13 @@ export function ScheduledScreen() {
     { id: 'tomorrow', title: 'Tomorrow' },
     { id: 'week', title: 'Coming up' },
   ];
-  const failed = tab === 'past' ? history.isError : runs.isError || attendance.isError;
-  const pending =
+  // Upcoming needs each run's attendance to know which ones are the player's;
+  // with no runs there is nothing to look attendance up for.
+  const phase =
     tab === 'past'
-      ? history.isPending
-      : runs.isPending || (!!runs.data?.length && attendance.isPending);
+      ? loadPhase(history)
+      : combineLoadPhases(loadPhase(runs), runs.data?.length ? loadPhase(attendance) : 'ready');
+  const retrying = tab === 'past' ? history.isFetching : runs.isFetching || attendance.isFetching;
   function refresh() {
     void runs.refetch();
     void history.refetch();
@@ -160,14 +163,9 @@ export function ScheduledScreen() {
             body="Sign in to keep track of sessions you host, join, or mark Maybe."
             action={<Button label="Sign in" onPress={() => router.push('/sign-in')} />}
           />
-        ) : failed ? (
-          <EmptyState
-            icon="wifi-off"
-            title="Could not load your schedule"
-            body="Check your connection and try again."
-            action={<Button label="Try again" onPress={refresh} />}
-          />
-        ) : pending ? (
+        ) : phase === 'failed' ? (
+          <LoadError title="Could not load your schedule" onRetry={refresh} retrying={retrying} />
+        ) : phase === 'loading' ? (
           <>
             <Skeleton height={120} />
             <Skeleton height={120} />

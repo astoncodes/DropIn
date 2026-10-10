@@ -6,7 +6,13 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import VenueMap from '../../components/map/venue-map';
 import { SportBadge } from '../../components/ui/brand';
-import { ConditionChip, EmptyState, ScoreStat, Skeleton } from '../../components/ui/activity';
+import {
+  ConditionChip,
+  EmptyState,
+  LoadError,
+  ScoreStat,
+  Skeleton,
+} from '../../components/ui/activity';
 import { AppText, Button, Chip, sportIcon } from '../../components/ui/primitives';
 import { useUpcomingRuns, useVenueActivity, useVenueConditions, useVenueDetail } from './api';
 import {
@@ -26,6 +32,8 @@ import { useJoinSession, useRunAttendance } from '../community/api';
 import type { UpcomingRun } from './api';
 import type { IconName } from '../../components/ui/primitives';
 import { userMessage } from '../../lib/errors';
+import { loadPhase } from '../../lib/load-phase';
+import { uuidParam } from '../../lib/route-params';
 
 /**
  * Venue detail — "what is actually happening here, and can I join?"
@@ -36,7 +44,7 @@ import { userMessage } from '../../lib/errors';
  * would make the stronger signal worthless.
  */
 export function VenueDetailScreen() {
-  const { venueId } = useLocalSearchParams<{ venueId: string }>();
+  const venueId = uuidParam(useLocalSearchParams<{ venueId: string }>().venueId);
   const colors = usePalette();
   const scheme = useThemeName();
   const [directionError, setDirectionError] = useState('');
@@ -49,7 +57,7 @@ export function VenueDetailScreen() {
   const venue = useVenueDetail(venueId);
   const activity = useVenueActivity(venueId);
   const conditions = useVenueConditions(venueId);
-  const runs = useUpcomingRuns({ venueId, window: 'discovery' });
+  const runs = useUpcomingRuns({ venueId, window: 'discovery', enabled: Boolean(venueId) });
   const join = useJoinSession();
   const attendance = useRunAttendance(
     (runs.data ?? []).map((run) => run.run_series_id),
@@ -71,7 +79,10 @@ export function VenueDetailScreen() {
     }
   }
 
-  if (venue.isPending) {
+  // An id that cannot name a venue is "not found" without a request.
+  const phase = venueId ? loadPhase(venue) : 'ready';
+
+  if (phase === 'loading') {
     return (
       <View
         style={{ flex: 1, backgroundColor: colors.background, padding: space.lg, gap: space.md }}
@@ -83,7 +94,19 @@ export function VenueDetailScreen() {
     );
   }
 
-  if (venue.isError || !venue.data) {
+  if (phase === 'failed') {
+    return (
+      <View style={{ flex: 1, backgroundColor: colors.background, justifyContent: 'center' }}>
+        <LoadError
+          title="Could not load this venue"
+          onRetry={() => void venue.refetch()}
+          retrying={venue.isFetching}
+        />
+      </View>
+    );
+  }
+
+  if (!venue.data) {
     return (
       <View style={{ flex: 1, backgroundColor: colors.background, justifyContent: 'center' }}>
         <EmptyState
@@ -363,7 +386,7 @@ export function VenueDetailScreen() {
         <Button
           label="Create a session here"
           icon="calendar-plus"
-          onPress={() => router.push({ pathname: '/run/new', params: { venueId } })}
+          onPress={() => router.push({ pathname: '/run/new', params: { venueId: data.venue_id } })}
         />
         {!session && (
           <Button

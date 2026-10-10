@@ -5,7 +5,7 @@ import type { StyleProp, ViewStyle } from 'react-native';
 
 import { useReduceMotion } from '../../lib/accessibility';
 import { radius, space, typeScale, usePalette } from '../../theme';
-import { AppText } from './primitives';
+import { AppText, Button } from './primitives';
 import type { IconName } from './primitives';
 
 export type ActivityTone = 'live' | 'soon' | 'info' | 'quiet';
@@ -261,6 +261,41 @@ export function EmptyState({
       </AppText>
       {action}
     </View>
+  );
+}
+
+/**
+ * Stands in for content that could not be loaded (the `failed` load phase).
+ *
+ * It stays on screen while later attempts run, so the retry does not move or
+ * vanish under someone's thumb; `retrying` shows that an attempt is in flight.
+ * Screens without a navigation header pass a way out as `secondaryAction`.
+ */
+export function LoadError({
+  title,
+  body = 'Check your connection and try again.',
+  onRetry,
+  retrying = false,
+  secondaryAction,
+}: {
+  title: string;
+  body?: string;
+  onRetry: () => void;
+  retrying?: boolean;
+  secondaryAction?: React.ReactNode;
+}) {
+  return (
+    <EmptyState
+      icon="wifi-off"
+      title={title}
+      body={body}
+      action={
+        <>
+          <Button label="Try again" variant="soft" loading={retrying} onPress={onRetry} />
+          {secondaryAction}
+        </>
+      }
+    />
   );
 }
 

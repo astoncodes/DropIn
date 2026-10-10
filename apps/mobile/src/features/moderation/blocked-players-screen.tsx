@@ -2,15 +2,15 @@ import { useRouter } from 'expo-router';
 import { useState } from 'react';
 
 import { Screen } from '../../components/screen';
-import { EmptyState, Skeleton } from '../../components/ui/activity';
+import { EmptyState, LoadError, Skeleton } from '../../components/ui/activity';
 import { Avatar } from '../../components/ui/avatar';
 import { ConfirmDialog } from '../../components/ui/dialog';
 import { ListSection, ListRow } from '../../components/ui/list-row';
-import { Notice } from '../../components/ui/notice';
 import { AppText, Button } from '../../components/ui/primitives';
 import { useToast } from '../../components/ui/toast';
 import { relativeTime } from '../../lib/format';
 import { userMessage } from '../../lib/errors';
+import { loadPhase } from '../../lib/load-phase';
 import { useSession } from '../../providers/auth-context';
 import { useBlockedPlayers, useUnblockPlayer } from './api';
 
@@ -20,6 +20,7 @@ export function BlockedPlayersScreen() {
   const showToast = useToast();
   const { session, isLoading } = useSession();
   const blocked = useBlockedPlayers(session?.user.id);
+  const phase = loadPhase(blocked);
   const unblock = useUnblockPlayer();
   const [pending, setPending] = useState<{ playerId: string; name: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -41,7 +42,7 @@ export function BlockedPlayersScreen() {
       <AppText tone="muted">
         You don’t see posts, photos or chat messages from players you block. They aren’t told.
       </AppText>
-      {isLoading || (session && blocked.isPending) ? (
+      {isLoading || (session && phase === 'loading') ? (
         <Skeleton height={120} />
       ) : !session ? (
         <EmptyState
@@ -50,19 +51,11 @@ export function BlockedPlayersScreen() {
           body="Blocks belong to your account."
           action={<Button label="Sign in" onPress={() => router.push('/sign-in')} />}
         />
-      ) : blocked.isError ? (
-        <Notice
-          tone="error"
-          message={userMessage(blocked.error, 'Could not load blocked players. Try again.')}
-          action={
-            <Button
-              label="Try again"
-              size="sm"
-              variant="soft"
-              tone="neutral"
-              onPress={() => void blocked.refetch()}
-            />
-          }
+      ) : phase === 'failed' ? (
+        <LoadError
+          title="Could not load blocked players"
+          onRetry={() => void blocked.refetch()}
+          retrying={blocked.isFetching}
         />
       ) : blocked.data?.length ? (
         <ListSection>
