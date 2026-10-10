@@ -3,6 +3,18 @@
 Open work only. Anything listed here is genuinely unbuilt or unverified — if it
 is done, delete the entry rather than leaving a ticked box behind.
 
+## Keep the hosted projects running
+
+Free-plan Supabase projects pause after a week without activity. The app
+project and the test project were both found paused on 2026-10-09. While they
+are paused the apps have no backend and `npm run db:test` cannot connect.
+
+- [ ] Restore both projects from the Supabase dashboard, then run
+      `npm run db:test` to confirm the test project still matches the
+      migrations.
+- [ ] Decide how to stop this recurring before players depend on the app: the
+      Pro plan, or a scheduled request that keeps each project active.
+
 ## Verify moderation with real accounts
 
 `20260926120000_content_moderation.sql` is applied to the test and app projects
@@ -39,6 +51,37 @@ Account and configuration work is listed step by step in
 - [ ] **No automatic filtering.** Reports and blocks act after content is
       posted. Decide whether names, titles and captions need a blocked-term
       check at write time.
+
+## Client gaps
+
+- [ ] **Session dates and times are typed as text** (`YYYY-MM-DD` and 24-hour
+      `HH:MM`) when creating or editing a session. Replace them with pickers;
+      decide between a date-picker dependency and chips for the coming days and
+      common times.
+- [ ] **Venue search sends a request on every keystroke** when choosing an
+      existing venue for a session (the `session-venues` query in
+      `new-run-screen.tsx`). Search on submit, as place search does, or debounce.
+- [ ] **The Chats list downloads every message of every joined session** to
+      find each session's latest one (`useJoinedSessions`). The API caps a
+      response at its row limit, so past that some chats lose their preview.
+      Read one latest message per session instead, through a database function
+      or an embedded `limit(1)`, and verify it against the hosted API.
+- [ ] **No error reporting.** Neither app sends failures anywhere; the admin
+      website writes them to the browser console only. Choose a service before
+      launch.
+- [ ] **Avatars.** `profiles.avatar_path` is granted and returned by
+      `venue_activity()`, but nothing uploads or displays a photo, so players
+      appear as initials.
+
+## Dependencies
+
+- [ ] `npm audit` still reports advisories that need major upgrades
+      (`react-native-reanimated`, `expo-router`) or have no fixed release
+      (`node-forge`, `uuid`). All are build tooling or transitive packages.
+      Re-check after the next Expo SDK upgrade.
+- [ ] `@rnmapbox/maps` 10.3.7 is available within the declared range. Take it
+      together with a native build that can be run, not as a lockfile-only
+      change.
 
 ## Run database tests in CI
 
