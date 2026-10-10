@@ -76,12 +76,13 @@ Account and configuration work is listed step by step in
       `expo-font`; check it, the map pins and the pinned action bars in iOS and
       Android builds. The redrawn icon and splash screen appear only after
       `npx expo prebuild`; check them on a home screen and at launch.
-- [ ] **Update the hosted browser scripts.** `browser-social.mjs`,
+- [ ] **Run the hosted browser scripts.** `browser-social.mjs`,
       `browser-venue-review.mjs`, `live-presence.mjs --browser` and
-      `account-deletion.mjs` drive screens by label and cannot run without a
-      Supabase access token, so they were already behind the interface ("Edit
-      profile", "Yes, leave session") and are further behind now: session
-      creation uses a day strip and time chips instead of typed fields.
+      `account-deletion.mjs` need a Supabase access token, so they have not been
+      run since the redesign. Their steps were brought up to date by reading the
+      screens and by driving the same steps against stubbed responses
+      (`npm run test:browser:signed-in`); the first run against a hosted project
+      may still find a label that differs.
 
 ## Dependencies
 

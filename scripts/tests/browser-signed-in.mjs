@@ -16,6 +16,8 @@ assert.ok(
   'Set EXPO_PUBLIC_SUPABASE_URL in .env. The stored session is keyed by its project reference.',
 );
 const projectRef = new URL(process.env.EXPO_PUBLIC_SUPABASE_URL).hostname.split('.')[0];
+/** Where the web build keeps its session. */
+const SESSION_KEY = `sb-${projectRef}-auth-token`;
 
 const APP = 'http://localhost:8081';
 const API = /\/(rest|auth|storage|functions)\/v1\//;
@@ -132,7 +134,15 @@ const READS = {
       })),
 };
 
-/** Applies the `eq`, `in` and `is.null` filters PostgREST was sent to a table's rows. */
+/** What a write answers with, where the app goes on to use the answer. */
+const ANSWERS = {
+  // Creating a session answers with its id, which the app then opens.
+  create_run: JOINED.session,
+  create_run_at_pin: JOINED.session,
+  submit_venue: [{ candidate_id: '50000000-0000-4000-8000-000000000001', status: 'pending' }],
+};
+
+/** Applies the `eq` and `in` filters PostgREST was sent to a table's rows. */
 function rowsFor(url) {
   let rows = TABLES[url.pathname.split('/').at(-1)] ?? [];
   for (const [column, filter] of url.searchParams) {
@@ -161,8 +171,10 @@ async function check(name, run) {
   }
 }
 
-const browser = await chromium.launch({ headless: true });
-try {
+const pageErrors = [];
+
+/** A page with a stored session whose API calls are answered from the fixtures above. */
+async function signedInPage(browser) {
   const context = await browser.newContext({
     viewport: { width: 390, height: 844 },
     geolocation: HERE,
@@ -171,6 +183,8 @@ try {
   });
   /** Every write the app attempted, in order: the function or table, and what was sent. */
   const writes = [];
+  /** How the delete-account function answers: an object, or 'unreachable'. */
+  const functions = { deleteAccount: { deleted: true } };
   await context.route(API, async (route) => {
     const request = route.request();
     const url = new URL(request.url());
@@ -182,12 +196,16 @@ try {
       if (name === 'logout') writes.push({ target: 'logout', sent: null });
       return respond(200, PLAYER);
     }
+    if (url.pathname.includes('/functions/v1/')) {
+      writes.push({ target: name, sent: request.postDataJSON() });
+      if (functions.deleteAccount === 'unreachable') return route.abort('internetdisconnected');
+      return respond(200, functions.deleteAccount);
+    }
     if (url.pathname.includes('/rpc/')) {
       const sent = request.postDataJSON();
       if (READS[name]) return respond(200, READS[name](sent));
       writes.push({ target: name, sent });
-      // Creating a session answers with its id, which the app then opens.
-      return respond(200, name.startsWith('create_run') ? JOINED.session : null);
+      return respond(200, ANSWERS[name] ?? null);
     }
     if (request.method() !== 'GET') {
       writes.push({ target: `${request.method()} ${name}`, sent: request.postDataJSON() });
@@ -214,24 +232,13 @@ try {
         }),
       );
     },
-    [`sb-${projectRef}-auth-token`, PLAYER],
+    [SESSION_KEY, PLAYER],
   );
 
   const page = await context.newPage();
   page.setDefaultTimeout(15_000);
-  const pageErrors = [];
   page.on('pageerror', (error) => pageErrors.push(error.message));
 
-  const button = (name) => page.getByRole('button', { name, exact: true });
-  const confirm = (name) => page.getByRole('dialog').getByRole('button', { name, exact: true });
-  /** Waits for the app to send `target`, and returns what it sent. */
-  async function sentTo(target) {
-    await expectSoon(
-      () => writes.some((write) => write.target === target),
-      `${target} was never sent`,
-    );
-    return writes.findLast((write) => write.target === target).sent;
-  }
   async function expectSoon(condition, message) {
     const deadline = Date.now() + 8_000;
     while (!condition()) {
@@ -239,6 +246,34 @@ try {
       await page.waitForTimeout(100);
     }
   }
+  return {
+    page,
+    functions,
+    button: (name) => page.getByRole('button', { name, exact: true }),
+    /** A button in the open dialog, which can share its label with the row that opened it. */
+    inDialog: (name) => page.getByRole('dialog').getByRole('button', { name, exact: true }),
+    /** A day in the session form's strip. It starts at "Today"; the named days follow. */
+    namedDay: (index) =>
+      page.getByRole('button', { name: /^(Mon|Tue|Wed|Thu|Fri|Sat|Sun) \d{1,2}$/ }).nth(index),
+    wasSent: (target) => writes.some((write) => write.target === target),
+    /** Waits for the app to send `target`, and returns what it sent. */
+    async sentTo(target) {
+      await expectSoon(
+        () => writes.some((write) => write.target === target),
+        `${target} was never sent`,
+      );
+      return writes.findLast((write) => write.target === target).sent;
+    },
+  };
+}
+
+const dayAfterTomorrow = new Intl.DateTimeFormat('en-CA', { timeZone: TIMEZONE }).format(
+  Date.now() + 2 * 86_400_000,
+);
+
+const browser = await chromium.launch({ headless: true });
+try {
+  const { page, button, inDialog, namedDay, wasSent, sentTo } = await signedInPage(browser);
 
   await check('check in: sends the venue, sport, position, length, party and note', async () => {
     await page.goto(`${APP}/venue/${VENUE_ID}`);
@@ -265,9 +300,10 @@ try {
     );
   });
 
-  await check('on my way: sends the venue, sport and arrival time', async () => {
-    await page.goto(`${APP}/check-in/${VENUE_ID}`);
-    await page.getByRole('tab', { name: 'On my way' }).click();
+  await check('on my way: the venue button opens the form ready to send it', async () => {
+    await page.goto(`${APP}/venue/${VENUE_ID}`);
+    await button("I'm on my way").click();
+    await page.waitForURL(`**/check-in/${VENUE_ID}**`);
     await button("I'm on my way").click();
     assert.deepEqual(await sentTo('set_arrival_intent'), {
       p_venue_id: VENUE_ID,
@@ -284,18 +320,11 @@ try {
       await page.waitForURL('**/run/new**');
       await page.getByRole('textbox', { name: 'Session name' }).fill('Check run');
       await button('Basketball').click();
-      // The strip starts at "Today"; the second named day is the day after tomorrow.
-      await page
-        .getByRole('button', { name: /^(Mon|Tue|Wed|Thu|Fri|Sat|Sun) \d{1,2}$/ })
-        .nth(1)
-        .click();
+      await namedDay(1).click();
       await button('7:00 PM').click();
       await button('1 hr 30 min').click();
       await button('4 weeks').click();
       await button('Create session and open chat').click();
-      const dayAfterTomorrow = new Intl.DateTimeFormat('en-CA', { timeZone: TIMEZONE }).format(
-        Date.now() + 2 * 86_400_000,
-      );
       assert.deepEqual(await sentTo('create_run'), {
         p_sport_id: 1,
         p_starts_on: dayAfterTomorrow,
@@ -315,6 +344,7 @@ try {
     await button('Soccer').click();
     await button('6:30 PM').click();
     await button('Use my location').click();
+    await page.getByText(/Meeting pin:/).waitFor();
     await page.getByRole('textbox', { name: 'Meeting spot name' }).fill('East side of the park');
     await button('Create session and open chat').click();
     const sent = await sentTo('create_run_at_pin');
@@ -362,22 +392,61 @@ try {
     await page.goto(`${APP}/session/${JOINED.session}`);
     await page.getByRole('button', { name: /Leave session/ }).click();
     await page.getByText('Leave this session?', { exact: true }).waitFor();
-    assert.ok(!writes.some((write) => write.target === 'leave_run_session'), 'left without asking');
-    await confirm('Leave session').click();
+    assert.ok(!wasSent('leave_run_session'), 'left without asking');
+    await inDialog('Leave session').click();
     assert.deepEqual(await sentTo('leave_run_session'), { p_session_id: JOINED.session });
+  });
+
+  await check('session: the organiser edits the name, day, start and length', async () => {
+    await page.goto(`${APP}/session/${HOSTED.session}`);
+    await page.getByRole('button', { name: /Edit session/ }).click();
+    await page.getByRole('textbox', { name: 'Session name' }).fill('Hosted check run, moved');
+    await namedDay(1).click();
+    await button('7:00 PM').click();
+    await button('2 hr').click();
+    await button('Save changes').click();
+    assert.deepEqual(await sentTo('edit_run_session'), {
+      p_session_id: HOSTED.session,
+      p_title: 'Hosted check run, moved',
+      p_date: dayAfterTomorrow,
+      p_start_time: '19:00',
+      p_end_time: '21:00',
+      p_timezone: TIMEZONE,
+    });
   });
 
   await check('session: the organiser cancelling asks first, then names the session', async () => {
     await page.goto(`${APP}/session/${HOSTED.session}`);
     await page.getByRole('button', { name: /Cancel session/ }).click();
     await page.getByText('Cancel this session?', { exact: true }).waitFor();
-    assert.ok(
-      !writes.some((write) => write.target === 'cancel_run_session'),
-      'cancelled without asking',
-    );
-    await confirm('Cancel session').click();
+    assert.ok(!wasSent('cancel_run_session'), 'cancelled without asking');
+    await inDialog('Cancel session').click();
     assert.deepEqual(await sentTo('cancel_run_session'), { p_session_id: HOSTED.session });
   });
+
+  await check(
+    'add a venue: shows nearby venues first, then sends the name, spot, sports and setting',
+    async () => {
+      await page.goto(`${APP}/venue-submission/new`);
+      await button('Use my location').click();
+      await page.getByText(/Final coordinates:/).waitFor();
+      await button('None of these — continue').click();
+      await page.getByRole('textbox', { name: 'Venue name', exact: true }).fill('Check Park Court');
+      await page.getByRole('textbox', { name: 'Address', exact: true }).fill('1 Check Street');
+      await button('Basketball').click();
+      await button('Outdoor').click();
+      await button('Submit for review').click();
+      assert.deepEqual(await sentTo('submit_venue'), {
+        p_name: 'Check Park Court',
+        p_lat: HERE.latitude,
+        p_lon: HERE.longitude,
+        p_sport_ids: [1],
+        p_indoor_state: 'outdoor',
+        p_address_text: '1 Check Street',
+      });
+      await page.getByText('Submitted for review', { exact: true }).waitFor();
+    },
+  );
 
   await check('profile: saving sends the name and the chosen sports', async () => {
     await page.goto(`${APP}/profile`);
@@ -398,6 +467,40 @@ try {
     await sentTo('logout');
     await button('Sign in or create account').waitFor();
   });
+
+  const deleting = await signedInPage(browser);
+  await check(
+    'delete account: needs the word typed, survives a failed request, then signs out',
+    async () => {
+      const { page: profile, functions } = deleting;
+      await profile.goto(`${APP}/profile`);
+      await profile.getByRole('button', { name: /Delete account/ }).click();
+      await deleting.inDialog('Keep my account').click();
+      await profile.getByRole('dialog').waitFor({ state: 'hidden' });
+      await profile.getByRole('button', { name: /Delete account/ }).click();
+      const remove = deleting.inDialog('Delete permanently');
+      assert.equal(await remove.getAttribute('aria-disabled'), 'true');
+      await profile.getByRole('textbox', { name: 'Type DELETE to confirm' }).fill('DELETE');
+
+      functions.deleteAccount = 'unreachable';
+      await remove.click();
+      await profile
+        .getByText('Could not connect. Check your connection and try again.', { exact: true })
+        .waitFor();
+      assert.ok(
+        await profile.evaluate((key) => localStorage.getItem(key), SESSION_KEY),
+        'a failed deletion signed the player out',
+      );
+
+      functions.deleteAccount = { deleted: true };
+      await remove.click();
+      assert.deepEqual(await deleting.sentTo('delete-account'), { confirmation: 'DELETE' });
+      await profile
+        .getByText('Your account and its data have been deleted.', { exact: true })
+        .waitFor();
+      assert.equal(await profile.evaluate((key) => localStorage.getItem(key), SESSION_KEY), null);
+    },
+  );
 
   await check('no screen threw an error', async () => {
     assert.deepEqual(pageErrors, []);

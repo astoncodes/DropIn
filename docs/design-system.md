@@ -169,9 +169,9 @@ The first four need no credentials: the public test stubs email delivery, the
 location test checks which screens require location, the unreachable test
 refuses every API request in the browser to check what players see when the
 server cannot be reached, and the signed-in test stores a session and stubs the
-API to check the request each signed-in action sends (check-in, creating a
-session, answering, chat, leaving, cancelling, profile and sign-out). The hosted
-tests need a
+API to check the request each signed-in action sends (check-in, creating and
+editing a session, answering, chat, leaving, cancelling, adding a venue, the
+profile, sign-out and account deletion). The hosted tests need a
 Supabase management token (`SUPABASE_ACCESS_TOKEN`) and an explicit project
 matching the root configuration; they create temporary accounts, exercise the UI
 with two accounts, and clean up in `finally`. The admin website test is described

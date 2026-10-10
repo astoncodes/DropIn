@@ -262,7 +262,7 @@ try {
   }
   console.log('PASS: venue address edit, verification, removal from discovery and restoration');
   await mobile.goto('http://localhost:8081/profile');
-  await mobile.getByRole('button', { name: 'Your venue submissions', exact: true }).click();
+  await mobile.getByRole('button', { name: /Your venue submissions/ }).click();
   await mobile.getByText('Approved', { exact: true }).waitFor();
   await mobile.getByText('Not approved', { exact: true }).waitFor();
   await mobile.getByText('Linked to an existing venue', { exact: true }).waitFor();
