@@ -2,7 +2,7 @@ import type { Tables } from '@dropin/database-types';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { supabase } from '../../lib/supabase';
-import { UserFacingError } from '../../lib/errors';
+import { UserFacingError } from '@dropin/shared';
 
 type RunSession = Tables<'run_sessions'>;
 type SessionPost = Tables<'session_posts'>;

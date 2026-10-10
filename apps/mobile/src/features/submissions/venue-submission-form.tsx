@@ -1,4 +1,4 @@
-import { DUPLICATE_DISTANCE_METRES } from '@dropin/shared';
+import { DUPLICATE_DISTANCE_METRES, userMessage } from '@dropin/shared';
 import type { IndoorState } from '@dropin/shared';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { useRouter } from 'expo-router';
@@ -21,7 +21,6 @@ import type { IconName } from '../../components/ui/primitives';
 import { useSubmitVenue } from './api';
 import { useDeviceLocation } from '../location/use-device-location';
 import { useRequiredLocation } from '../location/required-location';
-import { userMessage } from '../../lib/errors';
 import { loadPhase } from '../../lib/load-phase';
 
 export function VenueSubmissionForm() {

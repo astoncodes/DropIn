@@ -1,3 +1,5 @@
+import { userMessage } from '@dropin/shared';
+
 import { SignIn } from './features/auth/sign-in';
 import { AdminConsole } from './features/console/admin-console';
 import { useState } from 'react';
@@ -22,12 +24,11 @@ export default function App() {
     setSignOutError('');
     try {
       const { error } = await supabase.auth.signOut();
-      if (error) setSignOutError(error.message);
-      else client.clear();
+      if (error) throw error;
+      client.clear();
     } catch (error) {
-      setSignOutError(
-        error instanceof Error ? error.message : 'Unable to sign out. Please try again.',
-      );
+      console.error('[admin] Could not sign out', error);
+      setSignOutError(userMessage(error, 'Could not sign out. Try again.'));
     } finally {
       setSigningOut(false);
     }
@@ -92,7 +93,7 @@ export default function App() {
       {adminError && (
         <div className="card access-card error" role="alert">
           <h1>Let’s try that again.</h1>
-          {adminError.message}
+          {userMessage(adminError, 'Could not check your access. Try again.')}
           <button
             className="secondary"
             onClick={() => void checkAccess()}

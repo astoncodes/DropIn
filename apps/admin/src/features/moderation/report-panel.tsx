@@ -1,4 +1,4 @@
-import { MODERATION } from '@dropin/shared';
+import { MODERATION, userMessage } from '@dropin/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 
@@ -117,7 +117,7 @@ export function ReportPanel({
         )}
         {media.error && (
           <p className="error" role="alert">
-            Could not load the post’s media. {media.error.message}
+            {userMessage(media.error, 'Could not load the post’s media. Try again.')}
           </p>
         )}
       </div>
@@ -150,7 +150,9 @@ export function ReportPanel({
             {filesLeft.length === 1 ? '' : 's'} could not be deleted from storage. Retry so the file
             links stop working.
           </p>
-          {retryFiles.error && <p>{retryFiles.error.message}</p>}
+          {retryFiles.error && (
+            <p>{userMessage(retryFiles.error, 'The files could not be deleted. Try again.')}</p>
+          )}
           <button onClick={() => retryFiles.mutate()} disabled={retryFiles.isPending}>
             {retryFiles.isPending ? 'Deleting files…' : 'Retry file deletion'}
           </button>
@@ -206,7 +208,7 @@ export function ReportPanel({
           </label>
           {resolve.error && (
             <p className="error" role="alert">
-              {resolve.error.message}
+              {userMessage(resolve.error, 'Could not save this decision. Try again.')}
             </p>
           )}
           <button

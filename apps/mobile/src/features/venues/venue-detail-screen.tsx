@@ -31,7 +31,7 @@ import { SessionCard } from '../community/session-card';
 import { useJoinSession, useRunAttendance } from '../community/api';
 import type { UpcomingRun } from './api';
 import type { IconName } from '../../components/ui/primitives';
-import { userMessage } from '../../lib/errors';
+import { userMessage } from '@dropin/shared';
 import { loadPhase } from '../../lib/load-phase';
 import { uuidParam } from '../../lib/route-params';
 

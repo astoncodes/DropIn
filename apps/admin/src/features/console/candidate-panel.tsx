@@ -1,3 +1,4 @@
+import { UserFacingError, userMessage } from '@dropin/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 
@@ -50,7 +51,7 @@ export function CandidatePanel({
   });
   const mutation = useMutation({
     mutationFn: async () => {
-      if (!decision) throw new Error('Choose a decision');
+      if (!decision) throw new UserFacingError('Choose a decision.');
       const { error } = await supabase.rpc('admin_review_candidate', {
         p_candidate_id: c.id,
         p_decision: decision,
@@ -104,7 +105,10 @@ export function CandidatePanel({
       {details.isPending && <p role="status">Loading sports and duplicate evidence…</p>}
       {details.error && (
         <p className="error" role="alert">
-          {details.error.message}
+          {userMessage(
+            details.error,
+            'Could not load the sports and duplicate evidence. Close this panel and try again.',
+          )}
         </p>
       )}
       <p>{details.data?.sports.map((s) => s.sports?.name).join(' · ')}</p>
@@ -213,7 +217,7 @@ export function CandidatePanel({
           </p>
           {mutation.error && (
             <p className="error" role="alert">
-              {mutation.error.message}
+              {userMessage(mutation.error, 'Could not save this decision. Try again.')}
             </p>
           )}
           <button

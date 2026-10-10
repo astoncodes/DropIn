@@ -8,7 +8,7 @@ import type { IconName } from '../../components/ui/primitives';
 import { useSports } from '../venues/api';
 import { space, usePalette } from '../../theme';
 import { useAccountProfile, useAccountSports, useUpdateAccount } from './api';
-import { userMessage } from '../../lib/errors';
+import { userMessage } from '@dropin/shared';
 import { combineLoadPhases, loadPhase } from '../../lib/load-phase';
 
 export function ProfileForm({

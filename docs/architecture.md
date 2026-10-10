@@ -92,15 +92,17 @@ lookup that finds nothing returns `null` as data, so "not found" and "could not
 load" are different states. Record ids from the route pass through `uuidParam()`
 first; a malformed id is "not found" without a request.
 
-**React Query is the only retry layer.** The mobile Supabase client is created
+**React Query is the only retry layer.** Both Supabase clients are created
 with `db.retry` off, so a failed read costs two requests about a second apart
 before the screen can say so.
 
-**Errors shown to players go through `userMessage()`** (`apps/mobile/src/lib/errors.ts`).
-Business-rule messages raised by database functions (SQLSTATE 22023, 42501,
-P0001, P0002) pass through; RLS violations, constraint names, PostgREST and
-Auth internals become the caller's fallback text. App code throws
-`UserFacingError` for its own validation messages.
+**Errors shown to people go through `userMessage()`** (`packages/shared/src/errors.ts`),
+in the mobile app and on the admin website alike. Business-rule messages raised
+by database functions (SQLSTATE 22023, 42501, P0001, P0002) pass through; RLS
+violations, constraint names, PostgREST and Auth internals become the caller's
+fallback text. App code throws `UserFacingError` for its own validation
+messages. The admin website also writes the original error to the browser
+console, since its screens no longer show it.
 
 **Policies and support pages are app routes** (`/privacy`, `/terms`, `/support`,
 `/delete-account`), so the app and the hosted web build serve one copy of each.

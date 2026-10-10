@@ -1,6 +1,6 @@
 /**
  * Turns whatever a query, mutation or native call throws into text a player
- * can act on.
+ * can act on. The admin site uses it the same way for moderators.
  *
  * Database functions raise business-rule failures as readable sentences with
  * SQLSTATE 22023 (invalid parameter) or 42501 (not allowed) — "Move within 250

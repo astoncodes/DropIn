@@ -1,5 +1,6 @@
 /**
- * Cross-app constants shared by the mobile and admin clients.
+ * Cross-app constants shared by the mobile and admin clients, and the mapping
+ * from a thrown error to text that is safe to show (`./errors`).
  *
  * BOUNDARY — read before adding anything here.
  *
@@ -9,6 +10,10 @@
  * Enforcement lives in migrations and database functions. If a value here ever
  * disagrees with the database, the database is right and this file is a bug.
  *
+ * `./errors` is here for the same reason: it mirrors the SQLSTATE convention
+ * the database functions use for messages written for people, and both clients
+ * must read that convention the same way.
+ *
  * Do NOT put in this package:
  *   - merge, dedup, or check-in validation logic (lives in database functions)
  *   - anything derived from data (sports, regions — those are queried)
@@ -16,6 +21,8 @@
  *
  * Section references are to docs/product-rules.md.
  */
+
+export * from './errors';
 
 /** Check-in duration bounds, in minutes. §Check-ins */
 export const CHECK_IN_DURATION = {

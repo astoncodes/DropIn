@@ -21,7 +21,7 @@ import type { UpcomingRun } from '../venues/api';
 import { timeOfDay, weekdayName, weekdayGroup } from '../../lib/format';
 import { radius, space, usePalette } from '../../theme';
 import { useSession } from '../../providers/auth-context';
-import { userMessage } from '../../lib/errors';
+import { userMessage } from '@dropin/shared';
 import { combineLoadPhases, loadPhase } from '../../lib/load-phase';
 
 /** Only hosted, Going and Maybe sessions belong in the player's schedule. */

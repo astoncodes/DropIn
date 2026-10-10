@@ -1,4 +1,10 @@
-import { CHECK_IN_DURATION, CHECK_IN_NOTE_MAX_LENGTH, PARTY_SIZE } from '@dropin/shared';
+import {
+  CHECK_IN_DURATION,
+  CHECK_IN_NOTE_MAX_LENGTH,
+  PARTY_SIZE,
+  UserFacingError,
+  userMessage,
+} from '@dropin/shared';
 import { useRouter } from 'expo-router';
 import { useRef, useState } from 'react';
 import { View } from 'react-native';
@@ -15,7 +21,6 @@ import { useDeviceLocation } from '../location/use-device-location';
 import { useSports, useVenueDetail } from '../venues/api';
 import { SportsUnavailableNotice } from '../venues/sports-unavailable-notice';
 import { useOwnPresence, usePresenceAction } from './api';
-import { UserFacingError, userMessage } from '../../lib/errors';
 import { loadPhase } from '../../lib/load-phase';
 
 export function CheckInScreen({

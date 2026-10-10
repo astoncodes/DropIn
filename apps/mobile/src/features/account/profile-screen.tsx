@@ -13,7 +13,7 @@ import { Notice } from '../../components/ui/notice';
 import { AppText, Button } from '../../components/ui/primitives';
 import { ScreenHeader } from '../../components/ui/screen-header';
 import { useToast } from '../../components/ui/toast';
-import { userMessage } from '../../lib/errors';
+import { userMessage } from '@dropin/shared';
 import { loadPhase } from '../../lib/load-phase';
 import { supabase } from '../../lib/supabase';
 import { useSession } from '../../providers/auth-context';

@@ -9,7 +9,7 @@ import { ListSection, ListRow } from '../../components/ui/list-row';
 import { AppText, Button } from '../../components/ui/primitives';
 import { useToast } from '../../components/ui/toast';
 import { relativeTime } from '../../lib/format';
-import { userMessage } from '../../lib/errors';
+import { userMessage } from '@dropin/shared';
 import { loadPhase } from '../../lib/load-phase';
 import { useSession } from '../../providers/auth-context';
 import { useBlockedPlayers, useUnblockPlayer } from './api';

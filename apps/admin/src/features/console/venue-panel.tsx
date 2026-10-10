@@ -1,3 +1,4 @@
+import { userMessage } from '@dropin/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 
@@ -127,7 +128,14 @@ export function VenuePanel({
           <fieldset>
             <legend>Sports</legend>
             {existing.isPending && <p>Loading…</p>}
-            {existing.error && <p className="error">{existing.error.message}</p>}
+            {existing.error && (
+              <p className="error">
+                {userMessage(
+                  existing.error,
+                  'Could not load this location’s sports. Close this panel and try again.',
+                )}
+              </p>
+            )}
             {sports.map((s) => (
               <label className="checkbox" key={s.id}>
                 <input
@@ -154,7 +162,7 @@ export function VenuePanel({
           </p>
           {mutation.error && (
             <p className="error" role="alert">
-              {mutation.error.message}
+              {userMessage(mutation.error, 'Could not save this location. Try again.')}
             </p>
           )}
           <button disabled={mutation.isPending || !existing.data || !ids.length}>

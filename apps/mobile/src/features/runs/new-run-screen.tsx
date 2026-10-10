@@ -18,7 +18,7 @@ import { useDeviceLocation } from '../location/use-device-location';
 import { supabase } from '../../lib/supabase';
 import { useSession } from '../../providers/auth-context';
 import { radius, space, useThemeName } from '../../theme';
-import { UserFacingError, userMessage } from '../../lib/errors';
+import { UserFacingError, userMessage } from '@dropin/shared';
 import { tomorrowDate } from '../../lib/format';
 import { combineLoadPhases, loadPhase } from '../../lib/load-phase';
 import { uuidParam } from '../../lib/route-params';

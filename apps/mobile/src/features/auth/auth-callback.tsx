@@ -6,7 +6,7 @@ import { AppText, Button } from '../../components/ui/primitives';
 import { supabase } from '../../lib/supabase';
 import { space, usePalette } from '../../theme';
 import { routeAfterSignIn } from './route-after-sign-in';
-import { UserFacingError, userMessage } from '../../lib/errors';
+import { UserFacingError, userMessage } from '@dropin/shared';
 
 const EXPIRED_LINK = 'This sign-in link is invalid or has expired. Request a new one.';
 

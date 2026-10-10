@@ -1,11 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import {
-  CONNECTION_MESSAGE,
-  UserFacingError,
-  isNetworkError,
-  userMessage,
-} from '../src/lib/errors';
+import { CONNECTION_MESSAGE, UserFacingError, isNetworkError, userMessage } from '@dropin/shared';
 
 const FALLBACK = 'Could not save. Try again.';
 

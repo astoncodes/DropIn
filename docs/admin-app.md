@@ -125,5 +125,8 @@ node scripts/tests/browser-admin-website.mjs
 
 They cover sign-in rendering, the dashboard queue, approval and duplicate linking,
 rejection validation and RPC payloads, report removal with its storage clean-up request,
-success and empty states, navigation, browser Back, reload and mobile width.
+success and empty states, navigation, browser Back, reload and mobile width. They
+also check failures: a rule stated by the database is shown as written, database
+internals are not, and a server that cannot be reached is reported in plain words
+within a few seconds.
 Screenshots are saved in `test-results/ui/admin-website-*.png`.

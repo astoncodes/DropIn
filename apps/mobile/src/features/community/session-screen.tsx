@@ -36,7 +36,7 @@ import { SessionPhotoComposer } from './session-photo-composer';
 import { MomentsFeed } from './feed-screen';
 import { SessionEditForm } from './session-edit-form';
 import { SessionMessageList } from './session-chat';
-import { userMessage } from '../../lib/errors';
+import { userMessage } from '@dropin/shared';
 import { loadPhase } from '../../lib/load-phase';
 import { uuidParam } from '../../lib/route-params';
 

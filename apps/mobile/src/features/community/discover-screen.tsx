@@ -15,7 +15,7 @@ import type { UpcomingRun } from '../venues/api';
 import { useJoinSession, useRunAttendance } from './api';
 import { MomentsFeed } from './feed-screen';
 import { SessionCard } from './session-card';
-import { userMessage } from '../../lib/errors';
+import { userMessage } from '@dropin/shared';
 import { loadPhase } from '../../lib/load-phase';
 
 export function DiscoverScreen() {

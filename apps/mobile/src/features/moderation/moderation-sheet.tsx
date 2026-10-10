@@ -1,4 +1,4 @@
-import { MODERATION } from '@dropin/shared';
+import { MODERATION, userMessage } from '@dropin/shared';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { View } from 'react-native';
@@ -9,7 +9,6 @@ import { AppText, Button } from '../../components/ui/primitives';
 import { Sheet } from '../../components/ui/sheet';
 import { TextField } from '../../components/ui/text-field';
 import { useToast } from '../../components/ui/toast';
-import { userMessage } from '../../lib/errors';
 import { useSession } from '../../providers/auth-context';
 import { space } from '../../theme';
 import {
