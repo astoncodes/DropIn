@@ -214,7 +214,7 @@ export function Button({
     live: colors.liveSoft,
     alert: colors.alertSoft,
   }[tone];
-  const ink = { neutral: colors.text, live: colors.liveText, alert: colors.alert }[tone];
+  const ink = { neutral: colors.text, live: colors.liveText, alert: colors.alertText }[tone];
 
   // A faded ink button reads as a grey button that still works, so a solid
   // button that cannot be pressed is redrawn as a muted block instead. A
@@ -395,7 +395,7 @@ export function Tag({
     neutral: { bg: colors.surfaceMuted, fg: colors.text },
     live: { bg: colors.liveSoft, fg: colors.liveText },
     soon: { bg: colors.soonSoft, fg: colors.soonText },
-    alert: { bg: colors.alertSoft, fg: colors.alert },
+    alert: { bg: colors.alertSoft, fg: colors.alertText },
   }[tone];
   return (
     <View style={[styles.tag, { backgroundColor: palette.bg }]}>

@@ -48,7 +48,7 @@ colour, can carry the one thing that matters.
 
 | Token       | Values                                                                                              | Use                                                             |
 | ----------- | --------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
-| `palettes`  | white `background` and `surface`, grey `surfaceMuted`, ink `text`, `live`, `soon`, `alert`          | Colour by meaning; see Principles                               |
+| `palettes`  | white `background` and `surface`, grey `surfaceMuted`, ink `text`, `live`, `soon`, `alert`          | Colour by meaning; text on a tint uses the matching `…Text`     |
 | `space`     | 2, 4, 8, 12, 16, 24, 32, 48                                                                         | All padding, gaps and margins; the page gutter is 16            |
 | `radius`    | xs 4, sm 6, md 10, lg 14, xl 18                                                                     | Tags xs; chips sm; controls md; maps and cards lg; sheets xl    |
 | `fonts`     | `display` (Barlow Condensed Bold), `displayMedium` (SemiBold)                                       | Loaded in the root layout; never combined with `fontWeight`     |

@@ -48,6 +48,8 @@ export type Palette = {
   soonText: string;
   alert: string;
   alertSoft: string;
+  /** Red text on `alertSoft`; `alert` itself is too light to read on its own tint. */
+  alertText: string;
 
   scrim: string;
 };
@@ -75,6 +77,7 @@ export const palettes: Record<ThemeName, Palette> = {
     soonText: '#7A4300',
     alert: '#C2302F',
     alertSoft: '#F8E0DD',
+    alertText: '#A82726',
 
     scrim: 'rgba(15,26,22,0.5)',
   },
