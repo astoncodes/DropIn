@@ -12,7 +12,8 @@ only the code.
 The redesign was reviewed in the web builds only. Start from
 `npx expo prebuild --clean` in `apps/mobile`: the icon, the splash screen and
 the two removed native modules (`expo-blur`, `expo-glass-effect`) reach a native
-project no other way. The first two parts are assigned in issue #14.
+project no other way. The redesign and sign-in parts are assigned in issue #14,
+and the map package in #15.
 
 ### The redesign on a device
 
@@ -67,7 +68,7 @@ manual verification.
 
 The Supabase access token (`SUPABASE_ACCESS_TOKEN`, see `.env.example`) or the
 dashboard. The hosted scripts and the moderation check are assigned in
-issue #14.
+issue #14, and database tests in CI in #16.
 
 ### Hosted scripts
 
@@ -99,11 +100,12 @@ this end to end.
 
 ### Database tests in CI
 
-- [ ] The repository has no `database-tests` environment yet, and creating one
-      needs admin rights on it. Add `SUPABASE_TEST_PROJECT_REF`,
-      `SUPABASE_TEST_DB_URL` and `SUPABASE_ACCESS_TOKEN` to it as secrets, and
-      set its `SUPABASE_PROJECT_REF` variable to the app project for isolation
-      checks. Run `.github/workflows/database.yml` manually to verify the setup.
+- [ ] The repository has no `database-tests` environment yet. It belongs to a
+      personal account, so only its owner can create one and add secrets. Add
+      `SUPABASE_TEST_PROJECT_REF`, `SUPABASE_TEST_DB_URL` and
+      `SUPABASE_ACCESS_TOKEN` to it as secrets, and set its
+      `SUPABASE_PROJECT_REF` variable to the app project for isolation checks.
+      Run `.github/workflows/database.yml` manually to verify the setup.
 - [ ] Once that workflow passes reliably, move it off `workflow_dispatch` so it
       guards pull requests.
 
@@ -122,7 +124,7 @@ the next day. While they are paused the apps have no backend and
 ### Store release
 
 Account and configuration work is listed step by step in
-[docs/release.md](docs/release.md).
+[docs/release.md](docs/release.md). Assigned in issue #17.
 
 - [ ] Apple Developer Program and Google Play Console accounts; start the Play
       closed test early if the account is a new personal one.
@@ -136,6 +138,8 @@ Account and configuration work is listed step by step in
       Prince Edward Island governing law, 24-hour report review, operator name.
 
 ### Sign-in on the web
+
+Assigned in issue #18.
 
 - [ ] Google in the web build: new account, returning user, cancellation,
       sign-out, session persistence. It takes the `signInWithOAuth` redirect in
