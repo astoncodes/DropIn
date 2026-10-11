@@ -12,7 +12,7 @@ only the code.
 The redesign was reviewed in the web builds only. Start from
 `npx expo prebuild --clean` in `apps/mobile`: the icon, the splash screen and
 the two removed native modules (`expo-blur`, `expo-glass-effect`) reach a native
-project no other way.
+project no other way. The first two parts are assigned in issue #14.
 
 ### The redesign on a device
 
@@ -66,7 +66,8 @@ manual verification.
 ## Needs access to the hosted project
 
 The Supabase access token (`SUPABASE_ACCESS_TOKEN`, see `.env.example`) or the
-dashboard.
+dashboard. The hosted scripts and the moderation check are assigned in
+issue #14.
 
 ### Hosted scripts
 
