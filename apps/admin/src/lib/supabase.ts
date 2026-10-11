@@ -16,6 +16,10 @@ import { env } from './env';
  * about itself.
  */
 export const supabase = createClient<Database>(env.supabaseUrl, env.supabaseAnonKey, {
+  // React Query retries failed reads (see the QueryClient in main.tsx). The
+  // client's own retry of GET requests would run inside each of those attempts
+  // and delay every error message by about fifteen seconds.
+  db: { retry: false },
   auth: {
     persistSession: true,
     autoRefreshToken: true,

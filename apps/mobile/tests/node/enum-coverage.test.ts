@@ -11,7 +11,6 @@ import {
   PULSE_LABEL,
   PULSE_TONE,
 } from '../../src/lib/format';
-import { sportColors } from '../../src/theme/tokens';
 
 /**
  * These are the drift checks. The database owns these enums; the maps below are
@@ -71,9 +70,9 @@ describe('database enum coverage', () => {
  * would be a second source of truth for the taxonomy, which is exactly what the
  * repository rules forbid.
  *
- * Both maps must cover every seeded sport exactly. A missing entry renders a
- * grey trophy where a sport badge belongs; an extra entry is a colour nothing
- * can ever look up.
+ * The icon map must cover every seeded sport exactly. A sport is identified by
+ * its glyph alone, so a missing entry renders a trophy where the sport belongs,
+ * and an extra entry is an icon nothing can ever look up.
  */
 describe('sport identity coverage', () => {
   const migrationsDir = fileURLToPath(new URL('../../../../supabase/migrations', import.meta.url));
@@ -113,10 +112,6 @@ describe('sport identity coverage', () => {
     // every assertion below vacuously true.
     expect(seededSportSlugs()).toContain('basketball');
     expect(seededSportSlugs().length).toBeGreaterThanOrEqual(6);
-  });
-
-  it('gives every seeded sport a colour', () => {
-    expect(Object.keys(sportColors).sort()).toEqual(seededSportSlugs());
   });
 
   it('gives every seeded sport an icon', () => {

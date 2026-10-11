@@ -1,28 +1,38 @@
-import { CHECK_IN_DURATION, CHECK_IN_NOTE_MAX_LENGTH, PARTY_SIZE } from '@dropin/shared';
+import {
+  CHECK_IN_DURATION,
+  CHECK_IN_NOTE_MAX_LENGTH,
+  PARTY_SIZE,
+  UserFacingError,
+  userMessage,
+} from '@dropin/shared';
 import { useRouter } from 'expo-router';
 import { useRef, useState } from 'react';
 import { View } from 'react-native';
 
 import { Screen } from '../../components/screen';
-import { SportBadge } from '../../components/ui/brand';
+import { EmptyState, LoadError } from '../../components/ui/activity';
 import { Notice } from '../../components/ui/notice';
 import { AppText, Button, Chip, IconButton, sportIcon } from '../../components/ui/primitives';
+import { SegmentedControl } from '../../components/ui/segmented-control';
 import { TextField } from '../../components/ui/text-field';
 import { useSession } from '../../providers/auth-context';
-import { space } from '../../theme';
+import { radius, space, usePalette } from '../../theme';
 import { useDeviceLocation } from '../location/use-device-location';
 import { useSports, useVenueDetail } from '../venues/api';
+import { SportsUnavailableNotice } from '../venues/sports-unavailable-notice';
 import { useOwnPresence, usePresenceAction } from './api';
-import { UserFacingError, userMessage } from '../../lib/errors';
+import { loadPhase } from '../../lib/load-phase';
 
 export function CheckInScreen({
   venueId,
   initialArrival = false,
 }: {
-  venueId: string;
+  /** Undefined when the link did not carry a usable venue id. */
+  venueId: string | undefined;
   initialArrival?: boolean;
 }) {
   const router = useRouter();
+  const colors = usePalette();
   const { session, isLoading } = useSession();
   const venue = useVenueDetail(venueId);
   const sports = useSports();
@@ -42,6 +52,7 @@ export function CheckInScreen({
     (sport) => venue.data?.sport_slugs?.includes(sport.slug) && sport.is_active,
   );
   const selected = available.find((sport) => sport.id === sportId) ?? available[0];
+  const venuePhase = venueId ? loadPhase(venue) : 'ready';
 
   async function submit() {
     if (!session || !selected || !venue.data || inFlight.current) return;
@@ -88,7 +99,7 @@ export function CheckInScreen({
     }
   }
 
-  if (isLoading || venue.isPending)
+  if (isLoading || venuePhase === 'loading')
     return (
       <Screen insetTop={false}>
         <AppText>Loading your venue…</AppText>
@@ -97,52 +108,53 @@ export function CheckInScreen({
   if (!session)
     return (
       <Screen insetTop={false}>
-        <AppText variant="display">Meet you on the court.</AppText>
-        <AppText tone="muted">Sign in to check in or let players know you are on your way.</AppText>
-        <Button label="Sign in" onPress={() => router.push('/sign-in')} />
+        <EmptyState
+          title="Sign in to check in"
+          body="Checking in shows other players your name, so it needs an account."
+          action={<Button label="Sign in" size="sm" onPress={() => router.push('/sign-in')} />}
+        />
+      </Screen>
+    );
+  if (venuePhase === 'failed')
+    return (
+      <Screen insetTop={false}>
+        <LoadError
+          title="Could not load this venue"
+          onRetry={() => void venue.refetch()}
+          retrying={venue.isFetching}
+        />
       </Screen>
     );
   if (!venue.data)
     return (
       <Screen insetTop={false}>
-        <AppText variant="heading">This venue is unavailable.</AppText>
-        <Button label="Back to map" onPress={() => router.replace('/')} />
+        <EmptyState
+          title="This venue is unavailable."
+          action={<Button label="Back to map" size="sm" onPress={() => router.replace('/')} />}
+        />
       </Screen>
     );
   return (
     <Screen insetTop={false}>
-      <SportBadge slug={selected?.slug} size={56} />
-      <AppText variant="display">{arrival ? 'See you soon.' : 'Make it a game.'}</AppText>
-      <AppText tone="muted">{venue.data.name}</AppText>
-      <View style={{ flexDirection: 'row', gap: space.sm }}>
-        <Chip
-          label="I'm here"
-          selected={!arrival}
-          tone="live"
-          onPress={
-            busy
-              ? undefined
-              : () => {
-                  setArrival(false);
-                  setError('');
-                }
-          }
-        />
-        <Chip
-          label="On my way"
-          selected={arrival}
-          tone="live"
-          onPress={
-            busy
-              ? undefined
-              : () => {
-                  setArrival(true);
-                  setError('');
-                }
-          }
-        />
+      <View accessibilityRole="header">
+        <AppText variant="title">{venue.data.name}</AppText>
       </View>
-      <AppText variant="heading">What are you playing?</AppText>
+      <SegmentedControl
+        segments={[
+          { value: 'here', label: 'I’m here' },
+          { value: 'coming', label: 'On my way' },
+        ]}
+        value={arrival ? 'coming' : 'here'}
+        onChange={(mode) => {
+          if (busy) return;
+          setArrival(mode === 'coming');
+          setError('');
+        }}
+        accessibilityLabel="Check in or share that you are on your way"
+      />
+      <AppText variant="caption" style={{ fontWeight: '600' }}>
+        Sport
+      </AppText>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.sm }}>
         {available.map((sport) => (
           <Chip
@@ -154,13 +166,13 @@ export function CheckInScreen({
           />
         ))}
       </View>
-      {sports.isError && (
-        <Button label="Retry sports" variant="outline" onPress={() => void sports.refetch()} />
-      )}
-      {!sports.isPending && !available.length && (
+      <SportsUnavailableNotice sports={sports} />
+      {loadPhase(sports) === 'ready' && !available.length && (
         <AppText tone="muted">This venue has no active sports available for check-in yet.</AppText>
       )}
-      <AppText variant="heading">{arrival ? 'Arriving in' : 'How long are you staying?'}</AppText>
+      <AppText variant="caption" style={{ fontWeight: '600' }}>
+        {arrival ? 'Arriving in' : 'Staying for'}
+      </AppText>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.sm }}>
         {(arrival ? [15, 30, 60] : [30, 60, 90, 120, 180, 240]).map((value) => (
           <Chip
@@ -173,15 +185,29 @@ export function CheckInScreen({
       </View>
       {!arrival && (
         <>
-          <AppText variant="heading">Players, including you</AppText>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.lg }}>
+          <AppText variant="caption" style={{ fontWeight: '600' }}>
+            Players, including you
+          </AppText>
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              alignSelf: 'flex-start',
+              borderWidth: 1,
+              borderColor: colors.borderStrong,
+              borderRadius: radius.md,
+              backgroundColor: colors.surface,
+            }}
+          >
             <IconButton
               icon="minus"
               label="Fewer players"
               onPress={() => setParty((value) => Math.max(PARTY_SIZE.min, value - 1))}
               disabled={busy || party === PARTY_SIZE.min}
             />
-            <AppText variant="heading">{party}</AppText>
+            <AppText variant="heading" style={{ minWidth: 36, textAlign: 'center' }}>
+              {party}
+            </AppText>
             <IconButton
               icon="plus"
               label="More players"
@@ -219,6 +245,7 @@ export function CheckInScreen({
       <Button
         label={arrival ? "I'm on my way" : 'Check in now'}
         icon={arrival ? 'walk' : 'map-marker-check'}
+        tone={arrival ? 'neutral' : 'live'}
         onPress={() => void submit()}
         loading={busy}
         disabled={!selected || busy}

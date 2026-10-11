@@ -1,19 +1,17 @@
-import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { StyleSheet, Text, View } from 'react-native';
 
-import { elevation, radius, space, typeScale, usePalette } from '../../theme';
+import { space, typeScale, usePalette } from '../../theme';
 import { PressableSurface } from './primitives';
-import type { IconName } from './primitives';
 
-export type Segment<T extends string> = { value: T; label: string; icon?: IconName };
+export type Segment<T extends string> = { value: T; label: string };
 
 /**
  * Switches between views of the same content — Upcoming/Past, Details/Chat.
  * Not for filters (use Chip) or actions (use Button).
  *
- * The selected segment is a raised white surface rather than a coloured fill,
- * so the control reads as navigation and the app's green stays reserved for
- * actions and live activity.
+ * Drawn as text tabs on a rule, with the selected one underlined in ink. A
+ * boxed, pill-shaped control would read as a setting; this reads as sections
+ * of one page, which is what it switches between.
  */
 export function SegmentedControl<T extends string>({
   segments,
@@ -31,7 +29,7 @@ export function SegmentedControl<T extends string>({
     <View
       accessibilityRole="tablist"
       accessibilityLabel={accessibilityLabel}
-      style={[styles.track, { backgroundColor: colors.surfaceMuted }]}
+      style={[styles.track, { borderBottomColor: colors.border }]}
     >
       {segments.map((segment) => {
         const selected = segment.value === value;
@@ -42,29 +40,20 @@ export function SegmentedControl<T extends string>({
             accessibilityRole="tab"
             accessibilityLabel={segment.label}
             selected={selected}
-            // The track's padding would otherwise leave each segment 40pt tall.
-            hitSlop={{ top: 3, bottom: 3 }}
-            style={styles.segmentWrap}
           >
             <View
               style={[
                 styles.segment,
-                selected && [styles.selected, { backgroundColor: colors.surface }],
+                { borderBottomColor: selected ? colors.text : 'transparent' },
               ]}
             >
-              {segment.icon && (
-                <MaterialCommunityIcons
-                  name={segment.icon}
-                  size={16}
-                  color={selected ? colors.text : colors.textMuted}
-                />
-              )}
               <Text
                 maxFontSizeMultiplier={1.3}
                 numberOfLines={1}
                 style={[
-                  typeScale.caption,
-                  { color: selected ? colors.text : colors.textMuted, fontWeight: '700' },
+                  typeScale.heading,
+                  styles.label,
+                  { color: selected ? colors.text : colors.textFaint },
                 ]}
               >
                 {segment.label}
@@ -78,21 +67,13 @@ export function SegmentedControl<T extends string>({
 }
 
 const styles = StyleSheet.create({
-  track: {
-    flexDirection: 'row',
-    padding: 3,
-    borderRadius: radius.md,
-    gap: 3,
-  },
-  segmentWrap: { flex: 1 },
+  track: { flexDirection: 'row', gap: space.xl, borderBottomWidth: 1 },
   segment: {
-    minHeight: 40,
-    flexDirection: 'row',
-    alignItems: 'center',
+    minHeight: 44,
     justifyContent: 'center',
-    gap: space.xs,
-    paddingHorizontal: space.md,
-    borderRadius: radius.md - 3,
+    // Sits on the track's rule, so the selected tab's underline replaces it.
+    marginBottom: -1,
+    borderBottomWidth: 2,
   },
-  selected: { ...elevation.card, shadowOpacity: 0.08 },
+  label: { fontSize: 20, lineHeight: 24 },
 });

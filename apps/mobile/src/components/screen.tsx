@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { space as spacing, usePalette } from '../theme';
@@ -33,23 +33,14 @@ export function Screen({ children, insetTop = true }: { children: ReactNode; ins
   );
 }
 
-/** The page heading for a Screen, announced as a header. */
-export function Title({ children }: { children: ReactNode }) {
-  return (
-    <View accessibilityRole="header">
-      <AppText variant="display">{children}</AppText>
-    </View>
-  );
-}
-
-/** Supporting copy under a Title. */
+/** Supporting copy at the top of a Screen. */
 export function Body({ children }: { children: ReactNode }) {
   return <AppText tone="muted">{children}</AppText>;
 }
 
 const styles = StyleSheet.create({
   content: {
-    paddingHorizontal: spacing.xl,
+    paddingHorizontal: spacing.lg,
     width: '100%',
     maxWidth: 720,
     alignSelf: 'center',

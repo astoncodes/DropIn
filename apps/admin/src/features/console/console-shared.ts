@@ -23,8 +23,12 @@ export const pages: Page[] = [
   'Audit history',
 ];
 
-/** Turns an enum value such as `possible_duplicate` into readable text. */
-export const label = (value: string) => value.replaceAll('_', ' ');
+/** Turns an enum value such as `possible_duplicate` into "Possible duplicate". */
+export function label(value: string) {
+  const words = value.replaceAll('_', ' ');
+  return words.charAt(0).toUpperCase() + words.slice(1);
+}
 
-/** Reviewer-facing timestamp in the reviewer's own locale and zone. */
-export const date = (value: string) => new Date(value).toLocaleString();
+/** Reviewer-facing timestamp, to the minute, in the reviewer's own locale and zone. */
+export const date = (value: string) =>
+  new Date(value).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });

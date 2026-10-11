@@ -1,7 +1,7 @@
 import 'react-native-url-polyfill/auto';
 
 import { env } from '../../lib/env';
-import { UserFacingError } from '../../lib/errors';
+import { UserFacingError } from '@dropin/shared';
 
 export type GeocodingResult = {
   id: string;

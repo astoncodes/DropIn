@@ -1,7 +1,7 @@
 import type { Enums } from '@dropin/database-types';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
-import { UserFacingError } from '../../lib/errors';
+import { UserFacingError } from '@dropin/shared';
 import { supabase } from '../../lib/supabase';
 
 export type ReportTarget = Enums<'report_target'>;

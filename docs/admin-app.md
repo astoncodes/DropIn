@@ -19,7 +19,8 @@ Forward and reload preserve the selected page:
 The approval form shows only the fields needed for the selected decision. Rejection
 requires a nonblank reason, approvals require readable coordinates, and linking
 requires an existing location. Successful changes show confirmation on the page.
-The sign-in page is a compact email form. The website works at desktop and phone widths.
+The sign-in page is a compact email form. The website works at desktop and phone widths,
+and looks the way the [design system](design-system.md#admin-website) describes.
 
 ## Features
 
@@ -125,5 +126,8 @@ node scripts/tests/browser-admin-website.mjs
 
 They cover sign-in rendering, the dashboard queue, approval and duplicate linking,
 rejection validation and RPC payloads, report removal with its storage clean-up request,
-success and empty states, navigation, browser Back, reload and mobile width.
+success and empty states, navigation, browser Back, reload and mobile width. They
+also check failures: a rule stated by the database is shown as written, database
+internals are not, and a server that cannot be reached is reported in plain words
+within a few seconds.
 Screenshots are saved in `test-results/ui/admin-website-*.png`.

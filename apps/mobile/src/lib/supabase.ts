@@ -19,6 +19,11 @@ import { secureStorage } from './secure-storage';
 export const AUTH_STORAGE_KEY = `sb-${new URL(env.supabaseUrl).hostname.split('.')[0]}-auth-token`;
 
 export const supabase = createClient<Database>(env.supabaseUrl, env.supabaseAnonKey, {
+  // React Query retries failed reads (see the QueryClient in providers). The
+  // client's own retry of GET requests would run inside each of those attempts
+  // — eight requests and about fifteen seconds before a screen can say that a
+  // read failed — so retrying is left to the one layer the screens observe.
+  db: { retry: false },
   auth: {
     storage: secureStorage,
     storageKey: AUTH_STORAGE_KEY,

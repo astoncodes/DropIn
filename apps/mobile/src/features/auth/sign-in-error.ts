@@ -11,7 +11,7 @@
  * developer-facing half.
  */
 
-import { CONNECTION_MESSAGE, isNetworkError, userMessage } from '../../lib/errors';
+import { CONNECTION_MESSAGE, isNetworkError, userMessage } from '@dropin/shared';
 
 export const SIGN_IN_FALLBACK_MESSAGE =
   'Something went wrong signing you in. Please try again in a moment.';

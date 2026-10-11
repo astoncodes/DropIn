@@ -1,4 +1,4 @@
-import { MODERATION } from '@dropin/shared';
+import { MODERATION, userMessage } from '@dropin/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 
@@ -91,13 +91,13 @@ export function ReportPanel({
   return (
     <Panel title="Review report" close={close}>
       <span className="badge">{TARGET_LABEL[group.targetKind]}</span>
-      <h3>
+      <h3 className="subject">
         {group.reports.length} {group.reports.length === 1 ? 'report' : 'reports'} about {author}’s{' '}
         {TARGET_LABEL[group.targetKind].toLowerCase()}
       </h3>
       <small>First reported {date(group.firstReportedAt)}</small>
 
-      <div className="card wide">
+      <div className="card">
         <strong>What the reporter saw</strong>
         <p className="reported-content">{group.snapshot || 'No text — see media below.'}</p>
         {media.data?.map((item) =>
@@ -117,14 +117,14 @@ export function ReportPanel({
         )}
         {media.error && (
           <p className="error" role="alert">
-            Could not load the post’s media. {media.error.message}
+            {userMessage(media.error, 'Could not load the post’s media. Try again.')}
           </p>
         )}
       </div>
 
       <h3>Reports</h3>
       {group.reports.map((report) => (
-        <div className="card wide" key={report.id}>
+        <div className="card" key={report.id}>
           <strong>{label(report.reason)}</strong>
           {report.details && <p>“{report.details}”</p>}
           <small>
@@ -144,13 +144,15 @@ export function ReportPanel({
       ))}
 
       {filesLeft.length > 0 ? (
-        <div className="card wide error" role="alert">
+        <div className="card error" role="alert">
           <p>
             The content is removed from Drop In, but {filesLeft.length} file
             {filesLeft.length === 1 ? '' : 's'} could not be deleted from storage. Retry so the file
             links stop working.
           </p>
-          {retryFiles.error && <p>{retryFiles.error.message}</p>}
+          {retryFiles.error && (
+            <p>{userMessage(retryFiles.error, 'The files could not be deleted. Try again.')}</p>
+          )}
           <button onClick={() => retryFiles.mutate()} disabled={retryFiles.isPending}>
             {retryFiles.isPending ? 'Deleting files…' : 'Retry file deletion'}
           </button>
@@ -164,7 +166,7 @@ export function ReportPanel({
         >
           <fieldset>
             <legend>Decision</legend>
-            <div className="decision-options two">
+            <div className="decision-options">
               <label>
                 <input
                   type="radio"
@@ -206,7 +208,7 @@ export function ReportPanel({
           </label>
           {resolve.error && (
             <p className="error" role="alert">
-              {resolve.error.message}
+              {userMessage(resolve.error, 'Could not save this decision. Try again.')}
             </p>
           )}
           <button

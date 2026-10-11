@@ -1,4 +1,4 @@
-import { DUPLICATE_DISTANCE_METRES } from '@dropin/shared';
+import { DUPLICATE_DISTANCE_METRES, userMessage } from '@dropin/shared';
 import type { IndoorState } from '@dropin/shared';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { useRouter } from 'expo-router';
@@ -14,13 +14,14 @@ import { TextField } from '../../components/ui/text-field';
 import { searchPlaces } from '../geocoding/geoapify';
 import type { GeocodingResult } from '../geocoding/geoapify';
 import { useNearbyVenues, useSports } from '../venues/api';
+import { SportsUnavailableNotice } from '../venues/sports-unavailable-notice';
 import { useSession } from '../../providers/auth-context';
-import { elevation, radius, space, usePalette, useThemeName } from '../../theme';
+import { radius, space, usePalette, useThemeName } from '../../theme';
 import type { IconName } from '../../components/ui/primitives';
 import { useSubmitVenue } from './api';
 import { useDeviceLocation } from '../location/use-device-location';
 import { useRequiredLocation } from '../location/required-location';
-import { userMessage } from '../../lib/errors';
+import { loadPhase } from '../../lib/load-phase';
 
 export function VenueSubmissionForm() {
   const initialLocation = useRequiredLocation();
@@ -60,6 +61,8 @@ export function VenueSubmissionForm() {
     sportIds: [],
     radiusM: DUPLICATE_DISTANCE_METRES.submissionPrevention,
   });
+
+  const nearbyPhase = loadPhase(nearby);
 
   const marker = useMemo(
     () => [
@@ -264,7 +267,7 @@ export function VenueSubmissionForm() {
               accessibilityLabel={`Use ${result.label}`}
             >
               <View style={[styles.result, { borderBottomColor: colors.border }]}>
-                <MaterialCommunityIcons name="map-marker-outline" size={20} color={colors.info} />
+                <MaterialCommunityIcons name="map-marker-outline" size={20} color={colors.text} />
                 <AppText variant="caption" style={{ flex: 1 }}>
                   {result.label}
                 </AppText>
@@ -298,9 +301,9 @@ export function VenueSubmissionForm() {
             These are all existing venues within {DUPLICATE_DISTANCE_METRES.submissionPrevention}{' '}
             metres of your pin.
           </AppText>
-          {nearby.isPending ? (
+          {nearbyPhase === 'loading' ? (
             <ActivityIndicator color={colors.live} />
-          ) : nearby.isError ? (
+          ) : nearbyPhase === 'failed' ? (
             <Notice
               tone="error"
               message="Nearby venues could not be checked. Try again."
@@ -310,6 +313,7 @@ export function VenueSubmissionForm() {
                   size="sm"
                   tone="neutral"
                   variant="soft"
+                  loading={nearby.isFetching}
                   onPress={() => void nearby.refetch()}
                 />
               }
@@ -341,7 +345,7 @@ export function VenueSubmissionForm() {
           <Button
             label="None of these — continue"
             onPress={() => setDuplicateCheckAccepted(true)}
-            disabled={!pinSelected || nearby.isPending || nearby.isError}
+            disabled={!pinSelected || nearbyPhase !== 'ready'}
           />
         </View>
       ) : (
@@ -367,6 +371,7 @@ export function VenueSubmissionForm() {
 
           <View style={{ gap: space.sm }}>
             <AppText variant="heading">Sports</AppText>
+            <SportsUnavailableNotice sports={sports} />
             <View style={styles.chipRow}>
               {(sports.data ?? [])
                 .filter((sport) => sport.is_active)
@@ -453,7 +458,6 @@ const styles = StyleSheet.create({
     borderRadius: radius.xl,
     padding: space.lg,
     gap: space.md,
-    ...elevation.card,
   },
   nearbyRow: { minHeight: 50, flexDirection: 'row', alignItems: 'center', gap: space.sm },
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },

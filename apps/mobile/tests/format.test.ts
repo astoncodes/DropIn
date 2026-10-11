@@ -2,14 +2,12 @@ import { describe, expect, it } from 'vitest';
 
 import {
   activitySummary,
+  dayLabel,
   distanceLabel,
   relativeFuture,
   relativeTime,
   remainingTime,
   timeOfDay,
-  tomorrowDate,
-  weekdayGroup,
-  weekdayName,
 } from '../src/lib/format';
 
 /**
@@ -111,33 +109,10 @@ describe('distanceLabel', () => {
   });
 });
 
-describe('weekdayGroup', () => {
-  const on = (iso: string) => new Date(iso);
-
-  it('groups by calendar day, not by elapsed hours', () => {
-    // 23:00 and 01:00 the next day are two hours apart but different days.
-    expect(weekdayGroup('2026-09-07T23:00:00', on('2026-09-07T21:00:00'))).toBe('today');
-    expect(weekdayGroup('2026-09-08T01:00:00', on('2026-09-07T23:00:00'))).toBe('tomorrow');
-  });
-
-  it('treats anything already past as today, so nothing renders as overdue', () => {
-    expect(weekdayGroup('2026-09-05T10:00:00', on('2026-09-07T10:00:00'))).toBe('today');
-  });
-
-  it('falls through to the week bucket beyond tomorrow', () => {
-    expect(weekdayGroup('2026-09-09T10:00:00', on('2026-09-07T10:00:00'))).toBe('week');
-  });
-
-  it('crosses a month boundary without arithmetic drift', () => {
-    expect(weekdayGroup('2026-10-01T09:00:00', on('2026-09-30T21:00:00'))).toBe('tomorrow');
-  });
-});
-
-describe('timeOfDay and weekdayName', () => {
-  it('formats a local time and the weekday it falls on', () => {
+describe('timeOfDay', () => {
+  it('formats a local time', () => {
     // Locale output varies by environment, so assert shape, not exact glyphs.
     expect(timeOfDay('2026-09-07T14:30:00')).toMatch(/2.30|14.30/);
-    expect(weekdayName('2026-09-07T14:30:00')).toBe('Monday');
   });
 });
 
@@ -164,12 +139,23 @@ describe('activitySummary', () => {
   });
 });
 
-describe('tomorrowDate', () => {
-  it('uses the local calendar and pads month and day', () => {
-    expect(tomorrowDate(new Date(2026, 8, 26, 23, 30))).toBe('2026-09-27');
+describe('dayLabel — which day a session is on, as a player would say it', () => {
+  const now = new Date(2026, 9, 9, 15, 0); // Friday 9 October 2026, mid-afternoon
+
+  it('says Today for later the same day', () => {
+    expect(dayLabel(new Date(2026, 9, 9, 19, 0).toISOString(), now)).toBe('Today');
   });
 
-  it('rolls over months and years', () => {
-    expect(tomorrowDate(new Date(2026, 11, 31, 9, 0))).toBe('2027-01-01');
+  it('says Tomorrow for the next calendar day, even when it is hours away', () => {
+    expect(dayLabel(new Date(2026, 9, 10, 0, 30).toISOString(), now)).toBe('Tomorrow');
+  });
+
+  it('names the weekday and date beyond tomorrow', () => {
+    expect(dayLabel(new Date(2026, 9, 11, 9, 0).toISOString(), now)).toMatch(/Sun.*11/);
+    expect(dayLabel(new Date(2026, 9, 15, 20, 0).toISOString(), now)).toMatch(/Thu.*15/);
+  });
+
+  it('names the date for a day that has passed, rather than calling it Today', () => {
+    expect(dayLabel(new Date(2026, 9, 6, 19, 0).toISOString(), now)).toMatch(/Tue.*6/);
   });
 });

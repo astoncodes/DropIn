@@ -1,16 +1,19 @@
+import { userMessage } from '@dropin/shared';
 import { useState } from 'react';
-import { View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import VenueMap from '../../components/map/venue-map';
 import { Notice } from '../../components/ui/notice';
 import { AppText, Button } from '../../components/ui/primitives';
 import { TextField } from '../../components/ui/text-field';
-import { space, useThemeName } from '../../theme';
+import { radius, space, useThemeName } from '../../theme';
+import { SessionTimeFields, sessionEnd, sessionLength } from '../runs/session-time-fields';
+import type { SessionTimes } from '../runs/session-time-fields';
 import type { EditSessionInput, useSessionOverview } from './api';
-import { userMessage } from '../../lib/errors';
 
 type Session = NonNullable<ReturnType<typeof useSessionOverview>['data']>;
 
+/** The session's wall-clock date and time in its own zone, as the form edits them. */
 function localFields(instant: string, timezone: string) {
   const parts = new Intl.DateTimeFormat('en-CA', {
     timeZone: timezone,
@@ -41,30 +44,34 @@ export function SessionEditForm({
 }) {
   const scheme = useThemeName();
   const [title, setTitle] = useState(item.title);
-  const [date, setDate] = useState(localFields(item.starts_at, item.timezone).date);
-  const [start, setStart] = useState(localFields(item.starts_at, item.timezone).time);
-  const [end, setEnd] = useState(localFields(item.ends_at, item.timezone).time);
+  const [times, setTimes] = useState<SessionTimes>(() => {
+    const starts = localFields(item.starts_at, item.timezone);
+    return {
+      date: starts.date,
+      start: starts.time,
+      minutes: sessionLength(starts.time, localFields(item.ends_at, item.timezone).time),
+    };
+  });
   const [name, setName] = useState(item.venueName);
   const [pin, setPin] = useState({ latitude: item.latitude ?? 0, longitude: item.longitude ?? 0 });
   const [error, setError] = useState('');
   async function save() {
     setError('');
-    if (
-      !/^\d{4}-\d{2}-\d{2}$/.test(date) ||
-      !/^([01]\d|2[0-3]):[0-5]\d$/.test(start) ||
-      !/^([01]\d|2[0-3]):[0-5]\d$/.test(end) ||
-      start >= end ||
-      title.trim().length < 2
-    ) {
-      setError('Enter a title, date as YYYY-MM-DD, and 24-hour times with end after start.');
+    const end = sessionEnd(times);
+    if (title.trim().length < 2) {
+      setError('Give the session a name of at least two characters.');
+      return;
+    }
+    if (!end) {
+      setError('That runs past midnight. Choose an earlier start or a shorter length.');
       return;
     }
     try {
       await onSave({
         p_session_id: item.id,
         p_title: title,
-        p_date: date,
-        p_start_time: start,
+        p_date: times.date,
+        p_start_time: times.start,
         p_end_time: end,
         p_timezone: item.timezone,
         ...(item.venue_id === null
@@ -76,39 +83,40 @@ export function SessionEditForm({
       setError(userMessage(cause, 'Could not save. Try again.'));
     }
   }
-  const fields = [
-    { label: 'Session title', value: title, change: setTitle, max: 80 },
-    { label: 'Date (YYYY-MM-DD)', value: date, change: setDate, max: 10 },
-    { label: 'Start (24-hour HH:MM)', value: start, change: setStart, max: 5 },
-    { label: 'End (24-hour HH:MM)', value: end, change: setEnd, max: 5 },
-    ...(item.venue_id === null
-      ? [{ label: 'Meeting spot', value: name, change: setName, max: 120 }]
-      : []),
-  ];
   return (
-    <View style={{ padding: space.lg, gap: space.md }}>
-      <AppText variant="heading">Edit this session</AppText>
+    <View style={styles.form}>
+      <View accessibilityRole="header">
+        <AppText variant="heading">Edit this session</AppText>
+      </View>
       <AppText variant="caption" tone="muted">
-        Only this occurrence changes. Times are in {item.timezone}.
+        Only this date changes. Other weeks in the series stay as they are.
       </AppText>
-      {fields.map((field) => (
-        <TextField
-          key={field.label}
-          label={field.label}
-          value={field.value}
-          onChangeText={field.change}
-          editable={!pending}
-          maxLength={field.max}
-          autoCapitalize="none"
-        />
-      ))}
+      <TextField
+        label="Session name"
+        value={title}
+        onChangeText={setTitle}
+        editable={!pending}
+        maxLength={80}
+      />
+      <SessionTimeFields
+        timezone={item.timezone}
+        value={times}
+        onChange={setTimes}
+        disabled={pending}
+      />
       {item.venue_id === null && (
         <>
-          <AppText variant="caption">Tap the map or drag the pin to move the meeting spot.</AppText>
-          <View
-            style={{ height: 220, position: 'relative' }}
-            pointerEvents={pending ? 'none' : 'auto'}
-          >
+          <TextField
+            label="Meeting spot name"
+            value={name}
+            onChangeText={setName}
+            editable={!pending}
+            maxLength={120}
+          />
+          <AppText variant="caption" tone="muted">
+            Tap the map or drag the pin to move the meeting spot.
+          </AppText>
+          <View style={styles.map} pointerEvents={pending ? 'none' : 'auto'}>
             <VenueMap
               colorScheme={scheme}
               region={{ ...pin, latitudeDelta: 0.012, longitudeDelta: 0.012 }}
@@ -132,14 +140,22 @@ export function SessionEditForm({
         </>
       )}
       {error ? <Notice tone="error" message={error} /> : null}
-      <Button label="Save changes" loading={pending} onPress={() => void save()} />
-      <Button
-        label="Discard changes"
-        tone="neutral"
-        variant="soft"
-        disabled={pending}
-        onPress={onClose}
-      />
+      <View style={styles.actions}>
+        <Button
+          label="Save changes"
+          loading={pending}
+          style={styles.action}
+          onPress={() => void save()}
+        />
+        <Button label="Discard" variant="ghost" disabled={pending} onPress={onClose} />
+      </View>
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  form: { gap: space.lg },
+  map: { height: 220, borderRadius: radius.lg, overflow: 'hidden' },
+  actions: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
+  action: { flex: 1 },
+});

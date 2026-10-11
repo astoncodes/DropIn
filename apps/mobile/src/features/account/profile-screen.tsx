@@ -13,7 +13,8 @@ import { Notice } from '../../components/ui/notice';
 import { AppText, Button } from '../../components/ui/primitives';
 import { ScreenHeader } from '../../components/ui/screen-header';
 import { useToast } from '../../components/ui/toast';
-import { userMessage } from '../../lib/errors';
+import { userMessage } from '@dropin/shared';
+import { loadPhase } from '../../lib/load-phase';
 import { supabase } from '../../lib/supabase';
 import { useSession } from '../../providers/auth-context';
 import { space } from '../../theme';
@@ -37,15 +38,10 @@ export function ProfileAccountScreen() {
       ) : (
         <Card>
           <EmptyState
-            icon="account-outline"
             title="Your people are out there"
             body="Sign in to join sessions, chat with players and keep your sports in one place."
             action={
-              <Button
-                label="Sign in or create account"
-                icon="arrow-right"
-                onPress={() => router.push('/sign-in')}
-              />
+              <Button label="Sign in or create account" onPress={() => router.push('/sign-in')} />
             }
           />
         </Card>
@@ -65,7 +61,7 @@ export function ProfileAccountScreen() {
         />
       </ListSection>
       <View style={styles.footer}>
-        <BrandMark size={24} showTagline />
+        <BrandMark size={22} />
         <AppText variant="caption" tone="faint">
           Version {Constants.expoConfig?.version ?? 'unknown'}
         </AppText>
@@ -113,6 +109,22 @@ function SignedInProfile({ userId, email }: { userId: string; email: string }) {
               tone="alert"
               variant="soft"
               onPress={() => setDeleting(true)}
+            />
+          }
+        />
+      )}
+      {loadPhase(profile) === 'failed' && (
+        <Notice
+          tone="error"
+          message="Could not load your profile. Check your connection and try again."
+          action={
+            <Button
+              label="Try again"
+              size="sm"
+              tone="neutral"
+              variant="soft"
+              loading={profile.isFetching}
+              onPress={() => void profile.refetch()}
             />
           }
         />

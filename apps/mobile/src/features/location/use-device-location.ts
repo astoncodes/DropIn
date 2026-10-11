@@ -2,7 +2,7 @@ import * as Location from 'expo-location';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AppState } from 'react-native';
 import { readDevicePosition } from './read-device-position';
-import { userMessage } from '../../lib/errors';
+import { userMessage } from '@dropin/shared';
 
 export type LocationState =
   | { status: 'idle' }

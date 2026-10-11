@@ -1,9 +1,9 @@
 import { Pressable, StyleSheet, View } from 'react-native';
 
-import { EmptyState, Skeleton } from '../../components/ui/activity';
-import { AppText, Button } from '../../components/ui/primitives';
-import { userMessage } from '../../lib/errors';
+import { EmptyState, LoadError, Skeleton } from '../../components/ui/activity';
+import { AppText } from '../../components/ui/primitives';
 import { relativeTime } from '../../lib/format';
+import { loadPhase } from '../../lib/load-phase';
 import { radius, space, usePalette } from '../../theme';
 import type { useSessionMessages } from './api';
 
@@ -24,21 +24,20 @@ export function SessionMessageList({
   viewerId: string | undefined;
   onModerate: (message: Message) => void;
 }) {
-  if (messages.isError) {
+  const phase = loadPhase(messages);
+  if (phase === 'failed') {
     return (
-      <EmptyState
-        icon="alert-circle-outline"
+      <LoadError
         title="Couldn’t load chat"
-        body={userMessage(messages.error, 'Check your connection and try again.')}
-        action={<Button label="Try again" onPress={() => void messages.refetch()} />}
+        onRetry={() => void messages.refetch()}
+        retrying={messages.isFetching}
       />
     );
   }
-  if (messages.isPending) return <Skeleton height={180} />;
+  if (phase === 'loading') return <Skeleton height={180} />;
   if (!messages.data?.length) {
     return (
       <EmptyState
-        icon="message-outline"
         title="Start the conversation"
         body="Ask what to bring or where everyone is meeting."
       />
@@ -46,11 +45,13 @@ export function SessionMessageList({
   }
   return (
     <>
-      {messages.data.map((message) => (
+      {messages.data.map((message, index) => (
         <MessageBubble
           key={message.id}
           message={message}
           mine={message.user_id === viewerId}
+          // A run of messages from one player is named once, at its start.
+          continued={messages.data[index - 1]?.user_id === message.user_id}
           onModerate={() => onModerate(message)}
         />
       ))}
@@ -61,22 +62,29 @@ export function SessionMessageList({
 function MessageBubble({
   message,
   mine,
+  continued,
   onModerate,
 }: {
   message: Message;
   mine: boolean;
+  continued: boolean;
   onModerate: () => void;
 }) {
   const colors = usePalette();
   const meta = `${mine ? 'You' : message.authorName} · ${relativeTime(message.created_at)}`;
+  // The player's own messages are ink, not green: green means live activity.
   const bubble = (
     <View
       style={[
         styles.bubble,
         mine
-          ? { backgroundColor: colors.live, borderBottomRightRadius: radius.sm / 2 }
-          : { backgroundColor: colors.surface, borderBottomLeftRadius: radius.sm / 2 },
-        !mine && { borderColor: colors.border, borderWidth: StyleSheet.hairlineWidth },
+          ? { backgroundColor: colors.surfaceInverse, borderBottomRightRadius: radius.xs }
+          : {
+              backgroundColor: colors.surface,
+              borderBottomLeftRadius: radius.xs,
+              borderColor: colors.border,
+              borderWidth: 1,
+            },
       ]}
     >
       <AppText variant="body" tone={mine ? 'inverse' : 'default'}>
@@ -86,10 +94,12 @@ function MessageBubble({
   );
 
   return (
-    <View style={[styles.row, mine && styles.mine]}>
-      <AppText variant="micro" tone="muted">
-        {meta}
-      </AppText>
+    <View style={[styles.row, mine && styles.mine, !continued && styles.firstOfRun]}>
+      {!continued && (
+        <AppText variant="micro" tone="muted">
+          {meta}
+        </AppText>
+      )}
       {mine ? (
         <View style={styles.bubbleColumn}>{bubble}</View>
       ) : (
@@ -114,6 +124,7 @@ function MessageBubble({
 const styles = StyleSheet.create({
   row: { gap: 4, alignItems: 'flex-start' },
   mine: { alignItems: 'flex-end' },
+  firstOfRun: { paddingTop: space.sm },
   bubbleColumn: { maxWidth: '84%' },
   bubble: {
     maxWidth: '100%',

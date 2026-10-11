@@ -5,8 +5,9 @@ import { StyleSheet, View } from 'react-native';
 import { useFonts } from 'expo-font';
 
 import { env } from '../../lib/env';
-import { palettes, sportColor } from '../../theme/tokens';
+import { fonts, palettes } from '../../theme/tokens';
 import { AppText, sportIcon } from '../ui/primitives';
+import { MAP_STYLE_URL, PIN } from './types';
 import type { MapRegion, VenueMapProps } from './types';
 
 if (env.mapboxAccessToken) Mapbox.setAccessToken(env.mapboxAccessToken);
@@ -68,7 +69,7 @@ export default function VenueMap({
     <View style={[StyleSheet.absoluteFill, style]}>
       <MapView
         style={StyleSheet.absoluteFill}
-        styleURL="mapbox://styles/mapbox/streets-v12"
+        styleURL={MAP_STYLE_URL}
         zoomEnabled
         onCameraChanged={(state) => {
           zoom.current = state.properties.zoom;
@@ -105,10 +106,10 @@ export default function VenueMap({
         />
         {markers.map((marker) => (
           <PointAnnotation
-            key={`${marker.id}/${marker.selected}/${marker.count}/${colorScheme}/${fontsLoaded}`}
+            key={`${marker.id}/${marker.selected}/${marker.count}/${marker.isPending}/${colorScheme}/${fontsLoaded}`}
             id={marker.id}
             coordinate={[marker.longitude, marker.latitude]}
-            anchor={marker.kind === 'session' ? { x: 0.5, y: 49 / 56 } : { x: 0.5, y: 24 / 44 }}
+            anchor={{ x: 0.5, y: 0.5 }}
             onSelected={() => onSelectMarker?.(marker.id)}
             draggable={marker.draggable}
             onDragEnd={(event) =>
@@ -118,37 +119,41 @@ export default function VenueMap({
               })
             }
           >
-            <View
-              style={{ width: 48, height: marker.kind === 'session' ? 56 : 44 }}
-              collapsable={false}
-              accessibilityLabel={marker.label}
-            >
+            <View style={styles.box} collapsable={false} accessibilityLabel={marker.label}>
               <View
                 style={[
                   styles.pin,
-                  {
-                    backgroundColor: sportColor(marker.sportSlug),
-                    borderColor: marker.selected ? colors.text : '#FFFFFF',
-                  },
-                  marker.kind === 'session' && styles.sessionPin,
+                  marker.kind === 'session'
+                    ? { backgroundColor: colors.surface, borderColor: colors.text }
+                    : { backgroundColor: colors.text, borderColor: colors.surface },
+                  marker.selected && styles.selected,
                 ]}
-              />
-              <View
-                style={[styles.glyph, marker.kind === 'session' && { backgroundColor: '#FFFFFF' }]}
               >
                 <MaterialCommunityIcons
                   name={marker.sportSlug ? sportIcon(marker.sportSlug) : 'map-marker-outline'}
-                  size={20}
-                  color={marker.kind === 'session' ? sportColor(marker.sportSlug) : '#FFFFFF'}
+                  size={PIN.glyph}
+                  color={marker.kind === 'session' ? colors.text : colors.textInverse}
                 />
               </View>
-              {marker.count > 0 && (
-                <View style={[styles.badge, { backgroundColor: colors.live }]}>
-                  <AppText style={{ color: '#FFFFFF', fontSize: 10, lineHeight: 14 }}>
+              {marker.count > 0 ? (
+                <View
+                  style={[
+                    styles.badge,
+                    { backgroundColor: colors.live, borderColor: colors.surface },
+                  ]}
+                >
+                  <AppText style={[styles.count, { color: colors.textInverse }]}>
                     {Math.min(marker.count, 99)}
                   </AppText>
                 </View>
-              )}
+              ) : marker.isPending && marker.kind !== 'session' ? (
+                <View
+                  style={[
+                    styles.pending,
+                    { backgroundColor: colors.soon, borderColor: colors.surface },
+                  ]}
+                />
+              ) : null}
             </View>
           </PointAnnotation>
         ))}
@@ -159,41 +164,39 @@ export default function VenueMap({
 }
 
 const styles = StyleSheet.create({
+  box: { width: PIN.box, height: PIN.box },
   pin: {
     position: 'absolute',
-    left: 6,
-    top: 6,
-    width: 36,
-    height: 36,
-    borderRadius: 10,
+    left: (PIN.box - PIN.size) / 2,
+    top: (PIN.box - PIN.size) / 2,
+    width: PIN.size,
+    height: PIN.size,
+    borderRadius: PIN.radius,
     borderWidth: 2,
-  },
-  sessionPin: {
-    borderRadius: 18,
-    borderBottomRightRadius: 3,
-    transform: [{ rotate: '45deg' }],
-  },
-  glyph: {
-    position: 'absolute',
-    left: 11,
-    top: 11,
-    width: 26,
-    height: 26,
-    borderRadius: 13,
     alignItems: 'center',
     justifyContent: 'center',
   },
+  selected: { transform: [{ scale: 1.12 }] },
   badge: {
     position: 'absolute',
     right: 0,
     top: 0,
-    minWidth: 16,
-    height: 16,
-    paddingHorizontal: 3,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#FFFFFF',
+    minWidth: PIN.badge + 2,
+    height: PIN.badge + 2,
+    paddingHorizontal: 4,
+    borderRadius: PIN.badge,
+    borderWidth: 2,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  count: { fontFamily: fonts.display, fontSize: 15, lineHeight: 16 },
+  pending: {
+    position: 'absolute',
+    right: 2,
+    top: 2,
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    borderWidth: 2,
   },
 });

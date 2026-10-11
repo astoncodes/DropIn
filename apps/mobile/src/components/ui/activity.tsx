@@ -1,14 +1,13 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { useEffect, useState } from 'react';
+import type { ReactNode } from 'react';
 import { Animated, Easing, StyleSheet, View } from 'react-native';
 import type { StyleProp, ViewStyle } from 'react-native';
 
 import { useReduceMotion } from '../../lib/accessibility';
-import { radius, space, typeScale, usePalette } from '../../theme';
-import { AppText } from './primitives';
+import { radius, space, usePalette } from '../../theme';
+import { AppText, Button } from './primitives';
 import type { IconName } from './primitives';
-
-export type ActivityTone = 'live' | 'soon' | 'info' | 'quiet';
 
 /**
  * A slow expanding ring behind a solid dot — the visual shorthand for
@@ -19,7 +18,8 @@ export type ActivityTone = 'live' | 'soon' | 'info' | 'quiet';
  * animates on an empty court would be the most damaging kind of decoration,
  * because it would imply activity that is not there.
  */
-export function LivePulse({ color, size = 10 }: { color: string; size?: number }) {
+export function LivePulse({ size = 8 }: { size?: number }) {
+  const colors = usePalette();
   const [progress] = useState(() => new Animated.Value(0));
   const reduceMotion = useReduceMotion();
 
@@ -42,14 +42,7 @@ export function LivePulse({ color, size = 10 }: { color: string; size?: number }
   }, [progress, reduceMotion]);
 
   return (
-    <View
-      style={{
-        width: size * 2.6,
-        height: size * 2.6,
-        alignItems: 'center',
-        justifyContent: 'center',
-      }}
-    >
+    <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
       {!reduceMotion && (
         <Animated.View
           style={{
@@ -57,94 +50,64 @@ export function LivePulse({ color, size = 10 }: { color: string; size?: number }
             width: size,
             height: size,
             borderRadius: size,
-            backgroundColor: color,
+            backgroundColor: colors.live,
             opacity: progress.interpolate({ inputRange: [0, 1], outputRange: [0.5, 0] }),
             transform: [
-              { scale: progress.interpolate({ inputRange: [0, 1], outputRange: [1, 2.6] }) },
+              { scale: progress.interpolate({ inputRange: [0, 1], outputRange: [1, 2.8] }) },
             ],
           }}
         />
       )}
-      <View style={{ width: size, height: size, borderRadius: size, backgroundColor: color }} />
+      <View
+        style={{ width: size, height: size, borderRadius: size, backgroundColor: colors.live }}
+      />
     </View>
   );
 }
+
+export type StatTone = 'live' | 'soon' | 'default' | 'quiet';
 
 /**
- * The headline activity signal on a card or venue header.
- *
- * The count reads at scoreboard weight because it is the single most useful
- * number on the screen; everything else is supporting detail.
+ * One figure on a scoreboard: a large number or time over a small-capitals
+ * label. `live` is the only tone that uses green, and only for a count of
+ * people who are present right now.
  */
-export function ActivityBadge({
-  label,
-  tone,
-  count,
-  style,
-}: {
-  label: string;
-  tone: ActivityTone;
-  count?: number;
-  style?: StyleProp<ViewStyle>;
-}) {
-  const colors = usePalette();
-
-  const tones: Record<ActivityTone, { bg: string; fg: string; dot: string }> = {
-    live: { bg: colors.liveSoft, fg: colors.liveText, dot: colors.live },
-    soon: { bg: colors.soonSoft, fg: colors.soonText, dot: colors.soon },
-    info: { bg: colors.infoSoft, fg: colors.info, dot: colors.info },
-    quiet: { bg: colors.surfaceMuted, fg: colors.textMuted, dot: colors.textFaint },
-  };
-  const t = tones[tone];
-
-  return (
-    <View
-      accessibilityRole="text"
-      accessibilityLabel={count != null ? `${count} ${label}` : label}
-      style={[styles.badge, { backgroundColor: t.bg, borderRadius: radius.pill }, style]}
-    >
-      {tone === 'live' ? (
-        <LivePulse color={t.dot} size={8} />
-      ) : (
-        <View style={{ width: 8, height: 8, borderRadius: 8, backgroundColor: t.dot }} />
-      )}
-      <AppText variant="caption" style={{ color: t.fg, fontWeight: '700' }}>
-        {label}
-      </AppText>
-    </View>
-  );
-}
-
-/** Big scoreboard-weight number with a label underneath. */
-export function ScoreStat({
+export function Stat({
   value,
   label,
-  tone = 'live',
+  tone = 'default',
+  align = 'left',
 }: {
   value: number | string;
   label: string;
-  tone?: ActivityTone;
+  tone?: StatTone;
+  align?: 'left' | 'right';
 }) {
   const colors = usePalette();
   const color = {
     live: colors.live,
     soon: colors.soon,
-    info: colors.info,
+    default: colors.text,
     quiet: colors.textFaint,
   }[tone];
 
   return (
-    <View style={{ alignItems: 'flex-start', gap: 2 }}>
-      <AppText variant="score" style={{ color }}>
+    <View
+      accessible
+      accessibilityLabel={`${value} ${label}`}
+      style={{ alignItems: align === 'right' ? 'flex-end' : 'flex-start', gap: 2 }}
+    >
+      <AppText variant="score" numberOfLines={1} style={{ color }}>
         {value}
       </AppText>
-      <AppText variant="micro" tone="muted" style={{ textTransform: 'uppercase' }}>
+      <AppText variant="label" tone="muted">
         {label}
       </AppText>
     </View>
   );
 }
 
+/** A short-lived fact about a venue: lights on, wet surface, locked. */
 export function ConditionChip({
   icon,
   label,
@@ -152,29 +115,15 @@ export function ConditionChip({
 }: {
   icon: IconName;
   label: string;
+  /** True when the condition is a reason not to travel there. */
   blocking: boolean;
 }) {
   const colors = usePalette();
+  const color = blocking ? colors.alert : colors.textMuted;
   return (
-    <View
-      style={[
-        styles.badge,
-        {
-          backgroundColor: blocking ? colors.alertSoft : colors.surfaceMuted,
-          borderRadius: radius.pill,
-          paddingVertical: 5,
-        },
-      ]}
-    >
-      <MaterialCommunityIcons
-        name={icon}
-        size={13}
-        color={blocking ? colors.alert : colors.textMuted}
-      />
-      <AppText
-        variant="micro"
-        style={{ color: blocking ? colors.alert : colors.textMuted, fontWeight: '700' }}
-      >
+    <View style={styles.condition}>
+      <MaterialCommunityIcons name={icon} size={16} color={color} />
+      <AppText variant="caption" style={{ color, fontWeight: blocking ? '600' : '400' }}>
         {label}
       </AppText>
     </View>
@@ -219,7 +168,7 @@ export function Skeleton({
           backgroundColor: colors.surfaceMuted,
           opacity: reduceMotion
             ? 0.6
-            : shimmer.interpolate({ inputRange: [0, 1], outputRange: [0.45, 0.85] }),
+            : shimmer.interpolate({ inputRange: [0, 1], outputRange: [0.4, 0.8] }),
         },
         style,
       ]}
@@ -227,58 +176,79 @@ export function Skeleton({
   );
 }
 
+/**
+ * What a list or screen says when it has nothing to show: what is missing, in
+ * plain words, and the one thing to do about it. Left-aligned like the content
+ * it stands in for, with no illustration — an empty list is not an occasion.
+ */
 export function EmptyState({
-  icon,
   title,
   body,
   action,
 }: {
-  icon: IconName;
   title: string;
-  body: string;
-  action?: React.ReactNode;
+  body?: string;
+  action?: ReactNode;
 }) {
-  const colors = usePalette();
   return (
     <View style={styles.empty}>
-      <View
-        style={{
-          width: 56,
-          height: 56,
-          borderRadius: radius.pill,
-          backgroundColor: colors.surfaceMuted,
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}
-      >
-        <MaterialCommunityIcons name={icon} size={26} color={colors.textMuted} />
+      <View accessibilityRole="header">
+        <AppText variant="heading">{title}</AppText>
       </View>
-      <AppText variant="heading" style={{ textAlign: 'center' }}>
-        {title}
-      </AppText>
-      <AppText variant="body" tone="muted" style={{ textAlign: 'center', maxWidth: 300 }}>
-        {body}
-      </AppText>
-      {action}
+      {body && <AppText tone="muted">{body}</AppText>}
+      {action && <View style={styles.emptyActions}>{action}</View>}
     </View>
   );
 }
 
+/**
+ * Stands in for content that could not be loaded (the `failed` load phase).
+ *
+ * It stays on screen while later attempts run, so the retry does not move or
+ * vanish under someone's thumb; `retrying` shows that an attempt is in flight.
+ * Screens without a navigation header pass a way out as `secondaryAction`.
+ */
+export function LoadError({
+  title,
+  body = 'Check your connection and try again.',
+  onRetry,
+  retrying = false,
+  secondaryAction,
+}: {
+  title: string;
+  body?: string;
+  onRetry: () => void;
+  retrying?: boolean;
+  secondaryAction?: ReactNode;
+}) {
+  return (
+    <EmptyState
+      title={title}
+      body={body}
+      action={
+        <>
+          <Button
+            label="Try again"
+            variant="outline"
+            size="sm"
+            loading={retrying}
+            onPress={onRetry}
+          />
+          {secondaryAction}
+        </>
+      }
+    />
+  );
+}
+
 const styles = StyleSheet.create({
-  badge: {
+  condition: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  empty: { gap: space.sm, paddingVertical: space.xl },
+  emptyActions: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     alignItems: 'center',
-    gap: 6,
-    paddingVertical: 6,
-    paddingHorizontal: space.md,
-    alignSelf: 'flex-start',
-  },
-  empty: {
-    alignItems: 'center',
-    gap: space.md,
-    paddingVertical: space.xxl,
-    paddingHorizontal: space.xl,
+    gap: space.sm,
+    paddingTop: space.sm,
   },
 });
-
-export { typeScale };

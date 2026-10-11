@@ -3,8 +3,9 @@ import { useMemo, useState } from 'react';
 import { ScrollView, View, RefreshControl } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { EmptyState, Skeleton } from '../../components/ui/activity';
-import { AppText, Button, Chip, IconButton, sportIcon } from '../../components/ui/primitives';
+import { EmptyState, LoadError, Skeleton } from '../../components/ui/activity';
+import { Button, Chip, IconButton, sportIcon } from '../../components/ui/primitives';
+import { Notice } from '../../components/ui/notice';
 import { ScreenHeader } from '../../components/ui/screen-header';
 import { SegmentedControl } from '../../components/ui/segmented-control';
 import { TextField } from '../../components/ui/text-field';
@@ -14,8 +15,9 @@ import { useUpcomingRuns, useSports } from '../venues/api';
 import type { UpcomingRun } from '../venues/api';
 import { useJoinSession, useRunAttendance } from './api';
 import { MomentsFeed } from './feed-screen';
-import { SessionCard } from './session-card';
-import { userMessage } from '../../lib/errors';
+import { SessionRow } from './session-row';
+import { userMessage } from '@dropin/shared';
+import { loadPhase } from '../../lib/load-phase';
 
 export function DiscoverScreen() {
   const colors = usePalette();
@@ -34,6 +36,7 @@ export function DiscoverScreen() {
     session?.user.id,
   );
   const join = useJoinSession();
+  const runsPhase = loadPhase(runs);
   const responses = useMemo(
     () =>
       new Map(
@@ -68,11 +71,11 @@ export function DiscoverScreen() {
 
   return (
     <View
-      style={{ flex: 1, backgroundColor: colors.background, paddingTop: insets.top + space.lg }}
+      style={{ flex: 1, backgroundColor: colors.background, paddingTop: insets.top + space.md }}
     >
       <View
         style={{
-          paddingHorizontal: space.xl,
+          paddingHorizontal: space.lg,
           gap: space.md,
           width: '100%',
           maxWidth: 760,
@@ -81,7 +84,6 @@ export function DiscoverScreen() {
       >
         <ScreenHeader
           title="Discover"
-          subtitle="A good game is closer than you think."
           actions={
             <>
               <IconButton
@@ -96,7 +98,7 @@ export function DiscoverScreen() {
               <IconButton
                 icon="plus"
                 label="Create session"
-                tone="live"
+                filled
                 onPress={() => router.push('/run/new')}
               />
             </>
@@ -104,8 +106,8 @@ export function DiscoverScreen() {
         />
         <SegmentedControl
           segments={[
-            { value: 'sessions', label: 'Sessions', icon: 'calendar-outline' },
-            { value: 'moments', label: 'Moments', icon: 'image-outline' },
+            { value: 'sessions', label: 'Sessions' },
+            { value: 'moments', label: 'Moments' },
           ]}
           value={tab}
           onChange={setTab}
@@ -132,8 +134,8 @@ export function DiscoverScreen() {
               horizontal
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={{
-                paddingHorizontal: space.xl,
-                paddingVertical: space.lg,
+                paddingHorizontal: space.lg,
+                paddingVertical: space.md,
                 gap: space.sm,
               }}
             >
@@ -174,43 +176,38 @@ export function DiscoverScreen() {
               />
             }
             contentContainerStyle={{
-              paddingHorizontal: space.xl,
+              paddingHorizontal: space.lg,
               paddingBottom: space.xxl,
-              gap: space.lg,
               width: '100%',
               maxWidth: 760,
               alignSelf: 'center',
             }}
           >
-            {!!error && (
-              <View accessibilityRole="alert">
-                <AppText tone="alert">{error}</AppText>
+            {!!error && <Notice tone="error" message={error} />}
+            {runsPhase === 'loading' ? (
+              <View style={{ gap: space.md, paddingTop: space.md }}>
+                <Skeleton height={72} />
+                <Skeleton height={72} />
+                <Skeleton height={72} />
               </View>
-            )}
-            {runs.isPending ? (
-              <>
-                <Skeleton height={220} />
-                <Skeleton height={220} />
-              </>
-            ) : runs.isError ? (
-              <EmptyState
-                icon="wifi-off"
+            ) : runsPhase === 'failed' ? (
+              <LoadError
                 title="Could not load sessions"
-                body="Check your connection and try again."
-                action={<Button label="Try again" onPress={() => void runs.refetch()} />}
+                onRetry={() => void runs.refetch()}
+                retrying={runs.isFetching}
               />
             ) : matching.length ? (
               <>
-                <AppText variant="heading">Coming up</AppText>
                 {matching.map((item) => {
                   const response = responses.get(`${item.run_series_id}-${item.occurrence_date}`);
                   return (
-                    <SessionCard
+                    <SessionRow
                       key={`${item.run_series_id}-${item.occurrence_date}`}
                       item={item}
                       response={response}
+                      showDescription
                       hosting={item.organizer_id === session?.user.id}
-                      attendanceUnavailable={attendance.isError || attendance.isPending}
+                      attendanceUnavailable={loadPhase(attendance) !== 'ready'}
                       pending={
                         join.isPending &&
                         join.variables?.runSeriesId === item.run_series_id &&
@@ -228,21 +225,16 @@ export function DiscoverScreen() {
               </>
             ) : (
               <EmptyState
-                icon="basketball"
-                title={
-                  search || selectedSports.length
-                    ? 'No matching sessions'
-                    : 'Be the first to get a game going'
-                }
+                title={search || selectedSports.length ? 'No matching sessions' : 'No sessions yet'}
                 body={
                   search || selectedSports.length
                     ? 'Try another search or clear your sport filters.'
-                    : 'Choose a place, pick a time, and invite your community to play.'
+                    : 'Nothing is scheduled in the next two weeks. Start one and it shows up here.'
                 }
                 action={
                   <Button
                     label={search || selectedSports.length ? 'Clear filters' : 'Create a session'}
-                    icon={search || selectedSports.length ? 'filter-remove-outline' : 'plus'}
+                    size="sm"
                     onPress={() => {
                       if (search || selectedSports.length) {
                         setSearch('');

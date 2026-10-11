@@ -6,7 +6,7 @@ import { Dialog } from '../../components/ui/dialog';
 import { Notice } from '../../components/ui/notice';
 import { AppText, Button } from '../../components/ui/primitives';
 import { TextField } from '../../components/ui/text-field';
-import { UserFacingError, userMessage } from '../../lib/errors';
+import { UserFacingError, userMessage } from '@dropin/shared';
 import { supabase } from '../../lib/supabase';
 import { useSession } from '../../providers/auth-context';
 

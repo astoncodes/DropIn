@@ -2,9 +2,21 @@
 
 import type { ThemeName } from '../../theme/tokens';
 
+/**
+ * A muted basemap: streets and parks are still readable, but the pins are the
+ * darkest things on it and a live count is the only saturated colour.
+ */
+export const MAP_STYLE_URL = 'mapbox://styles/mapbox/light-v11';
+
+/** Pin geometry shared by the native and web renderers. */
+export const PIN = { box: 44, size: 34, radius: 9, glyph: 19, badge: 18 } as const;
+
 export type MapMarker = {
   id: string;
-  /** Locations and sessions retain distinct shapes regardless of activity. */
+  /**
+   * Venues are solid ink; sessions are outlined. The two stay distinct
+   * regardless of activity, because one is a place and the other is a plan.
+   */
   kind?: 'venue' | 'session';
   latitude: number;
   longitude: number;

@@ -85,8 +85,8 @@ for app startup.** That privileged Postgres connection is only for maintenance
 scripts. Never put a database password or service-role key in
 `EXPO_PUBLIC_*`, `VITE_*`, or application code. `.env` is ignored by Git.
 
-Geoapify powers location search. Mapbox powers native and web maps, with natural
-street styling and a blue live-location dot. Pinch to zoom on
+Geoapify powers location search. Mapbox powers native and web maps, with a muted
+street style and a blue live-location dot. Pinch to zoom on
 touchscreens or use the mouse wheel on web. Set a public `pk.*` Mapbox token;
 never place a secret `sk.*` token in client configuration. Without a token,
 the map displays an unavailable message and the venue list remains usable.
@@ -333,6 +333,7 @@ npm run test:supabase -- --project-ref=YOUR_PROJECT_REF
 | Symptom                                    | What to check                                                                                                 |
 | ------------------------------------------ | ------------------------------------------------------------------------------------------------------------- |
 | Missing Supabase URL/key                   | Fill in the root`.env` using the exact variable names above; restart the server.                              |
+| Every screen says it could not connect     | The Supabase project may be paused (free plan, after a week idle). Restore it in the dashboard.               |
 | Sign-in email never arrives                | Check spam, Supabase Auth logs and SMTP configuration; default delivery is limited to project-team addresses. |
 | Login returns to the wrong page            | Check the exact host, port and callback in Supabase's redirect allowlist.                                     |
 | Empty map or no sessions                   | An empty database is valid. Create a pin session; inspect any displayed network errors separately.            |

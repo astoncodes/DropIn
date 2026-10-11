@@ -42,11 +42,25 @@ const mediaPath = 'author-1/post-1/photo.jpg';
 let reportsOpen = true;
 const resolutions = [];
 const fileRemovals = [];
+// Endpoint name → 'unreachable', or the error response PostgREST would send.
+const failures = new Map();
+const rejected = (status, code, message) => ({
+  status,
+  body: { code, message, details: null, hint: null },
+});
 try {
   const context = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
   await context.route('https://admin-test.supabase.co/**', async (route) => {
     const url = new URL(route.request().url());
     const table = url.pathname.split('/').at(-1);
+    const failure = failures.get(table);
+    if (failure === 'unreachable') return route.abort('internetdisconnected');
+    if (failure)
+      return route.fulfill({
+        status: failure.status,
+        contentType: 'application/json',
+        body: JSON.stringify(failure.body),
+      });
     let data = [];
     if (table === 'is_admin') data = true;
     if (table === 'regions')
@@ -194,9 +208,70 @@ try {
     'Page must fit mobile viewport',
   );
   await page.screenshot({ path: 'test-results/ui/admin-website-mobile.png', fullPage: true });
+
+  // Failures. A rule the database wrote for people is shown as written; engine
+  // text and transport errors are replaced by words a moderator can act on.
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  pending = true;
+  await page.getByRole('button', { name: 'Refresh data' }).click();
+  await page.getByRole('button', { name: 'Review', exact: true }).click();
+  await page.getByLabel(/^Decision/).selectOption('reject');
+  await page.getByLabel('Review note').fill('Not a sports venue.');
+  failures.set(
+    'admin_review_candidate',
+    rejected(400, '22023', 'This submission has already been reviewed.'),
+  );
+  await page.getByRole('button', { name: 'Confirm review decision' }).click();
+  await page
+    .getByRole('alert')
+    .filter({ hasText: 'This submission has already been reviewed.' })
+    .waitFor();
+  failures.set(
+    'admin_review_candidate',
+    rejected(403, '42501', 'new row violates row-level security policy for table "venues"'),
+  );
+  await page.getByRole('button', { name: 'Confirm review decision' }).click();
+  await page
+    .getByRole('alert')
+    .filter({ hasText: 'Could not save this decision. Try again.' })
+    .waitFor();
+  assert.equal(await page.getByText('row-level security').count(), 0);
+  failures.delete('admin_review_candidate');
+  await page.getByRole('button', { name: 'Close details' }).click();
+
+  await page.getByRole('link', { name: 'Location approvals', exact: true }).click();
+  await page.getByText('Riverside Basketball Court').waitFor();
+  failures.set('venue_candidates', 'unreachable');
+  await page.getByRole('button', { name: 'Refresh data' }).click();
+  // Two attempts a second apart, with margin: one retry layer, not two.
+  await page
+    .getByRole('alert')
+    .filter({ hasText: 'Could not connect. Check your connection and try again.' })
+    .waitFor({ timeout: 6000 });
+  assert.equal(await page.getByText('Failed to fetch').count(), 0);
+  failures.delete('venue_candidates');
+  await page.getByRole('button', { name: 'Try again', exact: true }).click();
+  await page.getByRole('alert').waitFor({ state: 'hidden' });
+  await page.getByText('Riverside Basketball Court').waitFor();
+
+  const visitor = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
+  await visitor.route('https://admin-test.supabase.co/**', (route) =>
+    route.abort('internetdisconnected'),
+  );
+  const signIn = await visitor.newPage();
+  signIn.on('pageerror', (error) => errors.push(error.message));
+  await signIn.goto(base);
+  await signIn.getByLabel('Email address').fill('admin@example.test');
+  await signIn.getByRole('button', { name: 'Email me a sign-in link' }).click();
+  await signIn
+    .getByRole('alert')
+    .filter({ hasText: 'Could not connect. Check your connection and try again.' })
+    .waitFor();
+  assert.equal(await signIn.getByText('Failed to fetch').count(), 0);
+
   assert.deepEqual(errors, []);
   console.log(
-    'Admin website passed: sign in, dashboard, approval, duplicate linking, rejection payload and validation, report removal with storage clean-up, success feedback, empty states, navigation, back, reload, reference pages, mobile width, and no browser errors.',
+    'Admin website passed: sign in, dashboard, approval, duplicate linking, rejection payload and validation, report removal with storage clean-up, success feedback, empty states, navigation, back, reload, reference pages, mobile width, safe and prompt failure messages, and no browser errors.',
   );
 } finally {
   await browser.close();

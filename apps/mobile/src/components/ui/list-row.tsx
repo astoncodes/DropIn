@@ -3,14 +3,14 @@ import { Children, Fragment, isValidElement } from 'react';
 import type { ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
 
-import { radius, space, usePalette } from '../../theme';
+import { space, usePalette } from '../../theme';
 import { AppText, PressableSurface } from './primitives';
 import type { IconName } from './primitives';
 
 /**
- * A titled group of rows on one surface — the settings-list pattern people
- * already know from their phone. Dividers are inserted between rows here so
- * no row has to know whether it is first or last.
+ * A labelled run of rows divided by rules, sitting directly on the page. Rules
+ * are inserted between rows here so no row has to know whether it is first or
+ * last.
  */
 export function ListSection({
   title,
@@ -23,24 +23,26 @@ export function ListSection({
 }) {
   const colors = usePalette();
   const rows = Children.toArray(children).filter(isValidElement);
+  // Callers pass rows conditionally; a section with none draws nothing.
+  if (rows.length === 0) return null;
 
   return (
     <View style={styles.section}>
       {title && (
-        <AppText variant="micro" tone="muted" style={styles.sectionTitle}>
-          {title.toUpperCase()}
+        <AppText variant="label" tone="muted">
+          {title}
         </AppText>
       )}
-      <View style={[styles.group, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+      <View style={[styles.group, { borderColor: colors.border }]}>
         {rows.map((row, index) => (
           <Fragment key={row.key ?? index}>
-            {index > 0 && <View style={[styles.divider, { backgroundColor: colors.border }]} />}
+            {index > 0 && <View style={[styles.rule, { backgroundColor: colors.border }]} />}
             {row}
           </Fragment>
         ))}
       </View>
       {footer && (
-        <AppText variant="caption" tone="muted" style={styles.footer}>
+        <AppText variant="caption" tone="muted">
           {footer}
         </AppText>
       )}
@@ -84,16 +86,7 @@ export function ListRow({
   const content = (
     <View style={styles.row}>
       {leading}
-      {icon && !leading && (
-        <View
-          style={[
-            styles.icon,
-            { backgroundColor: tone === 'alert' ? colors.alertSoft : colors.surfaceMuted },
-          ]}
-        >
-          <MaterialCommunityIcons name={icon} size={18} color={foreground} />
-        </View>
-      )}
+      {icon && !leading && <MaterialCommunityIcons name={icon} size={22} color={foreground} />}
       <View style={styles.copy}>
         <AppText variant="body" style={{ color: foreground }}>
           {title}
@@ -136,29 +129,15 @@ export function ListRow({
 
 const styles = StyleSheet.create({
   section: { gap: space.sm },
-  sectionTitle: { paddingHorizontal: space.xs },
-  group: {
-    borderRadius: radius.lg,
-    borderWidth: StyleSheet.hairlineWidth,
-    overflow: 'hidden',
-  },
-  divider: { height: StyleSheet.hairlineWidth, marginLeft: space.lg },
+  group: { borderTopWidth: 1, borderBottomWidth: 1 },
+  rule: { height: 1 },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: space.md,
     minHeight: 56,
-    paddingHorizontal: space.lg,
     paddingVertical: space.md,
-  },
-  icon: {
-    width: 32,
-    height: 32,
-    borderRadius: radius.sm,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   copy: { flex: 1, gap: 2 },
   value: { maxWidth: '45%' },
-  footer: { paddingHorizontal: space.xs },
 });

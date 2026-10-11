@@ -82,10 +82,11 @@ function ToastView({ toast, onDone }: { toast: Toast; onDone: () => void }) {
     };
   }, [toast, progress, reduceMotion, onDone]);
 
+  // Tints light enough to read on the toast's ink background.
   const iconColor = {
-    success: colors.live,
-    info: colors.info,
-    error: colors.alert,
+    success: colors.liveSoft,
+    info: colors.textInverse,
+    error: colors.alertSoft,
   }[toast.tone];
 
   return (

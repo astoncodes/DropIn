@@ -11,7 +11,7 @@ import { TextField } from '../../components/ui/text-field';
 import { radius, space } from '../../theme';
 import { checkSessionPhotoLocation, usePublishSessionPost } from './api';
 import type { PhotoLocation } from './api';
-import { UserFacingError, userMessage } from '../../lib/errors';
+import { UserFacingError, userMessage } from '@dropin/shared';
 
 function ClipPreview({ uri }: { uri: string }) {
   const player = useVideoPlayer(uri);

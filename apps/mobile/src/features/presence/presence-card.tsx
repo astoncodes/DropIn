@@ -8,7 +8,7 @@ import { useSession } from '../../providers/auth-context';
 import { radius, space, usePalette } from '../../theme';
 import { useVenueDetail } from '../venues/api';
 import { useOwnPresence, usePresenceAction, usePresenceClock } from './api';
-import { userMessage } from '../../lib/errors';
+import { userMessage } from '@dropin/shared';
 
 export function PresenceCard({ venueId }: { venueId?: string }) {
   const { session } = useSession();

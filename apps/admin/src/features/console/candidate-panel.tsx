@@ -1,3 +1,4 @@
+import { UserFacingError, userMessage } from '@dropin/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 
@@ -50,7 +51,7 @@ export function CandidatePanel({
   });
   const mutation = useMutation({
     mutationFn: async () => {
-      if (!decision) throw new Error('Choose a decision');
+      if (!decision) throw new UserFacingError('Choose a decision.');
       const { error } = await supabase.rpc('admin_review_candidate', {
         p_candidate_id: c.id,
         p_decision: decision,
@@ -76,14 +77,14 @@ export function CandidatePanel({
   const pending = c.status === 'pending' || c.status === 'possible_duplicate';
   return (
     <Panel title="Review submission" close={close}>
-      <span className="badge">{label(c.status)}</span>
-      <h3>{c.proposed_name}</h3>
+      <span className={`badge ${c.status}`}>{label(c.status)}</span>
+      <h3 className="subject">{c.proposed_name}</h3>
       <p>
         {c.address_text || 'No street address supplied'} · {label(c.indoor_state)}
       </p>
       <small>Submitted {date(c.created_at)}</small>
       {point ? (
-        <div className="card wide">
+        <div className="card">
           <strong>Submitted location</strong>
           <p>
             {point.lat.toFixed(6)}, {point.lon.toFixed(6)}
@@ -104,10 +105,18 @@ export function CandidatePanel({
       {details.isPending && <p role="status">Loading sports and duplicate evidence…</p>}
       {details.error && (
         <p className="error" role="alert">
-          {details.error.message}
+          {userMessage(
+            details.error,
+            'Could not load the sports and duplicate evidence. Close this panel and try again.',
+          )}
         </p>
       )}
-      <p>{details.data?.sports.map((s) => s.sports?.name).join(' · ')}</p>
+      {details.data && (
+        <div className="card">
+          <strong>Sports</strong>
+          <p>{details.data.sports.map((s) => s.sports?.name).join(' · ') || 'None listed'}</p>
+        </div>
+      )}
       <h3>Possible duplicates</h3>
       {details.data?.matches.length === 0 && (
         <p className="hint">
@@ -115,7 +124,7 @@ export function CandidatePanel({
         </p>
       )}
       {details.data?.matches.map((m) => (
-        <div className="card wide" key={m.venue_id}>
+        <div className="card" key={m.venue_id}>
           <strong>{m.venues?.name ?? m.venue_id}</strong>
           <p>
             {Math.round(m.distance_m)} m away · {m.shared_sport_count} shared sports ·{' '}
@@ -136,7 +145,7 @@ export function CandidatePanel({
         </div>
       ))}
       {!pending ? (
-        <div className="card wide">
+        <div className="card">
           <h3>Review outcome</h3>
           <p>{c.review_note || 'No review note'}</p>
           <small>{c.reviewed_at && date(c.reviewed_at)}</small>
@@ -213,7 +222,7 @@ export function CandidatePanel({
           </p>
           {mutation.error && (
             <p className="error" role="alert">
-              {mutation.error.message}
+              {userMessage(mutation.error, 'Could not save this decision. Try again.')}
             </p>
           )}
           <button
