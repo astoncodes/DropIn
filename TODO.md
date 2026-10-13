@@ -9,103 +9,40 @@ only the code.
 
 ## Needs a phone
 
-The redesign was reviewed in the web builds only. Start from
-`npx expo prebuild --clean` in `apps/mobile`: the icon, the splash screen and
-the two removed native modules (`expo-blur`, `expo-glass-effect`) reach a native
-project no other way. The redesign and sign-in parts are assigned in issue #14,
-and the map package in #15.
-
-### The redesign on a device
-
-On iOS and on Android:
-
-- [ ] **Icon and launch.** The icon on the home screen; on Android also the
-      round mask and a themed icon. The splash screen is white with the wordmark
-      and gives way to the first screen without a change of colour. On
-      Android 12 or later the wordmark is not clipped by the splash circle.
-- [ ] **Typeface.** Titles, figures and buttons are condensed, not the system
-      font, on a cold start with and without a connection. The font loads with
-      `expo-font` before the splash screen hides (`apps/mobile/app/_layout.tsx`);
-      if it cannot load, the app still opens in the system font.
-- [ ] **Live map.** Venue pins are solid ink with a white glyph, session pins
-      are outlined, and a live count is a green badge. The results sheet drags.
-      The filter chips and the add button clear the notch.
-- [ ] **Venue.** The row of figures fits on one line. "Check in here" and "I'm
-      on my way" stay pinned above the home indicator.
-- [ ] **Check in.** The note field is not hidden by the keyboard. A check-in
-      more than 250 metres from the venue is refused with the database's
-      message.
-- [ ] **Create a session.** The day strip and the start-time strip scroll, and
-      the start strip opens at the selected time. The pin drags. The button is
-      reachable with the keyboard open.
-- [ ] **Session.** The message field sits above the keyboard. Going and Maybe
-      stay pinned.
-- [ ] **Largest text size and Reduce Motion** on the screens above.
+The redesign, the icon and splash screen, and Apple and Google sign-in were
+checked in iOS and Android builds in issue #14. Run
+`npx expo prebuild --clean` in `apps/mobile` after any change to
+`app.config.ts`, the icon or a native package; a native project picks those up
+no other way.
 
 ### Sign-in on a device
 
-Native configuration has assertions in
-`apps/mobile/tests/node/native-config.test.ts`. Device authentication still needs
-manual verification.
+- [ ] Confirm email sign-in links open the app and sign in, on iOS and on
+      Android. Assigned in issue #14.
 
-- [ ] Confirm `com.playdropin.app` is the identifier registered in the Apple
-      Developer portal and as the Google iOS OAuth client. The Apple setup
-      checklist in issue #3 named `com.dropin.app`. If the registered one
-      differs, change `APP_IDENTIFIER` in `app.config.ts` and re-run
-      `npx expo prebuild --clean` from `apps/mobile`.
-- [ ] Sign in with Apple on a device build: new account, returning user,
-      cancellation, sign-out, session persistence.
-- [ ] Same for Google on iOS and Android.
-- [ ] Confirm email magic links still work on both.
+### Native package updates
 
-### Map package
+Both need a native build that can be run, so they are not lockfile-only
+changes. Assigned in issue #15.
 
-- [ ] `@rnmapbox/maps` 10.3.7 is available within the declared range. Take it
-      together with a native build that can be run, not as a lockfile-only
-      change.
+- [ ] `@rnmapbox/maps` 10.3.7 is available within the declared range.
+- [ ] Six Expo packages have newer SDK 57 patch releases, so `npx expo-doctor`
+      fails its version check: `expo`, `expo-crypto`, `expo-dev-client`,
+      `expo-location`, `expo-router` and `expo-splash-screen`. Align them with
+      `npx expo install --check`.
 
 ## Needs access to the hosted project
 
-The Supabase access token (`SUPABASE_ACCESS_TOKEN`, see `.env.example`) or the
-dashboard. The hosted scripts and the moderation check are assigned in
-issue #14, and database tests in CI in #16.
-
-### Hosted scripts
-
-None has been run since the redesign. They create temporary accounts in the
-project `.env` points at and remove them when they finish. With the app on
-port 8081 and the admin website on port 5173:
-
-```bash
-npm run test:supabase -- --project-ref=YOUR_PROJECT_REF
-npm run test:browser:supabase -- --project-ref=YOUR_PROJECT_REF
-npm run test:presence -- --project-ref=YOUR_PROJECT_REF --browser
-npm run test:browser:venues -- --project-ref=YOUR_PROJECT_REF
-node scripts/tests/account-deletion.mjs --project-ref=YOUR_PROJECT_REF
-```
-
-- [ ] All five pass. The four that drive a browser were brought up to date by
-      reading the screens and by driving the same steps against stubbed
-      responses (`npm run test:browser:signed-in`), so the first run against a
-      hosted project may still find a label that differs.
-
-### Moderation with real accounts
-
-`20260926120000_content_moderation.sql` is applied to the test and app projects
-(`npm run db:test` passes; `npm run db:types` is unchanged). No script covers
-this end to end.
-
-- [ ] Report, block and remove content with real accounts, including deleting
-      a removed post's files from Storage.
-
 ### Database tests in CI
 
-- [ ] The repository has no `database-tests` environment yet. It belongs to a
-      personal account, so only its owner can create one and add secrets. Add
-      `SUPABASE_TEST_PROJECT_REF`, `SUPABASE_TEST_DB_URL` and
-      `SUPABASE_ACCESS_TOKEN` to it as secrets, and set its
-      `SUPABASE_PROJECT_REF` variable to the app project for isolation checks.
-      Run `.github/workflows/database.yml` manually to verify the setup.
+The `database-tests` environment exists in the GitHub repository and holds the
+two project references. The repository belongs to a personal account, so only
+its owner can add the rest. Assigned in issue #16.
+
+- [ ] Add two secrets to that environment: `SUPABASE_TEST_DB_URL` (the test
+      connection URL in the root `.env`) and `SUPABASE_ACCESS_TOKEN` (a personal
+      access token, which starts with `sbp_`; a project's secret key is refused).
+      Then run `.github/workflows/database.yml` by hand to verify the setup.
 - [ ] Once that workflow passes reliably, move it off `workflow_dispatch` so it
       guards pull requests.
 
@@ -124,11 +61,12 @@ the next day. While they are paused the apps have no backend and
 ### Store release
 
 Account and configuration work is listed step by step in
-[docs/release.md](docs/release.md). Assigned in issue #17.
+[docs/release.md](docs/release.md). Assigned in issue #17. The Apple Developer
+account is active, and the EAS project is linked under the `tomiwaadewumi` Expo
+account.
 
-- [ ] Apple Developer Program and Google Play Console accounts; start the Play
-      closed test early if the account is a new personal one.
-- [ ] `eas init`, then commit `owner` and `extra.eas.projectId` in `app.config.ts`.
+- [ ] Google Play Console account; start the closed test early if it is a new
+      personal one.
 - [ ] EAS production environment variables, custom SMTP, provider settings,
       the Android OAuth client with signing-key SHA-1s, and a published Google
       consent screen.
@@ -139,12 +77,20 @@ Account and configuration work is listed step by step in
 
 ### Sign-in on the web
 
-Assigned in issue #18.
+"Continue with Google" in the web build is refused by Google with
+`redirect_uri_mismatch`. It takes the `signInWithOAuth` redirect in
+`google-sign-in.web.ts` rather than the native SDK, so it depends on settings
+only the owner of the Supabase and Google Cloud projects can change. Assigned in
+issue #18.
 
-- [ ] Google in the web build: new account, returning user, cancellation,
-      sign-out, session persistence. It takes the `signInWithOAuth` redirect in
-      `google-sign-in.web.ts` rather than the native SDK, so it depends on the
-      provider settings in Supabase.
+- [ ] In Supabase, under Authentication → Providers → Google, list the Web
+      client ID first and the iOS one second, with the Web client's secret. The
+      first ID is the one sent to Google, and it is the iOS one today.
+- [ ] In Google Cloud, add the project's `/auth/v1/callback` address to the Web
+      client's authorised redirect URIs. Google refuses the Web client without
+      it.
+- [ ] Then check a new account, a returning one, cancelling, signing out and
+      staying signed in after a reload.
 
 ### Venue data
 
