@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
-import { homedir } from 'node:os';
 import { createClient } from '@supabase/supabase-js';
 import ts from 'typescript';
+import { adminKey, hostedProject } from '../supabase-project.mjs';
 
 // Fixture writes require an explicitly selected hosted project matching .env.
 const hostedRef = process.argv.find((arg) => arg.startsWith('--project-ref='))?.split('=')[1];
@@ -11,20 +11,11 @@ if (!hostedRef)
   throw new Error(
     'Pass --project-ref=YOUR_TEST_PROJECT_REF explicitly; the test creates and removes temporary fixtures.',
   );
-process.loadEnvFile('.env');
+const project = hostedProject();
 const url = process.env.EXPO_PUBLIC_SUPABASE_URL;
 assert.equal(new URL(url).hostname, `${hostedRef}.supabase.co`);
-const token =
-  process.env.SUPABASE_ACCESS_TOKEN ||
-  readFileSync(`${homedir()}/.supabase/access-token`, 'utf8').trim();
-const response = await fetch(`https://api.supabase.com/v1/projects/${hostedRef}/api-keys`, {
-  headers: { Authorization: `Bearer ${token}` },
-  signal: AbortSignal.timeout(15000),
-});
-assert.ok(response.ok, 'Management access is required for hosted smoke tests');
-const keys = await response.json();
-const serviceKey = keys.find((key) => key.name === 'service_role')?.api_key;
-assert.ok(serviceKey, 'Service role key is required for temporary test fixtures');
+assert.equal(project.ref, hostedRef, 'Selected project must match the configured app project.');
+const serviceKey = await adminKey(project);
 const config = {
   API_URL: url,
   ANON_KEY: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY,

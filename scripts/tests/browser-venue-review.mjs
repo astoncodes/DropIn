@@ -3,7 +3,7 @@ import crypto from 'node:crypto';
 import { mkdirSync } from 'node:fs';
 import { chromium } from 'playwright';
 import { createClient } from '@supabase/supabase-js';
-import { hostedProject } from '../supabase-project.mjs';
+import { adminKey, hostedProject } from '../supabase-project.mjs';
 
 // Creates only temporary identities, submissions and venues. No email is sent.
 const { ref, token } = hostedProject();
@@ -15,12 +15,7 @@ assert.equal(
 const url = process.env.EXPO_PUBLIC_SUPABASE_URL;
 assert.equal(new URL(url).hostname, `${ref}.supabase.co`);
 const anon = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
-const response = await fetch(`https://api.supabase.com/v1/projects/${ref}/api-keys`, {
-  headers: { Authorization: `Bearer ${token}` },
-});
-assert(response.ok);
-const serviceKey = (await response.json()).find((k) => k.name === 'service_role')?.api_key;
-assert(serviceKey);
+const serviceKey = await adminKey({ ref, token });
 const options = { auth: { persistSession: false, autoRefreshToken: false } };
 const admin = createClient(url, serviceKey, options);
 const users = [],

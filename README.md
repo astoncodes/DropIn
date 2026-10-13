@@ -322,7 +322,8 @@ a configured `database-tests` GitHub environment. It validates the test-project
 credentials and app-project reference before installing dependencies or running tests.
 
 The social integration test creates and removes temporary users, sessions and media.
-Use an explicitly selected hosted project matching your `.env`:
+It needs the project's secret key as `SUPABASE_SECRET_KEY` in `.env` (see
+`.env.example`). Use an explicitly selected hosted project matching your `.env`:
 
 ```bash
 npm run test:supabase -- --project-ref=YOUR_PROJECT_REF

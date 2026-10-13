@@ -18,7 +18,7 @@
     "typecheck": "npm run typecheck --workspaces --if-present",
     "test": "npm run test:js && npm run test:tooling",
     "test:js": "npm run test --workspaces --if-present",
-    "test:tooling": "node scripts/tests/account-deletion-handler.mjs && node scripts/test-database.mjs --self-test && node scripts/check-client-bundles.mjs --self-test",
+    "test:tooling": "node scripts/tests/account-deletion-handler.mjs && node scripts/test-database.mjs --self-test && node scripts/check-client-bundles.mjs --self-test && node scripts/tests/supabase-project.mjs",
     "db:test": "node scripts/test-database.mjs",
     "db:types": "node scripts/generate-database-types.mjs",
     "db:admin": "node scripts/grant-admin.mjs",
