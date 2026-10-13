@@ -100,6 +100,7 @@ if (process.env.EAS_BUILD_PROFILE === 'production') {
 const config: ExpoConfig = {
   name: 'Drop In',
   slug: 'drop-in',
+  owner: 'tomiwaadewumi',
   version: '0.1.0',
   orientation: 'portrait',
   icon: './assets/images/icon.png',
@@ -111,6 +112,9 @@ const config: ExpoConfig = {
   ios: {
     supportsTablet: true,
     bundleIdentifier: APP_IDENTIFIER,
+    // Expo SDK 57's native modules are built for iOS 17 and newer. Keep the
+    // generated app target aligned so Swift can import the Expo module.
+    deploymentTarget: '17.0',
     usesAppleSignIn: true,
     // Only the operating system's HTTPS is used, which is exempt from export
     // compliance documentation. Declaring it skips the question on every upload.
@@ -198,6 +202,9 @@ const config: ExpoConfig = {
   // app binary and is readable by anyone who unpacks it. RLS is what makes
   // that safe. Never put the service-role key or a database URL in `extra`.
   extra: {
+    eas: {
+      projectId: 'c540d540-4f74-4f65-b0e5-0423e06bb6c7',
+    },
     supabaseUrl: read('EXPO_PUBLIC_SUPABASE_URL'),
     supabaseAnonKey: read('EXPO_PUBLIC_SUPABASE_ANON_KEY'),
     geoapifyApiKey: read('EXPO_PUBLIC_GEOAPIFY_API_KEY'),
