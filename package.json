@@ -37,6 +37,7 @@
     "test:browser:location": "node scripts/tests/browser-location-gate.mjs",
     "test:browser:unreachable": "node scripts/tests/browser-unreachable.mjs",
     "test:browser:signed-in": "node scripts/tests/browser-signed-in.mjs",
+    "test:browser:moderation": "node scripts/tests/browser-moderation.mjs",
     "test:presence": "node scripts/tests/live-presence.mjs"
   },
   "devDependencies": {
