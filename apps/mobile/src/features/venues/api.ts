@@ -1,5 +1,5 @@
 import type { FunctionReturns, Tables } from '@dropin/database-types';
-import { useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
 
 import { supabase } from '../../lib/supabase';
 import { runWindowDays } from './run-window';
@@ -52,6 +52,7 @@ export function useNearbyVenues(params: {
       [...sportIds].sort().join(','),
     ],
     enabled,
+    placeholderData: keepPreviousData,
     // Mutation invalidation refreshes own actions; polling reconciles other
     // players and expiry without depending on a cleanup job.
     staleTime: 20_000,

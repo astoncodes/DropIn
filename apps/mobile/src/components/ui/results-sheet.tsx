@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useEffectEvent, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import { Animated, PanResponder, StyleSheet, View, useWindowDimensions } from 'react-native';
 
@@ -6,10 +6,10 @@ import { useReduceMotion } from '../../lib/accessibility';
 import { elevation, radius, space, usePalette } from '../../theme';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LivePulse } from './activity';
-import { AppText, IconButton } from './primitives';
+import { AppText } from './primitives';
 
 /**
- * The results panel over the map. Two snap points: peek and expanded.
+ * The results panel over the map. Three snap points: compact, peek and expanded.
  *
  * Dragged with a spring rather than a duration, so an interrupted gesture keeps
  * its velocity instead of restarting from zero. Under Reduce Motion the snap is
@@ -23,11 +23,17 @@ export function ResultsSheet({
   children,
   title,
   live = false,
+  expandable = true,
+  headerAction,
 }: {
   children: ReactNode;
   title: string;
   /** Marks the title with the live pulse: the list below has players in it now. */
   live?: boolean;
+  /** Whether the sheet has content that can be expanded above its default height. */
+  expandable?: boolean;
+  /** A primary list action shown beside the result count. */
+  headerAction?: ReactNode;
 }) {
   const colors = usePalette();
   const reduceMotion = useReduceMotion();
@@ -36,16 +42,34 @@ export function ResultsSheet({
   const insets = useSafeAreaInsets();
   const availableHeight = windowHeight - 64 - insets.bottom;
 
-  // Preserve more of the map on phones while keeping one venue card visible;
-  // the higher expanded stop leaves room for the floating map header.
-  const peekOffset = Math.round(availableHeight * 0.6);
   const expandedOffset = Math.min(insets.top + 160, Math.round(availableHeight * 0.4));
+  // Peek exposes the empty-state actions or first result. Compact leaves only
+  // the handle and heading so the map can still be viewed almost unobstructed.
+  const compactOffset = Math.max(expandedOffset + 112, availableHeight - 112);
+  const peekOffset = Math.min(
+    compactOffset - 72,
+    Math.max(expandedOffset + 72, availableHeight - 260),
+  );
 
   const [translateY] = useState(() => new Animated.Value(peekOffset));
-  const [expanded, setExpanded] = useState(false);
+  const [snap, setSnap] = useState<'compact' | 'peek' | 'expanded'>('peek');
+  // New map results must not move the sheet beneath the user's hand. If an
+  // expanded list becomes empty, keep its position until the next gesture.
+  const minimumOffset = expandable || snap === 'expanded' ? expandedOffset : peekOffset;
+  const displayedTranslateY = useMemo(
+    () =>
+      translateY.interpolate({
+        inputRange: [minimumOffset, compactOffset],
+        outputRange: [minimumOffset, compactOffset],
+        extrapolate: 'clamp',
+      }),
+    [translateY, minimumOffset, compactOffset],
+  );
 
-  const snapTo = (offset: number) => {
-    setExpanded(offset === expandedOffset);
+  const snapTo = (next: 'compact' | 'peek' | 'expanded') => {
+    const offset =
+      next === 'expanded' ? expandedOffset : next === 'compact' ? compactOffset : peekOffset;
+    setSnap(next);
     if (reduceMotion) {
       translateY.setValue(offset);
       return;
@@ -56,15 +80,26 @@ export function ResultsSheet({
       damping: 22,
       stiffness: 240,
       mass: 0.9,
+      overshootClamping: true,
     }).start();
   };
 
-  useEffect(() => {
+  const reposition = useEffectEvent(() => {
     if (isWide) return;
-    // Reposition on rotation/resize without touching state: the sheet is
-    // already in the right logical mode, only the pixel offset moved.
-    translateY.setValue(expanded ? expandedOffset : peekOffset);
-  }, [peekOffset, expandedOffset, isWide, expanded, translateY]);
+    // Only reset for geometry changes. Updating the snap state during
+    // a release must not cancel the spring animation with setValue().
+    translateY.setValue(
+      snap === 'expanded'
+        ? expandedOffset
+        : snap === 'compact'
+          ? compactOffset
+          : peekOffset,
+    );
+  });
+
+  useEffect(() => {
+    reposition();
+  }, [peekOffset, compactOffset, expandedOffset, isWide]);
 
   const panResponder = useMemo(
     () =>
@@ -85,18 +120,35 @@ export function ResultsSheet({
           // stopAnimation hands back the settled value, which is the only
           // read needed and it happens in an event, never during render.
           translateY.stopAnimation((current: number) => {
-            const midpoint = (peekOffset + expandedOffset) / 2;
-
             // A decisive flick wins over distance: a short fast swipe should
-            // not have to cross the halfway mark to count.
-            if (move.vy < -0.5) return snapTo(expandedOffset);
-            if (move.vy > 0.5) return snapTo(peekOffset);
-            snapTo(current < midpoint ? expandedOffset : peekOffset);
+            // not have to cross a midpoint to reach the next stop.
+            if (move.vy < -0.5) {
+              return snapTo(snap === 'compact' || !expandable ? 'peek' : 'expanded');
+            }
+            if (move.vy > 0.5) return snapTo(snap === 'expanded' ? 'peek' : 'compact');
+
+            const snapPoints: readonly (readonly [
+              'compact' | 'peek' | 'expanded',
+              number,
+            ])[] = expandable
+              ? [
+                  ['expanded', expandedOffset],
+                  ['peek', peekOffset],
+                  ['compact', compactOffset],
+                ]
+              : [
+                  ['peek', peekOffset],
+                  ['compact', compactOffset],
+                ];
+            const nearest = snapPoints.reduce((best, candidate) =>
+              Math.abs(candidate[1] - current) < Math.abs(best[1] - current) ? candidate : best,
+            );
+            snapTo(nearest[0]);
           });
         },
       }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [peekOffset, expandedOffset, reduceMotion, translateY],
+    [peekOffset, compactOffset, expandedOffset, expandable, reduceMotion, snap, translateY],
   );
 
   const header = (
@@ -105,13 +157,7 @@ export function ResultsSheet({
       <View accessibilityRole="header" style={{ flex: 1 }}>
         <AppText variant="heading">{title}</AppText>
       </View>
-      {!isWide && (
-        <IconButton
-          icon={expanded ? 'chevron-down' : 'chevron-up'}
-          label={expanded ? 'Collapse venue list' : 'Expand venue list'}
-          onPress={() => snapTo(expanded ? peekOffset : expandedOffset)}
-        />
-      )}
+      {headerAction}
     </View>
   );
 
@@ -135,27 +181,38 @@ export function ResultsSheet({
       style={[
         styles.sheet,
         {
-          height: availableHeight - (expanded ? expandedOffset : peekOffset),
-          backgroundColor: colors.surface,
-          borderColor: colors.border,
-          transform: [{ translateY }],
+          // Keep one fully formed sheet and move it between stops. Changing
+          // height at the start of the animation made the background expand
+          // as a rectangle before the sheet itself finished sliding.
+          height: availableHeight - expandedOffset,
+          // Do not visually overshoot an unavailable position while dragging.
+          // Empty results can move down, but pulling upward leaves the sheet
+          // exactly at its normal resting height.
+          transform: [{ translateY: displayedTranslateY }],
         },
         elevation.floating,
       ]}
     >
-      {/* No web `cursor: grab`: React Native's CursorValue only admits auto
-          and pointer, and casting around the type to style a hint that the
-          grabber already conveys is not worth it. */}
-      <View {...panResponder.panHandlers} style={styles.grabArea}>
-        <View
-          accessibilityRole="adjustable"
-          accessibilityLabel={expanded ? 'Collapse venue list' : 'Expand venue list'}
-          accessibilityHint="Drag up or down to resize the list"
-          style={[styles.grabber, { backgroundColor: colors.borderStrong }]}
-        />
-        {header}
+      <View
+        style={[
+          styles.sheetSurface,
+          { backgroundColor: colors.surface, borderColor: colors.border },
+        ]}
+      >
+        {/* No web `cursor: grab`: React Native's CursorValue only admits auto
+            and pointer, and casting around the type to style a hint that the
+            grabber already conveys is not worth it. */}
+        <View {...panResponder.panHandlers} style={styles.grabArea}>
+          <View
+            accessibilityRole="adjustable"
+            accessibilityLabel={snap === 'expanded' ? 'Collapse venue list' : 'Expand venue list'}
+            accessibilityHint="Drag up or down to resize the list"
+            style={[styles.grabber, { backgroundColor: colors.borderStrong }]}
+          />
+          {header}
+        </View>
+        <View style={{ flex: 1 }}>{children}</View>
       </View>
-      <View style={{ flex: 1 }}>{children}</View>
     </Animated.View>
   );
 }
@@ -166,8 +223,13 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     top: 0,
-    borderTopLeftRadius: radius.xl,
-    borderTopRightRadius: radius.xl,
+    borderTopLeftRadius: radius.xxl,
+    borderTopRightRadius: radius.xxl,
+  },
+  sheetSurface: {
+    flex: 1,
+    borderTopLeftRadius: radius.xxl,
+    borderTopRightRadius: radius.xxl,
     borderTopWidth: 1,
     overflow: 'hidden',
   },

@@ -1,15 +1,14 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { useRouter } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { FlatList, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import VenueMap from '../../components/map/venue-map';
 import { isAwayFromLocation } from '../../components/map/location-distance';
 import type { MapRegion } from '../../components/map/types';
-import { EmptyState, LoadError, Skeleton } from '../../components/ui/activity';
+import { EmptyState, LoadError } from '../../components/ui/activity';
 import {
-  AppText,
   Button,
   Chip,
   IconButton,
@@ -61,13 +60,25 @@ export function NearbyScreen() {
     deviceLocation,
   );
   const [recenterRequest, setRecenterRequest] = useState(0);
+  const [searchCenter, setSearchCenter] = useState<{ latitude: number; longitude: number }>(
+    deviceLocation,
+  );
+
+  // Several map-idle events can arrive during a pan. Search the settled
+  // position so intermediate areas do not repeatedly replace the list.
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      setSearchCenter({ latitude: visibleCenter.latitude, longitude: visibleCenter.longitude });
+    }, 300);
+    return () => clearTimeout(timeout);
+  }, [visibleCenter.latitude, visibleCenter.longitude]);
 
   const showRecenter = view === 'map' && isAwayFromLocation(visibleCenter, deviceLocation);
   const sports = useSports();
   const sessionPins = usePublicSessionPins(selectedSportIds);
   const venues = useNearbyVenues({
-    latitude: visibleCenter.latitude,
-    longitude: visibleCenter.longitude,
+    latitude: searchCenter.latitude,
+    longitude: searchCenter.longitude,
     sportIds: selectedSportIds,
     enabled: true,
   });
@@ -101,6 +112,7 @@ export function NearbyScreen() {
 
   const venuesPhase = loadPhase(venues);
   const liveCount = (venues.data ?? []).filter((v) => v.here_now > 0).length;
+  const sheetExpandable = (venues.data?.length ?? 0) > 0;
 
   function toggleSport(id: number) {
     setFilterOverride({
@@ -115,21 +127,16 @@ export function NearbyScreen() {
     <FlatList
       data={venues.data ?? []}
       keyExtractor={(venue) => venue.venue_id}
-      contentContainerStyle={styles.list}
+      contentContainerStyle={[styles.list, { paddingBottom: insets.bottom + space.md }]}
       showsVerticalScrollIndicator={false}
-      refreshing={venues.isRefetching}
-      onRefresh={() => void venues.refetch()}
+      // The sheet translates over the map; native clipping can briefly hide
+      // rows while their parent's position changes.
+      removeClippedSubviews={false}
       renderItem={({ item }) => (
         <VenueRow venue={item} onPress={() => router.push(`/venue/${item.venue_id}`)} />
       )}
       ListEmptyComponent={
-        venuesPhase === 'loading' ? (
-          <View style={styles.skeletons}>
-            {[0, 1, 2].map((key) => (
-              <Skeleton key={key} height={64} />
-            ))}
-          </View>
-        ) : venuesPhase === 'failed' ? (
+        venuesPhase === 'loading' ? null : venuesPhase === 'failed' ? (
           <LoadError
             title="Can't reach Drop In"
             body="Check your connection, then try again."
@@ -139,6 +146,7 @@ export function NearbyScreen() {
         ) : (
           <EmptyState
             title="No venues here"
+            style={styles.nearbyEmpty}
             body={
               selectedSportIds.length > 0
                 ? 'Nothing in this area matches those sports. Clear a filter or move the map.'
@@ -146,22 +154,6 @@ export function NearbyScreen() {
             }
           />
         )
-      }
-      ListFooterComponent={
-        venuesPhase === 'ready' ? (
-          <View style={styles.footer}>
-            <AppText variant="caption" tone="muted" style={{ flex: 1 }}>
-              Know a court that isn’t listed?
-            </AppText>
-            <Button
-              label="Add a venue"
-              size="sm"
-              variant="ghost"
-              icon="map-marker-plus-outline"
-              onPress={() => router.push('/venue-submission/new')}
-            />
-          </View>
-        ) : null
       }
     />
   );
@@ -302,14 +294,16 @@ export function NearbyScreen() {
       {view === 'map' ? (
         <ResultsSheet
           live={liveCount > 0}
-          title={
-            venuesPhase === 'loading'
-              ? 'Finding venues…'
-              : venuesPhase === 'failed'
-                ? 'Nearby venues'
-                : liveCount > 0
-                  ? `${liveCount} live now`
-                  : `${venues.data?.length ?? 0} nearby`
+          expandable={sheetExpandable}
+          title={liveCount > 0 ? `${liveCount} live now` : `${venues.data?.length ?? 0} nearby`}
+          headerAction={
+            <Button
+              label="Add venue"
+              size="sm"
+              variant="ghost"
+              icon="map-marker-plus-outline"
+              onPress={() => router.push('/venue-submission/new')}
+            />
           }
         >
           {listContent}
@@ -340,7 +334,6 @@ const styles = StyleSheet.create({
   sideControls: { position: 'absolute', zIndex: 20 },
   controlButton: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   controlDivider: { height: 1, marginHorizontal: space.sm },
-  list: { paddingHorizontal: space.lg, paddingBottom: space.xl },
-  skeletons: { gap: space.md, paddingTop: space.lg },
-  footer: { flexDirection: 'row', alignItems: 'center', gap: space.md, paddingTop: space.md },
+  list: { paddingHorizontal: space.lg },
+  nearbyEmpty: { paddingBottom: space.sm },
 });

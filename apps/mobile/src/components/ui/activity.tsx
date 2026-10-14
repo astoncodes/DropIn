@@ -148,8 +148,18 @@ export function Skeleton({
     if (reduceMotion) return;
     const loop = Animated.loop(
       Animated.sequence([
-        Animated.timing(shimmer, { toValue: 1, duration: 700, useNativeDriver: true }),
-        Animated.timing(shimmer, { toValue: 0, duration: 700, useNativeDriver: true }),
+        Animated.timing(shimmer, {
+          toValue: 1,
+          duration: 1200,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+        Animated.timing(shimmer, {
+          toValue: 0,
+          duration: 1200,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
       ]),
     );
     loop.start();
@@ -168,7 +178,7 @@ export function Skeleton({
           backgroundColor: colors.surfaceMuted,
           opacity: reduceMotion
             ? 0.6
-            : shimmer.interpolate({ inputRange: [0, 1], outputRange: [0.4, 0.8] }),
+            : shimmer.interpolate({ inputRange: [0, 1], outputRange: [0.55, 0.72] }),
         },
         style,
       ]}
@@ -185,13 +195,15 @@ export function EmptyState({
   title,
   body,
   action,
+  style,
 }: {
   title: string;
   body?: string;
   action?: ReactNode;
+  style?: StyleProp<ViewStyle>;
 }) {
   return (
-    <View style={styles.empty}>
+    <View style={[styles.empty, style]}>
       <View accessibilityRole="header">
         <AppText variant="heading">{title}</AppText>
       </View>
