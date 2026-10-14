@@ -89,11 +89,7 @@ export function ResultsSheet({
     // Only reset for geometry changes. Updating the snap state during
     // a release must not cancel the spring animation with setValue().
     translateY.setValue(
-      snap === 'expanded'
-        ? expandedOffset
-        : snap === 'compact'
-          ? compactOffset
-          : peekOffset,
+      snap === 'expanded' ? expandedOffset : snap === 'compact' ? compactOffset : peekOffset,
     );
   });
 
@@ -127,19 +123,17 @@ export function ResultsSheet({
             }
             if (move.vy > 0.5) return snapTo(snap === 'expanded' ? 'peek' : 'compact');
 
-            const snapPoints: readonly (readonly [
-              'compact' | 'peek' | 'expanded',
-              number,
-            ])[] = expandable
-              ? [
-                  ['expanded', expandedOffset],
-                  ['peek', peekOffset],
-                  ['compact', compactOffset],
-                ]
-              : [
-                  ['peek', peekOffset],
-                  ['compact', compactOffset],
-                ];
+            const snapPoints: readonly (readonly ['compact' | 'peek' | 'expanded', number])[] =
+              expandable
+                ? [
+                    ['expanded', expandedOffset],
+                    ['peek', peekOffset],
+                    ['compact', compactOffset],
+                  ]
+                : [
+                    ['peek', peekOffset],
+                    ['compact', compactOffset],
+                  ];
             const nearest = snapPoints.reduce((best, candidate) =>
               Math.abs(candidate[1] - current) < Math.abs(best[1] - current) ? candidate : best,
             );
