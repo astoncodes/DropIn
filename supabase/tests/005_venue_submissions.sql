@@ -114,7 +114,7 @@ select isnt(
 
 select throws_ok(
   $$ select * from public.submit_venue(
-       'Outside Region', 45.0000, -63.0000,
+       'Outside Region', 51.5072, -0.1276,
        array[(select id from public.sports where slug = 'basketball')],
        'outdoor', null
      ) $$,

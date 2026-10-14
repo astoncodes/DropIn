@@ -115,7 +115,7 @@ export function NearbyScreen() {
     <FlatList
       data={venues.data ?? []}
       keyExtractor={(venue) => venue.venue_id}
-      contentContainerStyle={styles.list}
+      contentContainerStyle={[styles.list, { paddingBottom: insets.bottom + space.xl }]}
       showsVerticalScrollIndicator={false}
       refreshing={venues.isRefetching}
       onRefresh={() => void venues.refetch()}
@@ -340,7 +340,7 @@ const styles = StyleSheet.create({
   sideControls: { position: 'absolute', zIndex: 20 },
   controlButton: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   controlDivider: { height: 1, marginHorizontal: space.sm },
-  list: { paddingHorizontal: space.lg, paddingBottom: space.xl },
+  list: { paddingHorizontal: space.lg },
   skeletons: { gap: space.md, paddingTop: space.lg },
   footer: { flexDirection: 'row', alignItems: 'center', gap: space.md, paddingTop: space.md },
 });
