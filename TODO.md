@@ -33,15 +33,6 @@ changes. Assigned in issue #15.
 
 ## Needs access to the hosted project
 
-### Test project behind the migrations
-
-- [ ] `20261013010000_canada_venue_coverage.sql` is applied to the app project
-      but not to the test project, so `npm run db:test` does not test it. Apply
-      it with the procedure in [docs/database-testing.md](docs/database-testing.md)
-      and run the suite. It adds six Canada-wide regions; the boxes are
-      rectangles, so northern US cities such as Seattle and Boston also fall
-      inside them.
-
 ### Database tests in CI
 
 The `database-tests` environment exists in the GitHub repository and holds the
@@ -111,6 +102,9 @@ venues around Charlottetown: one outdoor, none verified.
       No importer or staging tables exist in this checkout.
 - [ ] Either way, get a real Charlottetown venue list published. Nothing about
       the core loop can be validated at the current scale.
+- [ ] Decide whether venues just across the border should be accepted. The
+      Canada-wide regions are rectangles, so Seattle, Chicago, Detroit and
+      Boston fall inside them and would be labelled as Canadian regions.
 
 ### Before launch
 

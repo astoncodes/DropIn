@@ -6,7 +6,7 @@
 -- connects as a privileged database role and bypasses RLS entirely.
 
 begin;
-select plan(13);
+select plan(14);
 
 -- Fixtures. Created as postgres, which has BYPASSRLS — this is also the
 -- documented bootstrap path for the first admin (docs/architecture.md).
@@ -18,6 +18,19 @@ values
 insert into public.admin_users (user_id, note)
 values ('33333333-3333-3333-3333-333333333333', 'fixture admin');
 
+-- Region reference data grows with coverage (migrations add published
+-- regions), so visibility is checked against what is there, read here before
+-- any role switch, rather than against a fixed count.
+select set_config('test.published_regions', (select count(*) from public.regions where is_published)::text, true);
+select set_config('test.all_regions', (select count(*) from public.regions)::text, true);
+
+select cmp_ok(
+  current_setting('test.all_regions')::int,
+  '>',
+  current_setting('test.published_regions')::int,
+  'the fixtures include an unpublished region to hide'
+);
+
 -- ---------------------------------------------------------------------------
 -- Anonymous
 -- ---------------------------------------------------------------------------
@@ -25,7 +38,7 @@ set local role anon;
 
 select is(
   (select count(*)::int from public.regions),
-  1,
+  current_setting('test.published_regions')::int,
   'anon sees only published regions'
 );
 
@@ -65,7 +78,7 @@ set local role authenticated;
 
 select is(
   (select count(*)::int from public.regions),
-  1,
+  current_setting('test.published_regions')::int,
   'a signed-in non-admin still sees only published regions'
 );
 
@@ -102,7 +115,7 @@ set local role authenticated;
 
 select is(
   (select count(*)::int from public.regions),
-  2,
+  current_setting('test.all_regions')::int,
   'an admin sees the unpublished region too'
 );
 
