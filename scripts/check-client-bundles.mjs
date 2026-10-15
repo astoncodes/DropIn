@@ -22,6 +22,7 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, dirname, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { parseEnv } from 'node:util';
 
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -30,17 +31,6 @@ const BUNDLE_DIRS = ['apps/admin/dist', 'apps/mobile/dist'];
 
 /** Prefixes that mark a variable as intentionally public. */
 const PUBLIC_PREFIXES = ['VITE_', 'EXPO_PUBLIC_'];
-/**
- * Variables a native build is expected to embed, so finding one in a bundle is
- * not evidence of a leak.
- *
- * Empty on purpose. Maps are served by `@rnmapbox/maps`, whose token arrives
- * through `EXPO_PUBLIC_MAPBOX_ACCESS_TOKEN` and is covered by the public prefix
- * rule above. Add a key here only when a plugin genuinely writes it into a
- * manifest, and say which plugin.
- */
-const PUBLIC_NATIVE_KEYS = new Set();
-
 /** Values too short or generic to be meaningful evidence of a leak. */
 const MIN_SECRET_LENGTH = 12;
 
@@ -73,24 +63,8 @@ function readEnvSecrets() {
   }
 
   const secrets = [];
-  for (const rawLine of contents.split('\n')) {
-    const line = rawLine.trim();
-    if (!line || line.startsWith('#')) continue;
-
-    const separator = line.indexOf('=');
-    if (separator === -1) continue;
-
-    const key = line
-      .slice(0, separator)
-      .trim()
-      .replace(/^export\s+/, '');
-    let value = line.slice(separator + 1).trim();
-    if (value.length >= 2 && value[0] === value.at(-1) && (value[0] === '"' || value[0] === "'")) {
-      value = value.slice(1, -1);
-    }
-
+  for (const [key, value] of Object.entries(parseEnv(contents))) {
     if (!value || value.length < MIN_SECRET_LENGTH) continue;
-    if (PUBLIC_NATIVE_KEYS.has(key)) continue;
     if (PUBLIC_PREFIXES.some((prefix) => key.startsWith(prefix))) continue;
 
     secrets.push({ key, value });
@@ -137,13 +111,22 @@ function collectFiles(dir) {
   return files;
 }
 
+function missingBundleOutputs(filesByDirectory) {
+  return Object.entries(filesByDirectory)
+    .filter(([, files]) => !files.some((file) => /\.(?:js|mjs|cjs|hbc)$/.test(file)))
+    .map(([directory]) => directory);
+}
+
 function scan({ extraContent = null, secrets = readEnvSecrets() } = {}) {
   const findings = [];
 
-  const targets = BUNDLE_DIRS.flatMap(collectFiles).map((path) => ({
-    label: relative(repoRoot, path),
-    content: readFileSync(path, 'utf8'),
-  }));
+  const filesByDirectory = Object.fromEntries(BUNDLE_DIRS.map((dir) => [dir, collectFiles(dir)]));
+  const targets = Object.values(filesByDirectory)
+    .flat()
+    .map((path) => ({
+      label: relative(repoRoot, path),
+      content: readFileSync(path, 'utf8'),
+    }));
 
   if (extraContent) targets.push(extraContent);
 
@@ -163,12 +146,18 @@ function scan({ extraContent = null, secrets = readEnvSecrets() } = {}) {
     for (const rule of SHAPE_RULES) {
       const match = target.content.match(rule.pattern);
       if (match) {
-        findings.push(`${target.label}: matches ${rule.name} (${match[0].slice(0, 24)}…)`);
+        // Never copy even a prefix of a real credential into CI logs.
+        findings.push(`${target.label}: matches ${rule.name}`);
       }
     }
   }
 
-  return { findings, secretCount: secrets.length, fileCount: targets.length };
+  return {
+    findings,
+    secretCount: secrets.length,
+    fileCount: targets.length,
+    missingOutputs: missingBundleOutputs(filesByDirectory),
+  };
 }
 
 // --self-test plants a fake credential and confirms the scanner catches it. A
@@ -178,11 +167,22 @@ if (process.argv.includes('--self-test')) {
   const secrets = [{ key: 'SELF_TEST_SECRET', value: 'synthetic-bundle-scanner-secret-12345' }];
   const failures = [];
 
+  if (missingBundleOutputs({ admin: ['index.html'], mobile: [] }).join(',') !== 'admin,mobile') {
+    failures.push('missing JavaScript outputs did not fail closed');
+  }
+  if (missingBundleOutputs({ admin: ['assets/app.js'], mobile: ['app.hbc'] }).length) {
+    failures.push('valid JavaScript and native bytecode outputs were rejected');
+  }
+
   // Path 1: a shape rule catching a pasted key in a text bundle.
   const shapePlant = {
     label: '<self-test>.js',
     content: 'const key = "sb_secret_AAAAAAAAAAAAAAAAAAAAAAAA"; // planted',
   };
+  const plantedFindings = scan({ extraContent: shapePlant, secrets }).findings;
+  if (plantedFindings.some((finding) => finding.includes('sb_secret_A'))) {
+    failures.push('scanner diagnostics exposed a credential prefix');
+  }
   if (
     !scan({ extraContent: shapePlant, secrets }).findings.some((f) => f.startsWith('<self-test>'))
   ) {
@@ -225,7 +225,14 @@ if (process.argv.includes('--self-test')) {
   process.exit(0);
 }
 
-const { findings, secretCount, fileCount } = scan();
+const { findings, secretCount, fileCount, missingOutputs } = scan();
+
+if (missingOutputs.length > 0) {
+  console.error(
+    `Missing client bundle outputs: ${missingOutputs.join(', ')}. Run npm run build first.`,
+  );
+  process.exit(1);
+}
 
 if (findings.length > 0) {
   console.error('Server-side credentials found in client bundles:\n');
@@ -233,11 +240,6 @@ if (findings.length > 0) {
   console.error('\nMove the value out of the bundle. Only VITE_ / EXPO_PUBLIC_ variables');
   console.error('may be referenced from client code — see .env.example.');
   process.exit(1);
-}
-
-if (fileCount === 0) {
-  console.log('No built bundles found — build first (npm run build --workspace apps/admin).');
-  process.exit(0);
 }
 
 console.log(

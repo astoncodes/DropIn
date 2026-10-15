@@ -19,11 +19,21 @@ carry validation or touch several tables go through database functions so they a
 The service-role credential never appears in a mobile or browser bundle. `scripts/check-client-bundles.mjs`
 enforces this in CI, and it self-tests so a broken check fails loudly rather than passing everything.
 
-### Freshness is polled, not pushed
+### Freshness uses Realtime signals plus polling recovery
 
-Supabase Realtime is **not currently used** — there are no `.channel()` subscriptions in either
-client. Live figures come from React Query `refetchInterval`: 15 s for venue activity and presence,
-8 s for session chat, 30–60 s for slower lists. `AppState` invalidates everything on foreground.
+Session chat subscribes to authenticated Supabase Postgres Changes, filtered to
+the open session. `session_messages` is in the `supabase_realtime` publication,
+and its existing member-only RLS remains the authorization boundary. An insert
+invalidates the chat and Chats-list queries; clients then refetch authoritative
+rows instead of trusting an event as durable state. A 30-second poll heals a
+missed event after backgrounding, reconnects or transient WebSocket failure.
+
+Other live figures remain deliberately polled: 15 seconds for venue activity
+and presence and 30–60 seconds for slower lists. `AppState` invalidates
+everything on foreground. The Discover feed asks for foreground location and
+places posts from sessions within 50 km first, followed by other posts; each
+group remains newest-first. If location is unavailable or declined, the original
+newest-first order is preserved.
 
 Whichever mechanism delivers the signal, the rule that matters is unchanged: **refetch the
 authoritative aggregate, never increment local state.** A count assembled client-side drifts, and a
@@ -55,7 +65,11 @@ makes escalation auditable.
 
 ### Moderation
 
-Session posts and media are public, even signed out; chat is member-only. Players
+Session posts and media require sign-in; chat is member-only. Signed-out clients
+show the live map and authentication/legal pages. The private media bucket uses
+60-second signed URLs, refreshed by the feed while open. These security changes
+are verified on the test backend; production rollout is tracked in
+[security-hardening.md](security-hardening.md). Players
 report content through `report_content()`, which records a snapshot of what the
 reporter could see and only admits chat messages the reporter could read.
 `content_reports` is readable by admins alone. `admin_resolve_reports()` removes
@@ -65,8 +79,8 @@ the admin client, which an admin-only storage policy allows.
 
 Blocks are rows in `user_blocks`, private to the blocker. The signed-in read
 policies on posts, media and messages exclude blocked authors through
-`is_blocked_by_viewer()`; the signed-out policies are separate and unchanged, so
-anonymous reads never touch `user_blocks`. Profiles, sessions and check-ins stay
+`is_blocked_by_viewer()`; anonymous callers have no post/media SELECT grant.
+Profiles, sessions and check-ins stay
 visible to blockers.
 
 ---
@@ -157,7 +171,11 @@ the duplicate-submission case, which is the one users actually generate.
 
 ## Environments
 
-App development uses hosted Supabase. Migrations remain versioned in the repository.
-Database tests require a separate hosted test project with synthetic fixtures and
-transactional pgTAP checks; it must never share the app database. PR checks build with offline
-placeholder configuration. See the README for commands and credentials.
+The app and isolated test/development backends are separate hosted Supabase
+projects. Explicit `dev:*` commands select the test/development project for both
+clients through `.env.dev`; ordinary commands retain the root `.env` behavior.
+Migrations remain versioned. SQL tests use reserved synthetic fixtures and roll
+back each test transaction. Sharing the development backend means schema and
+fixtures are shared too; do not reset it or run competing fixture writes.
+See [development.md](development.md) and [database-testing.md](database-testing.md).
+PR checks build with offline placeholder configuration.

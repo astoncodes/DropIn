@@ -1,18 +1,19 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { parseEnv } from 'node:util';
 
 import type { ExpoConfig } from 'expo/config';
 
 /**
  * Reads the repository-root `.env`.
  *
- * Expo loads .env from the app directory, but this monorepo keeps a single
- * .env at the root so there is one file to gitignore and one .env.example to
- * keep honest. Values are passed through `extra` rather than injected into
+ * Expo loads .env from the app directory; this monorepo's default file lives
+ * at the root. The dev launcher overrides it through process variables.
+ * Values are passed through `extra` rather than injected into
  * process.env, so what the app receives is explicit and inspectable rather
  * than depending on bundler substitution order.
  */
-function loadRootEnv(): Record<string, string> {
+function loadRootEnv(): Record<string, string | undefined> {
   const envPath = resolve(__dirname, '../../.env');
 
   let contents: string;
@@ -22,25 +23,7 @@ function loadRootEnv(): Record<string, string> {
     return {};
   }
 
-  const values: Record<string, string> = {};
-  for (const rawLine of contents.split('\n')) {
-    const line = rawLine.trim();
-    if (!line || line.startsWith('#')) continue;
-
-    const separator = line.indexOf('=');
-    if (separator === -1) continue;
-
-    const key = line
-      .slice(0, separator)
-      .trim()
-      .replace(/^export\s+/, '');
-    let value = line.slice(separator + 1).trim();
-    if (value.length >= 2 && value[0] === value.at(-1) && (value[0] === '"' || value[0] === "'")) {
-      value = value.slice(1, -1);
-    }
-    if (key) values[key] = value;
-  }
-  return values;
+  return parseEnv(contents);
 }
 
 const rootEnv = loadRootEnv();

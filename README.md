@@ -46,6 +46,10 @@ You do not need the Supabase CLI login or a database password just to run the ap
 
 ### 2. Configure the root `.env`
 
+To develop against the isolated test backend while keeping your app/release
+configuration intact, use the [development profile](docs/development.md):
+`npm run dev:web`, `npm run dev:mobile`, and `npm run dev:admin`.
+
 For a new checkout **without an existing `.env`**:
 
 ```bash
@@ -267,9 +271,10 @@ meeting pins on a device with a configured Mapbox token.
 
 ## Releasing
 
-[Releasing Drop In](docs/release.md) covers the account setup, EAS configuration,
-Supabase settings, public policy pages and store-listing answers needed to ship
-to the App Store and Google Play.
+Start with the [release readiness review](docs/release-readiness.md) and the
+ordered checklist in [TODO](TODO.md). The [App Store runbook](docs/app-store-release.md)
+covers the exact iOS build, TestFlight and App Review steps. The broader
+[release guide](docs/release.md) also contains Android background.
 
 ## Optional admin and maintenance tools
 

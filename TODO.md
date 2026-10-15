@@ -3,65 +3,201 @@
 Open work only. Anything listed here is genuinely unbuilt or unverified — if it
 is done, delete the entry rather than leaving a ticked box behind.
 
-## Keep the hosted projects running
+## App Store release: current decision and order
 
-Free-plan Supabase projects pause after a week without activity. The app
-project and the test project were both found paused on 2026-10-09. While they
-are paused the apps have no backend and `npm run db:test` cannot connect.
+**Not ready for public submission as of October 15, 2026.**
+Read the [review evidence](docs/release-readiness.md) and follow the
+[exact App Store steps](docs/app-store-release.md). The EAS owner/project ID and
+production build profile already exist. Apple membership, signing, cloud
+variables and an App Store Connect record still need verification.
 
-- [ ] Restore both projects from the Supabase dashboard, then run
-      `npm run db:test` to confirm the test project still matches the
-      migrations.
-- [ ] Decide how to stop this recurring before players depend on the app: the
-      Pro plan, or a scheduled request that keeps each project active.
+### Deployment architecture and launch sequence
 
-## Verify moderation with real accounts
+Use one production environment and keep every client pointed at it:
 
-`20260926120000_content_moderation.sql` is applied to the test and app projects
-(`npm run db:test` passes; `npm run db:types` is unchanged).
+- **Backend:** keep Postgres, Auth, Row Level Security, Realtime, Storage and the
+  `delete-account` Edge Function in the existing production Supabase project
+  `zyxfymvtijudbenqxzyf`. There is no separate Node/API server in this repository
+  to deploy. Never place the database password or service-role key in either UI.
+- **Player web UI and public legal pages:** deploy the Expo web export from
+  `apps/mobile/dist` as a Render Static Site with SPA fallback routing. This deployment
+  supplies `/privacy`, `/terms`, `/support`, `/delete-account` and `/callback` as
+  well as the browser version of the player app.
+- **Admin UI:** deploy the Vite output from `apps/admin/dist` as a second Render
+  Static Site. Restrict who receives an admin database grant, require TOTP MFA, and do
+  not rely on an unguessable URL as access control.
+- **Native UI:** build with EAS and distribute the signed binary through
+  TestFlight/App Store. It talks directly to the same Supabase HTTPS APIs using
+  the public project URL and publishable key; RLS and RPC authorization are the
+  security boundary.
 
-- [ ] Report, block and remove content end to end with real accounts,
-      including deleting a removed post's files from Storage.
+A custom domain is not technically required: Render's stable HTTPS
+`*.onrender.com` URLs can be used for the first release. A domain is recommended for durable App Store,
+privacy, support and OAuth links. If purchasing one, use a simple layout such as
+`playdropin.app` for the player/legal site and `admin.playdropin.app` for the
+admin site. Add both domains to their Render services, create the DNS records
+Render displays, remove stale `AAAA` records, wait for verification and confirm
+managed TLS. Choose one canonical `www`/apex address. Do not point the
+public website at the Supabase database host.
 
-## Store release
+A real email setup is required before inviting public users:
 
-Account and configuration work is listed step by step in
-[docs/release.md](docs/release.md).
+- [ ] Create a monitored support mailbox such as `support@playdropin.app`, or use
+      a reliable existing mailbox if no domain is purchased. Assign a person and
+      escalation path for account deletion, safety reports and App Review mail.
+- [ ] Configure a transactional email provider as Supabase custom SMTP for magic
+      links and other Auth messages. Keep its SMTP credentials only in Supabase;
+      the support inbox and transactional sender may use the same domain but have
+      different purposes.
+- [ ] If using a domain, publish the provider's SPF and DKIM records and a DMARC
+      policy, verify the sender domain, then test delivery, links and replies with
+      Gmail, Outlook and an address outside the Supabase organization.
 
-- [ ] Apple Developer Program and Google Play Console accounts; start the Play
-      closed test early if the account is a new personal one.
-- [ ] `eas init`, then commit `owner` and `extra.eas.projectId` in `app.config.ts`.
-- [ ] EAS production environment variables, custom SMTP, provider settings,
-      the Android OAuth client with signing-key SHA-1s, and a published Google
-      consent screen.
-- [ ] Host the web build so `/privacy`, `/terms`, `/support` and
-      `/delete-account` are public; set `EXPO_PUBLIC_SITE_URL`.
-- [ ] Confirm the choices in `features/legal/legal-config.ts`: minimum age 16,
-      Prince Edward Island governing law, 24-hour report review, operator name.
+Deploy in this order so the clients and access rules remain compatible:
+
+- [ ] Create two Render Static Sites from this repository and record the player
+      URL, admin URL, support mailbox and operator name. Do not create a Render
+      Web Service for either UI or for the backend.
+- [ ] Configure the player site build command as
+      `npm ci && cd apps/mobile && npx expo export --platform web --output-dir dist --max-workers 2`
+      and publish `apps/mobile/dist`. Add a rewrite from `/*` to `/index.html`
+      so direct visits to legal and callback routes load the SPA. Supply only the
+      required `EXPO_PUBLIC_*` values.
+- [ ] Configure the admin site build command as
+      `npm ci && npm run build --workspace apps/admin`, publish
+      `apps/admin/dist`, add the same `/*` to `/index.html` SPA rewrite, and set
+      `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` to the same production
+      project used by the player app.
+- [ ] Set `EXPO_PUBLIC_SITE_URL`, `EXPO_PUBLIC_SUPPORT_EMAIL` and
+      `EXPO_PUBLIC_OPERATOR_NAME` consistently in the web host and EAS production
+      environment. Set all other required public map, Google and Supabase values
+      listed in `.env.example`; never copy server secrets into public variables.
+- [ ] In Supabase Auth, set the production player site as the Site URL and allow
+      its exact `/callback`, the exact admin origin, and `dropin://callback`.
+      Configure Apple and Google provider callbacks against this same project.
+- [ ] Set the Supabase Edge Function secret `ALLOWED_WEB_ORIGINS` to the exact
+      comma-separated player and admin HTTPS origins that genuinely invoke the
+      function. Do not use `*`, include URL paths, or include preview deployments.
+- [ ] Deploy the MFA-capable admin UI first and verify enrollment, AAL1 denial,
+      AAL2 access, sign-out/sign-in and the documented recovery process against
+      production before applying the MFA-enforcement migration.
+- [ ] Deploy the player web UI and prepare the native build that understands
+      signed private-media URLs. Then apply the reviewed migrations in order,
+      deploy the hardened `delete-account` Edge Function, and verify migrations,
+      advisors, RLS, bucket privacy and function metadata.
+- [ ] Rebuild both static sites and the EAS binary from the same reviewed commit.
+      Confirm their Supabase project URL is production, scan bundles for server
+      secrets, and record the web deployment IDs and EAS build UUID.
+- [ ] Test the complete connection path: email/social sign-in returns to the
+      correct client; both player clients read/write through RLS; Realtime chat
+      works; uploads use private Storage and short signed links; the admin UI can
+      moderate only at AAL2; deletion invokes the Edge Function and removes Auth,
+      database and Storage data; legal/support URLs work while signed out.
+- [ ] Enable production error/security monitoring, test an alert, verify backup
+      and restore procedures, and keep the backend, sites and support mailbox
+      available throughout TestFlight and App Review.
+
+### 1. Close code and safety blockers
+
+- [ ] Implement and test Sign in with Apple token revocation during account
+      deletion, including retry/failure behavior.
+- [ ] Complete objectionable-content filtering and report/moderation coverage
+      for the content players can publish. Verify reporting, blocking, takedown
+      and support response operations against Apple's UGC requirements.
+- [ ] Add server-side upload content verification and per-user upload quotas;
+      test rate limits under concurrent requests and direct API calls.
+- [ ] Fix Expo Doctor's Metro `watchFolders` defaults warning and align the
+      eight Expo packages flagged by `expo install --check`. Rebuild native code.
+- [ ] Triage the current npm audit results (20 high, 11 moderate dependency
+      entries); fix relevant exposure or document justified acceptance without
+      forcing incompatible native upgrades.
+
+### 2. Verify and deploy the production backend
+
+- [ ] Production metadata access now works and the October 15 read audit is in
+      `docs/release-readiness.md`. Resolve its findings: production is healthy but
+      four security migrations and the Realtime chat migration are absent,
+      `session-media` remains public,
+      `is_admin(uuid)` remains anonymously executable, and deployed
+      `delete-account` v1 still uses wildcard CORS.
+- [ ] Reconcile the four directly applied security changes and Realtime chat
+      change with test migration history, then deploy the reviewed production changes in compatible order:
+      MFA-capable admin first; matching app/private-storage rollout; updated
+      account-deletion function with real CORS origins. See
+      [security-hardening.md](docs/security-hardening.md).
+- [ ] Prove signed-out media denial through real Storage HTTP requests and
+      native/web clients, including old public URLs, link expiry and sign-out.
+- [ ] Verify Realtime chat on two authenticated test devices: member inserts
+      should update the other device immediately, reconnect/background recovery
+      should succeed through the 30-second fallback, and a non-member must
+      receive neither rows nor change events. The publication, RLS and bounded
+      latest-message RPC already pass isolated SQL tests.
+- [ ] Configure a monitored security/error alert destination and test an alert.
+      Verify production availability, backup retention and a restore procedure.
+- [ ] Triage production Supabase advisors: six anonymous and 32 authenticated
+      `SECURITY DEFINER` RPC warnings, leaked-password protection disabled, 27
+      unindexed foreign keys, 17 unused indexes and five overlapping permissive
+      policy sets. Preserve intentionally callable RPCs and the intentionally
+      policy-less internal account-deletion queue; do not apply blanket fixes.
+- [ ] Verify SMTP delivery to an external inbox, Apple/Google provider settings,
+      nonce configuration and native/web callback allowlists.
+
+### 3. Prepare Apple accounts, hosting and cloud configuration
+
+- [ ] Verify Apple Developer membership, intended team access, App ID
+      `com.playdropin.app`, and Sign in with Apple capability; create/verify the
+      matching App Store Connect record and numeric app ID.
+- [ ] Verify remote access to the already configured Expo project and its
+      production build variables, Apple signing and submission credentials.
+- [ ] Publish working HTTPS privacy, terms, support and deletion pages. A stable
+      hosting-provider URL is sufficient; a custom domain is optional. Configure
+      real site/operator/support values and host security headers.
+- [ ] Confirm minimum age 16, governing law, data disclosures and the promised
+      report-review turnaround; update the privacy document's revision date.
+
+### 4. Test the release binary
+
+- [ ] Choose iPhone-only versus iPhone+iPad before the first store binary.
+      `supportsTablet` is currently true; iPad testing/screenshots are missing.
+- [ ] Run the complete release checks, regenerate/review schema types against
+      the released backend, and commit a reviewed release candidate with lockfile.
+- [ ] Build a signed EAS production IPA using an accepted Xcode/iOS SDK image,
+      verify privacy manifests/SDK declarations and upload that build to TestFlight.
+- [ ] Test the exact uploaded build on real devices: each sign-in provider,
+      persistence, location/camera permissions, sessions/chat, uploads, map-only
+      signed-out state, private-media links, report/block and account deletion.
+
+### 5. Submit and operate
+
+- [ ] Finalize screenshots for each supported device family and current UI,
+      description/subtitle/keywords, category, support/privacy URLs and copyright.
+- [ ] Complete current App Privacy, age-rating, encryption and territory-specific
+      declarations based on actual app and third-party SDK behavior.
+- [ ] Provide repeatable reviewer access and location-sensitive review steps;
+      select the tested build and submit the version for App Review. Uploading
+      with EAS Submit alone does not request public App Review.
+- [ ] After approval, manually release, test the public install and monitor
+      errors/reports. Assign an owner for the promised 24-hour moderation response.
+
+## Other platform release
+
+- [ ] For a separate Google Play release, verify console access, Android OAuth
+      fingerprints, Data safety, signing and current testing-track requirements.
+      These are not prerequisites for an iOS-only App Store launch.
 
 ## Moderation gaps
 
-- [ ] **Sign in with Apple token revocation.** Apple asks apps to revoke a
-      deleted account's Apple tokens through its REST API. `delete-account`
-      does not; it needs the authorization code from a fresh Apple sign-in and
-      the Sign in with Apple key as function secrets.
 - [ ] **Check-in notes are not reportable.** They are visible to signed-in
       players while a check-in is active, but `report_target` has no kind for
       them.
-- [ ] **No automatic filtering.** Reports and blocks act after content is
-      posted. Decide whether names, titles and captions need a blocked-term
-      check at write time.
+- [ ] Include names, titles, captions and notes in the release moderation
+      coverage; reports and blocks alone do not filter material before posting.
 
 ## Client gaps
 
 - [ ] **Venue search sends a request on every keystroke** when choosing an
       existing venue for a session (the `session-venues` query in
       `new-run-screen.tsx`). Search on submit, as place search does, or debounce.
-- [ ] **The Chats list downloads every message of every joined session** to
-      find each session's latest one (`useJoinedSessions`). The API caps a
-      response at its row limit, so past that some chats lose their preview.
-      Read one latest message per session instead, through a database function
-      or an embedded `limit(1)`, and verify it against the hosted API.
 - [ ] **No error reporting.** Neither app sends failures anywhere; the admin
       website writes them to the browser console only. Choose a service before
       launch.
@@ -83,16 +219,6 @@ Account and configuration work is listed step by step in
       screens and by driving the same steps against stubbed responses
       (`npm run test:browser:signed-in`); the first run against a hosted project
       may still find a label that differs.
-
-## Dependencies
-
-- [ ] `npm audit` still reports advisories that need major upgrades
-      (`react-native-reanimated`, `expo-router`) or have no fixed release
-      (`node-forge`, `uuid`). All are build tooling or transitive packages.
-      Re-check after the next Expo SDK upgrade.
-- [ ] `@rnmapbox/maps` 10.3.7 is available within the declared range. Take it
-      together with a native build that can be run, not as a lockfile-only
-      change.
 
 ## Run database tests in CI
 
@@ -135,15 +261,11 @@ one, and the file header now says so.
       `npm run db:test` against the result so the rewrite cannot silently
       diverge from the live database.
 
-## There is almost no venue data
+## Launch geography
 
-The repository seeds four indoor venues; two support active sport filters.
-It seeds no outdoor courts or parks. Hosted data may differ.
-
-- [ ] Decide whether to revive automated OSM import or to keep curating by hand.
-      No importer or staging tables exist in this checkout.
-- [ ] Either way, get a real Charlottetown venue list published. Nothing about
-      the core loop can be validated at the current scale.
+- [ ] Verify actual production venue coverage and explain it accurately in the
+      store listing/review notes. Seed history alone does not establish live
+      coverage. Confirm useful nearby data for the intended first launch area.
 
 ## Verify social sign-in on device
 

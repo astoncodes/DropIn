@@ -20,3 +20,8 @@ supabase/migrations/
 supabase/tests/
 
 assets/
+
+# Standalone screenshot editor has its own dependencies and formatting rules.
+release-assets/app-store-screenshots/
+release-assets/exports/
+.next/

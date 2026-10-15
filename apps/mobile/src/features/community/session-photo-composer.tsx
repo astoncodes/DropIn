@@ -139,7 +139,7 @@ export function SessionPhotoComposer({
       <AppText variant="heading">Share from this session</AppText>
       <AppText variant="caption" tone="muted">
         Join the session and be within 500 metres of its meeting spot. We check your location before
-        you post. Photos and captions appear in the public feed.
+        you post. Photos and captions are visible to signed-in players.
       </AppText>
       {!verified ? (
         <Button

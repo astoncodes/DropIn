@@ -2,7 +2,7 @@ import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { useVideoPlayer, VideoView } from 'expo-video';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -13,6 +13,7 @@ import { dayLabel, relativeTime, timeOfDay } from '../../lib/format';
 import { loadPhase } from '../../lib/load-phase';
 import { useSession } from '../../providers/auth-context';
 import { radius, space, usePalette } from '../../theme';
+import { useLocationAccess } from '../location/location-access';
 import { ModerationSheet } from '../moderation/moderation-sheet';
 import type { ModerationSubject } from '../moderation/api';
 import { useCommunityFeed } from './api';
@@ -31,9 +32,19 @@ export function MomentsFeed({ sessionId }: { sessionId?: string } = {}) {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { session } = useSession();
-  const feed = useCommunityFeed(undefined, sessionId);
+  const location = useLocationAccess();
+  useEffect(() => {
+    if (!sessionId && location.state.status === 'idle') void location.request();
+  }, [location, sessionId]);
+  const feed = useCommunityFeed(
+    undefined,
+    sessionId,
+    !sessionId && location.state.status === 'granted' ? location.state.coords : undefined,
+  );
   const phase = loadPhase(feed);
   const [moderationSubject, setModerationSubject] = useState<ModerationSubject | null>(null);
+
+  if (!session) return null;
 
   return (
     <ScrollView

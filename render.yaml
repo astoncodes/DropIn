@@ -1,0 +1,69 @@
+services:
+  - type: web
+    runtime: static
+    name: dropin-player
+    buildCommand: npm ci && cd apps/mobile && npx expo export --platform web --output-dir dist --max-workers 2
+    staticPublishPath: apps/mobile/dist
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    headers:
+      - path: /*
+        name: X-Content-Type-Options
+        value: nosniff
+      - path: /*
+        name: Referrer-Policy
+        value: strict-origin-when-cross-origin
+      - path: /*
+        name: Permissions-Policy
+        value: camera=(self), geolocation=(self), microphone=()
+    envVars:
+      - key: EXPO_PUBLIC_SUPABASE_URL
+        sync: false
+      - key: EXPO_PUBLIC_SUPABASE_ANON_KEY
+        sync: false
+      - key: EXPO_PUBLIC_MAPBOX_ACCESS_TOKEN
+        sync: false
+      - key: EXPO_PUBLIC_GEOAPIFY_API_KEY
+        sync: false
+      - key: EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID
+        sync: false
+      - key: EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID
+        sync: false
+      - key: EXPO_PUBLIC_GOOGLE_IOS_URL_SCHEME
+        sync: false
+      - key: EXPO_PUBLIC_SUPPORT_EMAIL
+        sync: false
+      - key: EXPO_PUBLIC_OPERATOR_NAME
+        value: Drop In team
+      - key: EXPO_PUBLIC_SITE_URL
+        sync: false
+
+  - type: web
+    runtime: static
+    name: dropin-admin
+    buildCommand: npm ci && npm run build --workspace apps/admin
+    staticPublishPath: apps/admin/dist
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    headers:
+      - path: /*
+        name: X-Frame-Options
+        value: DENY
+      - path: /*
+        name: X-Content-Type-Options
+        value: nosniff
+      - path: /*
+        name: Referrer-Policy
+        value: no-referrer
+      - path: /*
+        name: Permissions-Policy
+        value: camera=(), geolocation=(), microphone=()
+    envVars:
+      - key: VITE_SUPABASE_URL
+        sync: false
+      - key: VITE_SUPABASE_ANON_KEY
+        sync: false

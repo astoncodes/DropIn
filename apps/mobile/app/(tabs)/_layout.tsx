@@ -1,9 +1,10 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Tabs } from 'expo-router';
+import { Tabs, Redirect, usePathname } from 'expo-router';
 import { useWindowDimensions } from 'react-native';
 
 import { usePalette } from '../../src/theme';
+import { useSession } from '../../src/providers/auth-context';
 
 /**
  * Five focused mobile destinations: live map, nearby community moments,
@@ -21,6 +22,10 @@ export default function TabsLayout() {
   const colors = usePalette();
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
+  const { session, isLoading } = useSession();
+  const pathname = usePathname();
+  if (isLoading) return null;
+  if (!session && pathname !== '/') return <Redirect href="/sign-in" />;
 
   return (
     <Tabs
@@ -57,6 +62,7 @@ export default function TabsLayout() {
         name="feed"
         options={{
           title: 'Discover',
+          href: session ? undefined : null,
           tabBarIcon: ({ color, size, focused }) => (
             <MaterialCommunityIcons
               name={focused ? 'compass' : 'compass-outline'}
@@ -70,6 +76,7 @@ export default function TabsLayout() {
         name="scheduled"
         options={{
           title: 'Scheduled',
+          href: session ? undefined : null,
           tabBarIcon: ({ color, size, focused }) => (
             <MaterialCommunityIcons
               name={focused ? 'calendar' : 'calendar-blank-outline'}
@@ -83,6 +90,7 @@ export default function TabsLayout() {
         name="chats"
         options={{
           title: 'Chats',
+          href: session ? undefined : null,
           tabBarIcon: ({ color, size, focused }) => (
             <MaterialCommunityIcons
               name={focused ? 'chat' : 'chat-outline'}
@@ -95,7 +103,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="profile"
         options={{
-          title: 'Profile',
+          title: session ? 'Profile' : 'Sign in',
           tabBarIcon: ({ color, size, focused }) => (
             <MaterialCommunityIcons
               name={focused ? 'account' : 'account-outline'}

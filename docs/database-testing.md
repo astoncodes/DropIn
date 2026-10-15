@@ -4,6 +4,11 @@ The **DropIn Tests** Supabase project holds the database schema and test fixture
 used by `npm run db:test`. It is separate from the app database and runs on the
 DropIn organization's free plan.
 
+It can also host manual development accounts/data through the explicit
+[development profile](development.md). SQL tests roll back their writes, but
+fixtures and schema are shared: coordinate migrations and avoid concurrent
+writes to test fixture rows.
+
 ## Project and connection details
 
 | Setting                                     | Value                                                                       |

@@ -139,7 +139,7 @@ select is_empty(
 reset role;
 select set_config(
   'request.jwt.claims',
-  json_build_object('sub', '73333333-3333-4333-8333-333333333333', 'role', 'authenticated')::text,
+  json_build_object('sub', '73333333-3333-4333-8333-333333333333', 'role', 'authenticated', 'aal', 'aal2')::text,
   true
 );
 set local role authenticated;

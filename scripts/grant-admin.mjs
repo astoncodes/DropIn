@@ -16,6 +16,7 @@
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { parseEnv } from 'node:util';
 
 import postgres from 'postgres';
 
@@ -31,26 +32,7 @@ function readEnv(name) {
     return undefined;
   }
 
-  for (const rawLine of contents.split('\n')) {
-    const line = rawLine.trim();
-    if (!line || line.startsWith('#')) continue;
-    const separator = line.indexOf('=');
-    if (separator === -1) continue;
-    if (
-      line
-        .slice(0, separator)
-        .trim()
-        .replace(/^export\s+/, '') !== name
-    )
-      continue;
-
-    let value = line.slice(separator + 1).trim();
-    if (value.length >= 2 && value[0] === value.at(-1) && (value[0] === '"' || value[0] === "'")) {
-      value = value.slice(1, -1);
-    }
-    return value;
-  }
-  return undefined;
+  return parseEnv(contents)[name];
 }
 
 const email = process.argv[2];

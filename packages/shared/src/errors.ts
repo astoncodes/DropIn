@@ -113,6 +113,7 @@ export function userMessage(error: unknown, fallback: string): string {
 
   const code = field(error, 'code');
   const message = text(error);
+  if (code === 'PT429') return 'Too many requests. Please try again later.';
   if (
     typeof code === 'string' &&
     BUSINESS_RULE_CODES.has(code) &&

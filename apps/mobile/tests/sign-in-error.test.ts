@@ -1,9 +1,10 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import {
   SIGN_IN_FALLBACK_MESSAGE,
   describeSignInFailure,
   isCancellation,
+  logSignInFailure,
 } from '../src/features/auth/sign-in-error';
 
 /**
@@ -19,6 +20,18 @@ import {
 const NETWORK_TEXT = /could not connect/i;
 const BUILD_TEXT = /not available in this build/i;
 const SETUP_TEXT = /not set up correctly/i;
+
+it('does not log raw authentication errors in production', () => {
+  vi.stubGlobal('__DEV__', false);
+  const log = vi.spyOn(console, 'error').mockImplementation(() => {});
+  try {
+    logSignInFailure('google', new Error('sensitive provider context'));
+    expect(log).not.toHaveBeenCalled();
+  } finally {
+    log.mockRestore();
+    vi.unstubAllGlobals();
+  }
+});
 
 describe('describeSignInFailure', () => {
   describe('never blames the network for a configuration fault', () => {

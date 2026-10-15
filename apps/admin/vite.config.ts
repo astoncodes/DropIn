@@ -7,9 +7,8 @@ import { defineConfig } from 'vite';
 export default defineConfig({
   plugins: [react()],
 
-  // Environment variables live in a single .env at the repository root rather
-  // than one per app, so there is exactly one file to keep out of git and one
-  // .env.example to keep accurate.
+  // Default configuration lives at the repository root. The explicit dev
+  // launcher supplies process variables, which take precedence over this file.
   envDir: fileURLToPath(new URL('../..', import.meta.url)),
 
   server: {

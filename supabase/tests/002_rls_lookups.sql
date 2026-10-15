@@ -24,7 +24,7 @@ values ('33333333-3333-3333-3333-333333333333', 'fixture admin');
 set local role anon;
 
 select is(
-  (select count(*)::int from public.regions),
+  (select count(*)::int from public.regions where slug in ('charlottetown', 'halifax')),
   1,
   'anon sees only published regions'
 );
@@ -64,7 +64,7 @@ select set_config(
 set local role authenticated;
 
 select is(
-  (select count(*)::int from public.regions),
+  (select count(*)::int from public.regions where slug in ('charlottetown', 'halifax')),
   1,
   'a signed-in non-admin still sees only published regions'
 );
@@ -95,13 +95,13 @@ select is(
 -- ---------------------------------------------------------------------------
 select set_config(
   'request.jwt.claims',
-  json_build_object('sub', '33333333-3333-3333-3333-333333333333', 'role', 'authenticated')::text,
+  json_build_object('sub', '33333333-3333-3333-3333-333333333333', 'role', 'authenticated', 'aal', 'aal2')::text,
   true
 );
 set local role authenticated;
 
 select is(
-  (select count(*)::int from public.regions),
+  (select count(*)::int from public.regions where slug in ('charlottetown', 'halifax')),
   2,
   'an admin sees the unpublished region too'
 );

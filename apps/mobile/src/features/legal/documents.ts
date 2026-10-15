@@ -58,7 +58,7 @@ export function privacyPolicy(): LegalDocument {
             'confirm you are at a venue when you check in, and near a session when you share a photo from it',
           ),
           p(
-            'We do not keep a history of where you have been. When you check in or share a session photo, your coordinates are compared with the venue or session location and then discarded; we store only whether the check passed and, for check-ins, the distance and reported accuracy. To list venues near you, the app sends the centre of the map on screen — at first, your location — to our servers for that search; we do not save it.',
+            'We do not keep a history of where you have been. When you check in or share a session photo, your coordinates are compared with the venue or session location and then discarded; we store only whether the check passed and, for check-ins, the distance and reported accuracy. To list venues and show nearby session moments first, the app sends your current location, or the centre of the map on screen, to our servers for that request; we do not save it.',
           ),
           p(
             'Places you choose on purpose are stored: a session’s meeting spot is public, and a venue you submit is visible to you and our moderators until it is approved. Drop In never reads your location in the background. You can turn location off in your device settings; the live map, creating sessions and adding venues then stop working, and everything else keeps working.',
@@ -72,7 +72,7 @@ export function privacyPolicy(): LegalDocument {
           list(
             'Sessions you organise — title, time and meeting spot — are public.',
             'Chat messages are visible to the people who joined that session.',
-            'Posts, captions, photos and short clips are public, including to people without an account.',
+            'Posts, captions, photos and short clips are visible to signed-in players. Signed-out visitors can browse the map, but cannot browse posts or media. Media links issued after sign-in expire after one minute; copies or screenshots made by another player cannot be revoked.',
             'While a check-in or “on my way” status is active, other signed-in players can see your display name, the venue, sport, party size and any note you add.',
             'Venue submissions are visible to you and our moderators until they are reviewed.',
           ),
@@ -228,7 +228,7 @@ export function termsOfUse(): LegalDocument {
         heading: 'Your content',
         blocks: [
           p(
-            'You own what you post. You give us a worldwide, non-exclusive, royalty-free licence to store, display and share it within Drop In so we can run the service, for as long as it stays on Drop In. Public content can be seen by anyone, including people without an account.',
+            'You own what you post. You give us a worldwide, non-exclusive, royalty-free licence to store, display and share it within Drop In so we can run the service, for as long as it stays on Drop In. Posts and media require sign-in to view. Map information remains available without an account.',
           ),
         ],
       },

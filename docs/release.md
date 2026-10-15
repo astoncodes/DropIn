@@ -1,10 +1,18 @@
 # Releasing Drop In to the App Store and Google Play
 
-The steps between this repository and a store listing, in order. The code these
-steps rely on is in the repository; what remains is account setup,
-configuration and review. Known code gaps are tracked in [TODO](../TODO.md).
+For the current iOS release, use the [App Store runbook](app-store-release.md)
+and [readiness review dated October 15, 2026](release-readiness.md). Code and
+production verification blockers remain; the steps below are broader background
+for both platforms and must not be treated as proof that the app is ready.
+The ordered current checklist is in [TODO](../TODO.md).
 
 ## 1. Apply the database migrations
+
+The current security work also includes four October 15 migrations for admin
+identity, rate limits, MFA and private media. They were applied directly to the
+test project; reconcile its history before a normal migration push. Verify the
+actual production target and coordinate admin/client/storage rollout using the
+new runbook before running deployment commands below.
 
 `supabase/migrations/20260926120000_content_moderation.sql` adds player reports,
 player blocks and admin take-down, and stops players attaching media hosted
@@ -46,6 +54,11 @@ The account holder then creates the signing credentials — by running the first
 EAS.
 
 ## 3. Link the EAS project
+
+This checkout already declares owner `tomiwaadewumi` and project ID
+`c540d540-4f74-4f65-b0e5-0423e06bb6c7`. Verify access to that project. The
+initialization instructions below apply only when deliberately creating a
+different project; they are not an outstanding release task.
 
 From `apps/mobile`, signed in to the Expo account that should own the app:
 
@@ -221,5 +234,5 @@ Charlottetown.
   within 24 hours.
 - Grant the first admin with `npm run db:admin -- you@example.com` (needs
   `SUPABASE_DB_URL`) or an insert into `admin_users` from the SQL editor.
-- Supabase's free plan pauses projects after a week without activity and has
-  no backups; the Pro plan avoids both.
+- Verify the production plan's availability, backup retention and tested restore
+  procedure. Do not assume recoverability from a plan name alone.

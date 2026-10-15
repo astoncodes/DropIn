@@ -2,6 +2,12 @@
 
 Run `npm run admin` from the repository root, then open http://localhost:5173.
 The app reads `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` from the root `.env`.
+
+Use `npm run dev:admin` with the [development profile](development.md) to select
+the isolated test/development backend. The admin app requires an authenticator
+code after email sign-in. The database MFA migration is verified on the test
+project; coordinate production rollout with the updated admin app as described
+in [security-hardening.md](security-hardening.md).
 Only a publishable/anon key belongs in the browser.
 
 ## Website navigation
