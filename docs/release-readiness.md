@@ -1,11 +1,12 @@
 # Release readiness — October 15, 2026
 
 **Decision: not ready for public App Store submission.** The local source and SQL
-regressions pass. Production rollout, Apple-specific account deletion, user-content
-safeguards, native testing, and store setup still have release gates open.
+regressions pass, and the production web/Supabase rollout is complete except for
+Render SPA rewrites and the missing public support address. Apple-specific account
+deletion, user-content safeguards, native testing, and store setup remain open.
 
-This is a review of the current worktree, including its uncommitted security
-changes. It is not an assertion that those changes are deployed. Follow the
+This record covers production deployment from commit
+`41b15654ce808f545e9c2bf16c9ac63f237f3520`. Follow the
 ordered checklist in [TODO.md](../TODO.md) and the [App Store runbook](app-store-release.md).
 
 ## Evidence collected
@@ -21,7 +22,8 @@ ordered checklist in [TODO.md](../TODO.md) and the [App Store runbook](app-store
 | `npx expo install --check` in `apps/mobile`                                            | Failed: eight package-version mismatches                                                                                                                                   |
 | `npx expo-doctor` in `apps/mobile`                                                     | 16/18 passed; Metro defaults and package alignment failed                                                                                                                  |
 | `npm audit --json`                                                                     | 31 affected dependency entries: 20 high, 11 moderate, zero critical                                                                                                        |
-| Production Supabase project, SQL, migrations and Edge Function metadata                | Read-only connector audit completed; production is healthy but five reviewed migrations and the hardened Edge Function are not deployed                                    |
+| Production Supabase project, SQL, migrations and Edge Function metadata                | Five reviewed migrations applied; private media, write limits, admin MFA, nearby feed and Realtime chat verified; JWT-verified `delete-account` v3 deployed                |
+| Production web clients                                                                 | Player and admin builds are live on Render; roots return 200, but direct nested SPA routes still need the versioned rewrite rules applied in Render                        |
 | Apple membership, signing, App Store Connect record, EAS cloud variables/build history | Not verified in this review                                                                                                                                                |
 | Signed production iPhone/iPad archive and TestFlight journeys                          | Not verified; web export does not prove native release behavior                                                                                                            |
 
@@ -32,18 +34,18 @@ just to reduce the count.
 
 ## Release gates
 
-| Priority         | Finding and evidence                                                                                                                                                                                                                       | Required outcome                                                                                                                                                                                                                                  |
-| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Blocker          | `apple-sign-in.ts` does not retain an authorization code for revocation; `delete-account` removes Supabase data but never calls Apple's revocation API                                                                                     | Complete and test Apple-token revocation during account deletion. [Apple guidance](https://developer.apple.com/help/app-review/guideline-reference/5-1-1-account-deletion)                                                                        |
-| Blocker          | Reports/blocks exist, but no implemented objectionable-content filtering path is evident; check-in notes are not report targets                                                                                                            | Finish filtering/moderation coverage for posts, media, chat and other public user text, and verify report/block/takedown and support operations. [UGC guideline](https://developer.apple.com/app-store/review/guidelines/#user-generated-content) |
-| Blocker          | Production ends at `20261013010000_canada_venue_coverage`; five October 15 migrations are absent. `session-media` is public, `is_admin(uuid)` remains anonymously executable, and deployed `delete-account` v1 still returns wildcard CORS | Reconcile test migration history, complete the lockout-safe admin/client rollout, deploy the reviewed database and Edge Function changes with real origins, and prove anonymous media denial via HTTP                                             |
-| Blocker          | Local support email, operator and site URL are blank; no public deployment was supplied                                                                                                                                                    | Publish working privacy/support/terms/deletion pages and a monitored support contact; verify cloud production variables separately                                                                                                                |
-| Blocker          | Native Apple/Google/email sign-in and Keychain persistence are not verified in a signed release build                                                                                                                                      | Complete real-device TestFlight tests, including fresh install, relaunch, denied permissions, sign-out and deletion                                                                                                                               |
-| Blocker          | `supportsTablet: true`; existing release screenshots cover only iPhone                                                                                                                                                                     | Test/capture iPad, or deliberately choose an iPhone-only first binary before submission. [Screenshot requirements](https://developer.apple.com/help/app-store-connect/reference/app-information/screenshot-specifications/)                       |
-| Engineering gate | Expo Doctor finds overwritten Metro watch defaults and eight patch mismatches                                                                                                                                                              | Resolve both checks, rebuild native dependencies, and rerun tests/builds                                                                                                                                                                          |
-| Engineering gate | Upload size/MIME/ownership restrictions exist, but server-side file-content validation and per-user quotas remain open                                                                                                                     | Complete upload safeguards, rate-limit concurrency tests and operational abuse detection                                                                                                                                                          |
-| Engineering gate | Security alerts, backup/restore procedure and production availability verification remain open                                                                                                                                             | Configure monitoring with a real destination and verify recovery/availability before inviting public users                                                                                                                                        |
-| Submission gate  | Membership, app record, final privacy/age declarations, reviewer access and signed archive are unverified                                                                                                                                  | Complete the App Store runbook and retain evidence for each gate                                                                                                                                                                                  |
+| Priority         | Finding and evidence                                                                                                                                                            | Required outcome                                                                                                                                                                                                                                  |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Blocker          | `apple-sign-in.ts` does not retain an authorization code for revocation; `delete-account` removes Supabase data but never calls Apple's revocation API                          | Complete and test Apple-token revocation during account deletion. [Apple guidance](https://developer.apple.com/help/app-review/guideline-reference/5-1-1-account-deletion)                                                                        |
+| Blocker          | Reports/blocks exist, but no implemented objectionable-content filtering path is evident; check-in notes are not report targets                                                 | Finish filtering/moderation coverage for posts, media, chat and other public user text, and verify report/block/takedown and support operations. [UGC guideline](https://developer.apple.com/app-store/review/guidelines/#user-generated-content) |
+| Blocker          | `session-media` is private and the hardened backend is live, but the empty bucket prevents a real old-public-URL denial test; production admin MFA has not been enrolled/tested | Upload a controlled test object, prove signed-out denial/signed-link expiry, and complete the admin TOTP/AAL2/recovery journey                                                                                                                    |
+| Blocker          | Both web roots are public, but Render SPA rewrites/security headers still need Dashboard application and no monitored support email has been supplied                           | Apply `render.yaml` routes/headers, verify legal/callback deep links, and publish a monitored support contact in Render and EAS                                                                                                                   |
+| Blocker          | Native Apple/Google/email sign-in and Keychain persistence are not verified in a signed release build                                                                           | Complete real-device TestFlight tests, including fresh install, relaunch, denied permissions, sign-out and deletion                                                                                                                               |
+| Blocker          | `supportsTablet: true`; existing release screenshots cover only iPhone                                                                                                          | Test/capture iPad, or deliberately choose an iPhone-only first binary before submission. [Screenshot requirements](https://developer.apple.com/help/app-store-connect/reference/app-information/screenshot-specifications/)                       |
+| Engineering gate | Expo Doctor finds overwritten Metro watch defaults and eight patch mismatches                                                                                                   | Resolve both checks, rebuild native dependencies, and rerun tests/builds                                                                                                                                                                          |
+| Engineering gate | Upload size/MIME/ownership restrictions exist, but server-side file-content validation and per-user quotas remain open                                                          | Complete upload safeguards, rate-limit concurrency tests and operational abuse detection                                                                                                                                                          |
+| Engineering gate | Security alerts, backup/restore procedure and production availability verification remain open                                                                                  | Configure monitoring with a real destination and verify recovery/availability before inviting public users                                                                                                                                        |
+| Submission gate  | Membership, app record, final privacy/age declarations, reviewer access and signed archive are unverified                                                                       | Complete the App Store runbook and retain evidence for each gate                                                                                                                                                                                  |
 
 The Expo patch checks currently expect: expo `~57.0.29`, expo-constants
 `~57.0.22`, expo-crypto `~57.0.4`, expo-dev-client `~57.0.20`, expo-linking
@@ -65,26 +67,29 @@ account deletion UI, reports/blocks, RLS/ownership tests, private-media migratio
 admin MFA code, and iPhone screenshot assets. Their presence does not prove
 their deployed operation or full App Review compliance.
 
-## Production Supabase read audit — October 15, 2026
+## Production deployment audit — October 15, 2026
 
-Authorized read access through the `dropin` connection now succeeds for app
-project `zyxfymvtijudbenqxzyf`. The project reports `ACTIVE_HEALTHY` on Postgres
-17.6.1. The migration ledger contains the eleven repository migrations through
-`20261013010000_canada_venue_coverage`; it does not contain the five reviewed
-October 15 migrations for restricted admin lookup, write rate limits, admin MFA,
-authenticated media reads and Realtime chat/latest-message previews.
+Authorized production access through the `dropin` connection succeeds for app
+project `zyxfymvtijudbenqxzyf`. All five October 15 migrations are now in the
+hosted ledger. Verification shows `session-media.public = false`, the private
+write-rate table exists, `session_messages` belongs to `supabase_realtime`, and
+the nearby-feed RPC is `SECURITY INVOKER`, executable by `authenticated` and not
+`anon`. `is_admin(uuid)` remains callable by `anon` intentionally because public
+RLS policies use it; it returns false without an authenticated caller and now
+requires an AAL2 token for an admin result.
 
-Production still has a public `session-media` bucket. Its 25 MiB limit and image/
-video MIME allowlist are present, but its SELECT policies cover only an object's
-owner and admins; public bucket delivery therefore remains the effective public
-read path. `public.write_rate_limits` and its rate-limit functions are absent.
-`public.is_admin(uuid)` is still a `SECURITY DEFINER` function executable by both
-`anon` and `authenticated`.
+The JWT-verified `delete-account` Edge Function is active at version 3. Its exact
+player/admin origin allowlist is stored as a Supabase secret. Auth now uses
+`https://dropin-player.onrender.com` as Site URL and allows the exact player
+callback, admin origin, native `dropin://callback`, and retained local-development
+callbacks.
 
-The only deployed Edge Function is JWT-verified `delete-account`, version 1. Its
-source matches the pre-hardening behavior: wildcard CORS, no exact web-origin
-allowlist, and no streamed 1024-byte request limit. Do not deploy the private
-bucket or MFA migration independently of their compatible clients/admin UI.
+Render serves the player root at `https://dropin-player.onrender.com` and admin
+root at `https://dropin-admin.onrender.com` from the same reviewed commit. Both
+return HTTP 200. Direct player legal/callback routes return 404 until the
+`render.yaml` `/*` rewrite is applied through the Dashboard; the current Render
+connector cannot mutate route/header rules and no interactive browser surface
+was available during this run.
 
 The production security advisor reports the exposed `is_admin(uuid)` issue,
 five other anonymous `SECURITY DEFINER` RPC warnings, 32 authenticated RPC
@@ -98,7 +103,7 @@ triage rather than blind index or policy removal.
 ## Scope and limits
 
 App Store readiness includes the actual signed binary, hosted services and
-store account, not only repository code. No binary was uploaded, no production
-migration was applied, and no Apple/EAS account settings were changed in this
-review. The previous test-project deployment record remains documented in
+store account, not only repository code. No binary was uploaded and no
+Apple/App Store account settings were changed in this review. The production
+Supabase and Render changes above are live. The previous test-project record remains in
 [security-hardening.md](security-hardening.md).

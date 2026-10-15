@@ -5,7 +5,9 @@ is done, delete the entry rather than leaving a ticked box behind.
 
 ## App Store release: current decision and order
 
-**Not ready for public submission as of October 15, 2026.**
+**Not ready for public App Store submission as of October 15, 2026.** The
+production web clients and reviewed Supabase changes are deployed; the remaining
+blockers below are native/store, support-contact, moderation and operational work.
 Read the [review evidence](docs/release-readiness.md) and follow the
 [exact App Store steps](docs/app-store-release.md). The EAS owner/project ID and
 production build profile already exist. Apple membership, signing, cloud
@@ -55,39 +57,24 @@ A real email setup is required before inviting public users:
 
 Deploy in this order so the clients and access rules remain compatible:
 
-- [ ] Create two Render Static Sites from this repository and record the player
-      URL, admin URL, support mailbox and operator name. Do not create a Render
-      Web Service for either UI or for the backend.
-- [ ] Configure the player site build command as
-      `npm ci && cd apps/mobile && npx expo export --platform web --output-dir dist --max-workers 2`
-      and publish `apps/mobile/dist`. Add a rewrite from `/*` to `/index.html`
-      so direct visits to legal and callback routes load the SPA. Supply only the
-      required `EXPO_PUBLIC_*` values.
-- [ ] Configure the admin site build command as
-      `npm ci && npm run build --workspace apps/admin`, publish
-      `apps/admin/dist`, add the same `/*` to `/index.html` SPA rewrite, and set
-      `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` to the same production
-      project used by the player app.
+- [ ] In each live Render Static Site, add the already versioned `/*` to
+      `/index.html` rewrite and security headers from `render.yaml`. The services
+      created through Render's limited API are live, but direct nested routes
+      currently return 404 until these Dashboard settings are applied.
 - [ ] Set `EXPO_PUBLIC_SITE_URL`, `EXPO_PUBLIC_SUPPORT_EMAIL` and
       `EXPO_PUBLIC_OPERATOR_NAME` consistently in the web host and EAS production
       environment. Set all other required public map, Google and Supabase values
       listed in `.env.example`; never copy server secrets into public variables.
-- [ ] In Supabase Auth, set the production player site as the Site URL and allow
-      its exact `/callback`, the exact admin origin, and `dropin://callback`.
-      Configure Apple and Google provider callbacks against this same project.
-- [ ] Set the Supabase Edge Function secret `ALLOWED_WEB_ORIGINS` to the exact
-      comma-separated player and admin HTTPS origins that genuinely invoke the
-      function. Do not use `*`, include URL paths, or include preview deployments.
-- [ ] Deploy the MFA-capable admin UI first and verify enrollment, AAL1 denial,
+- [ ] Configure and verify Apple and Google provider callbacks against the
+      production Supabase project. The production Site URL and exact player,
+      admin and native callback allowlist are already set.
+- [ ] Verify admin MFA enrollment, AAL1 denial,
       AAL2 access, sign-out/sign-in and the documented recovery process against
-      production before applying the MFA-enforcement migration.
-- [ ] Deploy the player web UI and prepare the native build that understands
-      signed private-media URLs. Then apply the reviewed migrations in order,
-      deploy the hardened `delete-account` Edge Function, and verify migrations,
-      advisors, RLS, bucket privacy and function metadata.
-- [ ] Rebuild both static sites and the EAS binary from the same reviewed commit.
-      Confirm their Supabase project URL is production, scan bundles for server
-      secrets, and record the web deployment IDs and EAS build UUID.
+      production. The MFA-enforcement migration is live, but no production admin
+      has yet completed a verified TOTP enrollment.
+- [ ] Build the EAS binary from the reviewed production commit after setting its
+      production variables and support address. Record the EAS build UUID; both
+      Render sites already deploy commit `41b15654ce808f545e9c2bf16c9ac63f237f3520`.
 - [ ] Test the complete connection path: email/social sign-in returns to the
       correct client; both player clients read/write through RLS; Realtime chat
       works; uploads use private Storage and short signed links; the admin UI can
@@ -114,19 +101,10 @@ Deploy in this order so the clients and access rules remain compatible:
 
 ### 2. Verify and deploy the production backend
 
-- [ ] Production metadata access now works and the October 15 read audit is in
-      `docs/release-readiness.md`. Resolve its findings: production is healthy but
-      four security migrations and the Realtime chat migration are absent,
-      `session-media` remains public,
-      `is_admin(uuid)` remains anonymously executable, and deployed
-      `delete-account` v1 still uses wildcard CORS.
-- [ ] Reconcile the four directly applied security changes and Realtime chat
-      change with test migration history, then deploy the reviewed production changes in compatible order:
-      MFA-capable admin first; matching app/private-storage rollout; updated
-      account-deletion function with real CORS origins. See
-      [security-hardening.md](docs/security-hardening.md).
 - [ ] Prove signed-out media denial through real Storage HTTP requests and
       native/web clients, including old public URLs, link expiry and sign-out.
+      The production bucket is private, but it currently contains no object with
+      which to run the end-to-end HTTP check.
 - [ ] Verify Realtime chat on two authenticated test devices: member inserts
       should update the other device immediately, reconnect/background recovery
       should succeed through the 30-second fallback, and a non-member must
