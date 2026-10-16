@@ -118,11 +118,9 @@ Deploy in this order so the clients and access rules remain compatible:
 
 ### 3. Prepare Apple accounts, hosting and cloud configuration
 
-- [ ] Verify Apple Developer membership, intended team access, App ID
-      `com.playdropin.app`, and Sign in with Apple capability; create/verify the
-      matching App Store Connect record and numeric app ID.
-- [ ] Verify remote access to the already configured Expo project and its
-      production build variables, Apple signing and submission credentials.
+- [ ] Verify the Sign in with Apple capability on App ID `com.playdropin.app`.
+      Apple team access, signing and submission credentials are verified; App
+      Store Connect app `6823479580` exists and all EAS variables are configured.
 - [ ] Publish working HTTPS privacy, terms, support and deletion pages. A stable
       hosting-provider URL is sufficient; a custom domain is optional. Configure
       real site/operator/support values and host security headers.
@@ -136,7 +134,8 @@ Deploy in this order so the clients and access rules remain compatible:
 - [ ] Run the complete release checks, regenerate/review schema types against
       the released backend, and commit a reviewed release candidate with lockfile.
 - [ ] Verify privacy manifests/SDK declarations for signed EAS production build
-      `1cd71961-076f-4c19-8f73-58bff955fcf2`, then upload it to TestFlight.
+      `1cd71961-076f-4c19-8f73-58bff955fcf2` after Apple finishes processing it.
+      The binary has been uploaded to App Store Connect.
 - [ ] Test the exact uploaded build on real devices: each sign-in provider,
       persistence, location/camera permissions, sessions/chat, uploads, map-only
       signed-out state, private-media links, report/block and account deletion.
