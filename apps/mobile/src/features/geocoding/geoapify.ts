@@ -20,6 +20,9 @@ type GeoapifyItem = {
 const cache = new Map<string, GeocodingResult[]>();
 let nextRequestAt = 0;
 
+/** Initial launch markets, expressed as ISO 3166-1 alpha-2 country codes. */
+const LAUNCH_COUNTRY_FILTER = 'countrycode:us,ca,ng';
+
 function abortError(): Error {
   const error = new Error('The search was cancelled.');
   error.name = 'AbortError';
@@ -72,7 +75,7 @@ export async function searchPlaces(
   url.searchParams.set('text', query);
   url.searchParams.set('format', 'json');
   url.searchParams.set('limit', '5');
-  url.searchParams.set('filter', 'countrycode:ca');
+  url.searchParams.set('filter', LAUNCH_COUNTRY_FILTER);
   url.searchParams.set('lang', 'en');
   url.searchParams.set('apiKey', env.geoapifyApiKey);
 
