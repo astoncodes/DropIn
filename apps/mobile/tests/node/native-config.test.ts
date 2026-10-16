@@ -47,6 +47,13 @@ describe('app.config.ts identifier', () => {
     expect(appConfig).toMatch(/iosUrlScheme:/);
     expect(appConfig).toMatch(/EXPO_PUBLIC_GOOGLE_IOS_URL_SCHEME/);
   });
+
+  it('declares the motion purpose string required by App Store validation', () => {
+    expect(appConfig).toMatch(/motionUsagePermission:/);
+    expect(appConfig).toContain(
+      'Drop In uses motion activity to improve location accuracy when showing nearby sports sessions and confirming check-ins.',
+    );
+  });
 });
 
 describeNative('generated iOS project matches app.config.ts', () => {
@@ -75,5 +82,13 @@ describeNative('generated iOS project matches app.config.ts', () => {
 
   it('keeps the deep-link scheme the auth callback relies on', () => {
     expect(readFileSync(INFO_PLIST, 'utf8')).toContain('<string>dropin</string>');
+  });
+
+  it('includes the Core Motion privacy purpose string Apple validates', () => {
+    const infoPlist = readFileSync(INFO_PLIST, 'utf8');
+    expect(infoPlist).toContain('<key>NSMotionUsageDescription</key>');
+    expect(infoPlist).toContain(
+      '<string>Drop In uses motion activity to improve location accuracy when showing nearby sports sessions and confirming check-ins.</string>',
+    );
   });
 });

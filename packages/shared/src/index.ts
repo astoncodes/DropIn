@@ -17,14 +17,14 @@
  * Do NOT put in this package:
  *   - merge, dedup, or check-in validation logic (lives in database functions)
  *   - anything derived from data (sports, regions — those are queried)
- *   - React components (see packages/ui, which is deliberately not created yet)
+ *   - React components (keep UI inside the owning app)
  *
- * Section references are to docs/product-rules.md.
+ * Constraint names and values are verified in the clients' product-rules tests.
  */
 
 export * from './errors';
 
-/** Check-in duration bounds, in minutes. §Check-ins */
+/** Check-in duration bounds, in minutes. */
 export const CHECK_IN_DURATION = {
   defaultMinutes: 90,
   minMinutes: 30,
@@ -32,18 +32,18 @@ export const CHECK_IN_DURATION = {
   maxMinutes: 240,
 } as const;
 
-/** §Check-ins — party_size includes the checked-in user. */
+/** party_size includes the checked-in user. */
 export const PARTY_SIZE = {
   min: 1,
   default: 1,
   max: 20,
 } as const;
 
-/** §Check-ins — optional, plain text. Never rendered as HTML. */
+/** Check-in notes are optional plain text and never rendered as HTML. */
 export const CHECK_IN_NOTE_MAX_LENGTH = 120;
 
 /**
- * §Location gating. An anti-abuse friction control, not proof of presence.
+ * Location gating is an anti-abuse friction control, not proof of presence.
  * Tunable: raise if legitimate check-ins fail, lower if abuse appears.
  */
 export const LOCATION_GATE = {
@@ -52,7 +52,7 @@ export const LOCATION_GATE = {
 } as const;
 
 /**
- * §Duplicate ranking — three distances, three different jobs. Distance alone
+ * Duplicate ranking uses three distances for three different jobs. Distance alone
  * never decides a merge; see find_duplicate_candidates() and merge_venues().
  */
 export const DUPLICATE_DISTANCE_METRES = {
@@ -64,7 +64,7 @@ export const DUPLICATE_DISTANCE_METRES = {
   highConfidenceReview: 40,
 } as const;
 
-/** §Recurring runs — a series must be renewed rather than living forever. */
+/** Recurring runs expire so a series needs a deliberate renewal. */
 export const RUN_SERIES = {
   maxWeeksValid: 12,
   /** Public discovery queries are bounded to this window. */
@@ -79,7 +79,7 @@ export const RUN_SERIES = {
 } as const;
 
 /**
- * §Moderation — mirrors content_reports constraints so the report sheet and the
+ * Mirrors content_reports constraints so the report sheet and the
  * admin queue can cap input before report_content() or admin_resolve_reports()
  * refuses it.
  */

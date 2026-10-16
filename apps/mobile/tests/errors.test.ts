@@ -17,6 +17,11 @@ const authError = (code: string, status: number, message = 'raw auth text') =>
   Object.assign(new Error(message), { name: 'AuthApiError', code, status, __isAuthError: true });
 
 describe('userMessage', () => {
+  it('handles backend rate limits without exposing server details', () => {
+    expect(userMessage(postgrestError('PT429', 'private server details'), FALLBACK)).toBe(
+      'Too many requests. Please try again later.',
+    );
+  });
   describe('passes through business-rule messages written for players', () => {
     it('keeps an invalid-parameter message raised by a database function', () => {
       expect(

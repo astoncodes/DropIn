@@ -86,14 +86,14 @@ describe('searchPlaces input bounds', () => {
 });
 
 describe('request shape', () => {
-  it('sends the trimmed query, Canada filter and key that the provider expects', async () => {
+  it('searches the United States, Canada and Nigeria launch markets', async () => {
     const { searchPlaces, calls } = await loadAdapter('test-key');
     await searchPlaces('  Eastlink Centre  ');
 
     const { searchParams, hostname } = calls[0].url;
     expect(hostname).toBe('api.geoapify.com');
     expect(searchParams.get('text')).toBe('Eastlink Centre');
-    expect(searchParams.get('filter')).toBe('countrycode:ca');
+    expect(searchParams.get('filter')).toBe('countrycode:us,ca,ng');
     expect(searchParams.get('format')).toBe('json');
     expect(searchParams.get('limit')).toBe('5');
     expect(searchParams.get('lang')).toBe('en');

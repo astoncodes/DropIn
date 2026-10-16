@@ -37,7 +37,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
 
     const { data: subscription } = supabase.auth.onAuthStateChange((_event, nextSession) => {
-      if (_event === 'SIGNED_OUT') queryClient.clear();
+      // Authorization and MFA results must not survive a session change.
+      if (_event !== 'INITIAL_SESSION') queryClient.clear();
       setSession(nextSession);
       setIsLoading(false);
     });

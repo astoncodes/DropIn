@@ -81,8 +81,8 @@ select throws_ok(
 reset role;
 
 set local role anon;
-select is((select count(*)::int from public.session_posts where author_id = 'a1111111-1111-4111-8111-111111111116'), 1,
-  'signed-out readers still see public posts');
+select throws_ok($$ select * from public.session_posts $$,
+  '42501', null, 'signed-out readers cannot see posts');
 select ok(not has_function_privilege('anon', 'public.report_content(public.report_target,uuid,public.report_reason,text)', 'EXECUTE'),
   'signed-out readers cannot file reports');
 select ok(not has_function_privilege('anon', 'public.admin_resolve_reports(public.report_target,uuid,text,text)', 'EXECUTE'),
@@ -134,7 +134,7 @@ select results_eq(
   'a report records the author, what the reporter saw, and trimmed details');
 
 -- The admin works the queue.
-select set_config('request.jwt.claims', '{"sub":"a4444444-4444-4444-8444-444444444446","role":"authenticated"}', true);
+select set_config('request.jwt.claims', '{"sub":"a4444444-4444-4444-8444-444444444446","role":"authenticated","aal":"aal2"}', true);
 set local role authenticated;
 select is((select count(*)::int from public.content_reports
             where target_user_id = 'a1111111-1111-4111-8111-111111111116' and status = 'open'), 4,

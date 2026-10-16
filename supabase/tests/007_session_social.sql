@@ -1,5 +1,5 @@
 begin;
-select plan(15);
+select plan(23);
 
 insert into auth.users (instance_id, id, aud, role, email, raw_user_meta_data)
 values
@@ -12,6 +12,23 @@ select has_table('public', 'session_memberships', 'session memberships exist');
 select has_table('public', 'session_messages', 'private messages exist');
 select has_table('public', 'session_posts', 'public session posts exist');
 select has_table('public', 'session_media', 'post media exists');
+select has_function('public', 'latest_joined_session_messages', array[]::text[],
+  'joined chat previews have a bounded database function');
+select has_function(
+  'public',
+  'community_feed_posts',
+  array['double precision', 'double precision', 'integer'],
+  'community feed has a location-aware bounded database function'
+);
+select ok(
+  exists (
+    select 1 from pg_publication_tables
+    where pubname = 'supabase_realtime'
+      and schemaname = 'public'
+      and tablename = 'session_messages'
+  ),
+  'session messages publish realtime changes'
+);
 
 -- Host a run for tomorrow rather than joining a seeded one. The hosted test
 -- project keeps its fixtures, so seeded series expire weeks after loading.
@@ -51,6 +68,18 @@ select lives_ok(
   'a member can send a session message'
 );
 
+select is(
+  (select body from public.latest_joined_session_messages()
+    where session_id = current_setting('test.joined_session_id')::uuid),
+  'See you there',
+  'a member receives one latest chat preview for the joined session'
+);
+
+select ok(
+  (select count(*) from public.community_feed_posts(46.24, -63.13, 50)) >= 1,
+  'an authenticated player can load the location-aware feed'
+);
+
 select lives_ok(
   $$ select public.create_session_photo_post(s.id, 'Great run tonight', s.latitude, s.longitude, 10, now())
        from public.run_sessions s
@@ -73,6 +102,9 @@ set local role authenticated;
 select is_empty($$ select 1 from public.session_messages $$,
   'a non-member cannot read session chat');
 
+select is_empty($$ select 1 from public.latest_joined_session_messages() $$,
+  'a non-member receives no joined-session chat previews');
+
 select throws_ok(
   $$ insert into public.session_messages (session_id, user_id, body)
      values (current_setting('test.joined_session_id')::uuid,
@@ -85,8 +117,12 @@ select is((select count(*)::integer from public.session_posts), 4,
 
 reset role;
 set local role anon;
-select is((select count(*)::integer from public.session_posts), 4,
-  'public feed posts are visible without an account');
+select throws_ok($$ select * from public.session_posts $$,
+  '42501', null, 'feed posts require an account');
+select throws_ok($$ select * from public.latest_joined_session_messages() $$,
+  '42501', null, 'anonymous users cannot request chat previews');
+select throws_ok($$ select * from public.community_feed_posts(46.24, -63.13, 50) $$,
+  '42501', null, 'anonymous users cannot request feed posts');
 select throws_ok(
   $$ select public.join_run_session(current_setting('test.series')::uuid, current_setting('test.date')::date) $$,
   '42501', null, 'anonymous users cannot join sessions'

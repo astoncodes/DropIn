@@ -1182,6 +1182,26 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      community_feed_posts: {
+        Args: { p_lat?: number; p_limit?: number; p_lon?: number }
+        Returns: Database["public"]["Tables"]["session_posts"]["Row"][]
+        SetofOptions: {
+          from: "*"
+          to: "session_posts"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      latest_joined_session_messages: {
+        Args: never
+        Returns: {
+          body: string
+          created_at: string
+          id: string
+          session_id: string
+          user_id: string
+        }[]
+      }
       account_accepts_writes: { Args: never; Returns: boolean }
       account_deletion_objects: {
         Args: { p_user_id: string }

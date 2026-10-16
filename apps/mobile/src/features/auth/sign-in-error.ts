@@ -117,5 +117,9 @@ export function describeSignInFailure(cause: unknown): string {
  * flaky network in a bug report.
  */
 export function logSignInFailure(provider: 'apple' | 'google' | 'email', cause: unknown): void {
-  console.error(`[auth] ${provider} sign-in failed`, cause);
+  // Provider errors may carry URLs or other sensitive context. Never emit the
+  // raw object in a release build.
+  if (typeof __DEV__ !== 'undefined' && __DEV__) {
+    console.error(`[auth] ${provider} sign-in failed`, cause);
+  }
 }

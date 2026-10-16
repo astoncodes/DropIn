@@ -37,18 +37,23 @@ export function ReportPanel({
   const media = useQuery({
     queryKey: ['admin', 'report-media', group.targetId],
     enabled: group.targetKind === 'session_post',
+    refetchInterval: 45_000,
     queryFn: async () => {
       const { data, error } = await supabase
         .from('session_media')
         .select('id, kind, storage_path')
         .eq('post_id', group.targetId);
       if (error) throw error;
-      return data.map((item) => ({
-        ...item,
-        url: item.storage_path
-          ? supabase.storage.from('session-media').getPublicUrl(item.storage_path).data.publicUrl
-          : null,
-      }));
+      return Promise.all(
+        data.map(async (item) => {
+          if (!item.storage_path) return { ...item, url: null };
+          const signed = await supabase.storage
+            .from('session-media')
+            .createSignedUrl(item.storage_path, 60);
+          if (signed.error) throw signed.error;
+          return { ...item, url: signed.data.signedUrl };
+        }),
+      );
     },
   });
 

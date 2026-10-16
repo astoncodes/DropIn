@@ -10,7 +10,7 @@
 -- ---------------------------------------------------------------------------
 -- Sports
 -- ---------------------------------------------------------------------------
--- The recommended launch set (docs/product-rules.md §Open decisions).
+-- Active sports mirror the lookup data used by the application migrations.
 -- ice_hockey is seeded inactive: it is well represented in PEI data but the
 -- app is about pickup play, and rink access works differently. Flip is_active
 -- when the owners decide — that decision is still open.
@@ -125,9 +125,8 @@ on conflict (alias) do nothing;
 
 insert into public.regions (slug, name, min_lat, min_lon, max_lat, max_lon, timezone, is_published) values
   ('charlottetown', 'Charlottetown, PE', 46.190000, -63.240000, 46.300000, -63.030000, 'America/Halifax', true),
-  -- Second region, imported but never published: proves the importer carries no
-  -- region-specific constants without creating a review burden. Denser and
-  -- differently shaped (spans a harbour), which is the point of the test.
+  -- An unpublished region lets RLS tests distinguish public lookup data from
+  -- admin-only data without depending on the user's selected region.
   ('halifax',       'Halifax, NS',       44.580000, -63.700000, 44.740000, -63.480000, 'America/Halifax', false)
 on conflict (slug) do nothing;
 

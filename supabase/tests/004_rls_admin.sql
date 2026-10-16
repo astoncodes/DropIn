@@ -5,7 +5,7 @@
 -- is decorative.
 
 begin;
-select plan(7);
+select plan(13);
 
 insert into auth.users (instance_id, id, aud, role, email)
 values
@@ -19,6 +19,10 @@ values ('33333333-3333-3333-3333-333333333333', 'fixture admin');
 -- Anonymous
 -- ---------------------------------------------------------------------------
 set local role anon;
+
+select is(public.is_admin(), false, 'anonymous admin check is false');
+select is(public.is_admin('33333333-3333-3333-3333-333333333333'), false,
+  'anonymous callers cannot discover a known admin');
 
 select throws_ok(
   $$ select 1 from public.admin_users $$,
@@ -43,6 +47,9 @@ select is(
   false,
   'is_admin() is false for an ordinary player'
 );
+
+select is(public.is_admin('33333333-3333-3333-3333-333333333333'), false,
+  'players cannot discover another user admin status');
 
 -- Note the difference from anon: this role *has* the SELECT grant, so the
 -- query succeeds and returns nothing. The policy, not the grant, is what hides
@@ -81,9 +88,21 @@ set local role authenticated;
 
 select is(
   (select public.is_admin()),
+  false,
+  'an admin without MFA is not authorized'
+);
+select is_empty($$ select 1 from public.admin_users $$,
+  'an AAL1 admin cannot read the admin roster');
+select set_config('request.jwt.claims',
+  '{"sub":"33333333-3333-3333-3333-333333333333","role":"authenticated","aal":"aal2"}', true);
+select is(
+  (select public.is_admin()),
   true,
   'is_admin() is true for an admin'
 );
+
+select is(public.is_admin('33333333-3333-3333-3333-333333333333'), true,
+  'an admin can explicitly check their own ID');
 
 -- Even admins cannot grant admin through the API. There is no INSERT policy on
 -- this table for anyone; promotion is a deliberate out-of-band act performed

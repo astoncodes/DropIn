@@ -1,5 +1,5 @@
 import { createClient } from 'npm:@supabase/supabase-js@2.112.3';
-import { createDeleteAccountHandler } from './handler.mts';
+import { createDeleteAccountHandler, parseAllowedOrigins } from './handler.mts';
 
 const admin = createClient(
   Deno.env.get('SUPABASE_URL')!,
@@ -8,4 +8,6 @@ const admin = createClient(
     auth: { persistSession: false, autoRefreshToken: false },
   },
 );
-Deno.serve(createDeleteAccountHandler(admin));
+Deno.serve(
+  createDeleteAccountHandler(admin, parseAllowedOrigins(Deno.env.get('ALLOWED_WEB_ORIGINS') ?? '')),
+);

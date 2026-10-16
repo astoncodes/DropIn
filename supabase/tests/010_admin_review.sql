@@ -17,7 +17,7 @@ set local role authenticated;
 select throws_ok($$select public.admin_review_candidate('83333333-3333-4333-8333-333333333333','approve')$$,'42501','Admin access required','player review denied');
 select is((select count(*)::int from public.admin_audit_log),0,'player cannot read audit');
 reset role;
-select set_config('request.jwt.claims','{"sub":"82222222-2222-4222-8222-222222222222","role":"authenticated"}',true);
+select set_config('request.jwt.claims','{"sub":"82222222-2222-4222-8222-222222222222","role":"authenticated","aal":"aal2"}',true);
 set local role authenticated;
 select throws_ok($$update public.venues set name='Bypass'$$,'42501',null,'even admins must use RPCs');
 select lives_ok($$select public.admin_review_candidate('83333333-3333-4333-8333-333333333333','approve','Looks good',null,'Reviewed court')$$,'admin can approve');

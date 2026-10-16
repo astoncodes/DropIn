@@ -8,6 +8,7 @@ import { useSession } from './lib/auth-context';
 import { supabase } from './lib/supabase';
 import { useIsAdmin } from './lib/use-is-admin';
 import { Brand } from './components/brand';
+import { MfaGate } from './features/auth/mfa-gate';
 
 /**
  * The protected shell.
@@ -16,6 +17,17 @@ import { Brand } from './components/brand';
  * an admin. Database permissions enforce access to every operation.
  */
 export default function App() {
+  const { session } = useSession();
+  return session ? (
+    <MfaGate key={session.user.id}>
+      <AdminWorkspace />
+    </MfaGate>
+  ) : (
+    <AdminWorkspace />
+  );
+}
+
+function AdminWorkspace() {
   const client = useQueryClient();
   const [signOutError, setSignOutError] = useState('');
   const [signingOut, setSigningOut] = useState(false);

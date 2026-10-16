@@ -1,8 +1,12 @@
 import type { Tables } from '@dropin/database-types';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useEffect } from 'react';
 
 import { supabase } from '../../lib/supabase';
 import { UserFacingError } from '@dropin/shared';
+import { useSession } from '../../providers/auth-context';
+import { orderFeedByLocation } from './feed-order';
+import type { FeedLocation } from './feed-order';
 
 type RunSession = Tables<'run_sessions'>;
 type SessionPost = Tables<'session_posts'>;
@@ -27,9 +31,14 @@ export type JoinedSession = RunSession & {
   lastMessage: SessionMessage | null;
 };
 
-function publicMediaUrl(item: SessionMedia) {
-  if (item.remote_url) return item.remote_url;
-  return supabase.storage.from('session-media').getPublicUrl(item.storage_path!).data.publicUrl;
+async function privateMediaUrl(item: SessionMedia) {
+  // External URLs cannot be protected by our Storage policies.
+  if (!item.storage_path) return null;
+  const { data, error } = await supabase.storage
+    .from('session-media')
+    .createSignedUrl(item.storage_path, 60);
+  if (error) throw error;
+  return data.signedUrl;
 }
 
 async function sessionLabels(sessions: RunSession[]) {
@@ -56,18 +65,34 @@ async function sessionLabels(sessions: RunSession[]) {
   };
 }
 
-export function useCommunityFeed(regionId?: number, sessionId?: string) {
+export function useCommunityFeed(regionId?: number, sessionId?: string, location?: FeedLocation) {
+  const { session } = useSession();
   return useQuery({
-    queryKey: ['community-feed', regionId ?? 'all', sessionId ?? 'all'],
+    queryKey: [
+      'community-feed',
+      session?.user.id,
+      regionId ?? 'all',
+      sessionId ?? 'all',
+      location ? `${location.latitude.toFixed(2)},${location.longitude.toFixed(2)}` : 'no-location',
+    ],
+    enabled: Boolean(session),
     staleTime: 30_000,
+    // Refresh before the 60-second media links expire while the feed is open.
+    refetchInterval: 45_000,
     queryFn: async (): Promise<FeedPost[]> => {
-      let postsQuery = supabase
-        .from('session_posts')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(50);
-      if (sessionId) postsQuery = postsQuery.eq('session_id', sessionId);
-      const postsResult = await postsQuery;
+      if (!session) return [];
+      const postsResult = sessionId
+        ? await supabase
+            .from('session_posts')
+            .select('*')
+            .eq('session_id', sessionId)
+            .order('created_at', { ascending: false })
+            .limit(50)
+        : await supabase.rpc('community_feed_posts', {
+            p_lat: location?.latitude,
+            p_lon: location?.longitude,
+            p_limit: 50,
+          });
       if (postsResult.error) throw postsResult.error;
       const posts = postsResult.data ?? [];
       if (posts.length === 0) return [];
@@ -103,27 +128,37 @@ export function useCommunityFeed(regionId?: number, sessionId?: string) {
       const profileById = new Map(
         (profilesResult.data ?? []).map((profile) => [profile.id, profile.display_name]),
       );
+      const mediaWithUrls = await Promise.all(
+        (mediaResult.data ?? []).map(async (item) => ({
+          ...item,
+          url: await privateMediaUrl(item),
+        })),
+      );
 
-      return visiblePosts.map((post) => {
-        const session = sessionById.get(post.session_id)!;
-        const sport = labels.sports.get(session.sport_id);
-        return {
-          ...post,
-          authorName: profileById.get(post.author_id) ?? 'Drop In player',
-          media: (mediaResult.data ?? [])
-            .filter((item) => item.post_id === post.id)
-            .map((item) => ({ ...item, url: publicMediaUrl(item) })),
-          session,
-          sessionTitle:
-            session.title ?? labels.series.get(session.run_series_id)?.title ?? 'Pickup session',
-          venueName:
-            session.location_name ??
-            (session.venue_id ? labels.venues.get(session.venue_id) : null) ??
-            'Meeting spot',
-          sportName: sport?.name ?? 'Sport',
-          sportSlug: sport?.slug ?? '',
-        };
-      });
+      return orderFeedByLocation(
+        visiblePosts.map((post) => {
+          const session = sessionById.get(post.session_id)!;
+          const sport = labels.sports.get(session.sport_id);
+          return {
+            ...post,
+            authorName: profileById.get(post.author_id) ?? 'Drop In player',
+            media: mediaWithUrls.filter(
+              (item): item is SessionMedia & { url: string } =>
+                item.post_id === post.id && item.url !== null,
+            ),
+            session,
+            sessionTitle:
+              session.title ?? labels.series.get(session.run_series_id)?.title ?? 'Pickup session',
+            venueName:
+              session.location_name ??
+              (session.venue_id ? labels.venues.get(session.venue_id) : null) ??
+              'Meeting spot',
+            sportName: sport?.name ?? 'Sport',
+            sportSlug: sport?.slug ?? '',
+          };
+        }),
+        location,
+      );
     },
   });
 }
@@ -143,11 +178,7 @@ export function useJoinedSessions(userId?: string) {
 
       const [sessionsResult, messagesResult] = await Promise.all([
         supabase.from('run_sessions').select('*').in('id', ids).order('starts_at'),
-        supabase
-          .from('session_messages')
-          .select('*')
-          .in('session_id', ids)
-          .order('created_at', { ascending: false }),
+        supabase.rpc('latest_joined_session_messages'),
       ]);
       if (sessionsResult.error) throw sessionsResult.error;
       if (messagesResult.error) throw messagesResult.error;
@@ -175,10 +206,13 @@ export function useJoinedSessions(userId?: string) {
 }
 
 export function useSessionMessages(sessionId?: string) {
-  return useQuery({
+  const client = useQueryClient();
+  const query = useQuery({
     queryKey: ['session-messages', sessionId],
     enabled: Boolean(sessionId),
-    refetchInterval: 8_000,
+    // Realtime normally invalidates immediately; polling heals missed events
+    // after backgrounding, reconnects, or a transient WebSocket failure.
+    refetchInterval: 30_000,
     queryFn: async () => {
       const messages = await supabase
         .from('session_messages')
@@ -198,6 +232,33 @@ export function useSessionMessages(sessionId?: string) {
       }));
     },
   });
+
+  useEffect(() => {
+    if (!sessionId) return;
+    const channel = supabase
+      .channel(`session:${sessionId}:messages`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'session_messages',
+          filter: `session_id=eq.${sessionId}`,
+        },
+        () => {
+          void Promise.all([
+            client.invalidateQueries({ queryKey: ['session-messages', sessionId] }),
+            client.invalidateQueries({ queryKey: ['joined-sessions'] }),
+          ]);
+        },
+      )
+      .subscribe();
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, [client, sessionId]);
+
+  return query;
 }
 
 export function useSessionOverview(sessionId?: string, userId?: string) {
