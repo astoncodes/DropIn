@@ -158,7 +158,11 @@ const config: ExpoConfig = {
           'Drop In uses your location to show nearby venues and sessions, start the map where you are when you place a meeting spot, and confirm you are nearby when you check in or share session photos.',
         locationAlwaysPermission: false,
         locationAlwaysAndWhenInUsePermission: false,
-        motionUsagePermission: false,
+        // expo-location links Core Motion APIs. Apple therefore requires this
+        // purpose string in the shipped Info.plist even when the app does not
+        // run background location tracking.
+        motionUsagePermission:
+          'Drop In uses motion activity to improve location accuracy when showing nearby sports sessions and confirming check-ins.',
         isIosBackgroundLocationEnabled: false,
         isAndroidBackgroundLocationEnabled: false,
         isAndroidForegroundServiceEnabled: false,
