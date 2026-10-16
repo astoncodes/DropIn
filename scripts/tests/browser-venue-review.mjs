@@ -3,9 +3,11 @@ import crypto from 'node:crypto';
 import { mkdirSync } from 'node:fs';
 import { chromium } from 'playwright';
 import { createClient } from '@supabase/supabase-js';
+import { setUpAdminAuthenticator } from '../admin-mfa.mjs';
 import { adminKey, hostedProject } from '../supabase-project.mjs';
 
-// Creates only temporary identities, submissions and venues. No email is sent.
+// Creates only temporary identities, submissions and venues; the reviewer's
+// authenticator goes with its account. No email is sent.
 const { ref, token } = hostedProject();
 assert.equal(
   process.argv.find((a) => a.startsWith('--project-ref='))?.split('=')[1],
@@ -114,6 +116,7 @@ try {
   );
   const adminPage = await pageFor(reviewer.session);
   await adminPage.goto('http://localhost:5173');
+  await setUpAdminAuthenticator(adminPage);
   await adminPage.getByRole('link', { name: 'Location approvals', exact: true }).click();
   await adminPage.getByRole('textbox', { name: 'Search by name', exact: true }).fill(name);
   await adminPage

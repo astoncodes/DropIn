@@ -107,7 +107,8 @@ npm run test:browser:venues -- --project-ref=YOUR_PROJECT_REF
 Database tests require the separate hosted test project documented in the README.
 The browser venue test requires the mobile and admin dev servers, an explicitly
 selected app project, and its secret key in `.env`. It creates temporary
-accounts and venues, checks submission, approval, rejection, duplicate linking,
+accounts and venues, sets up the reviewer's authenticator through the website's
+two-step screen, checks submission, approval, rejection, duplicate linking,
 venue edits, verification, removal/restoration and submission history, then removes
 its fixtures.
 `010_admin_review.sql` covers authorization, atomic approval, repeat review rejection,

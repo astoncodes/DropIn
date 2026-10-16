@@ -3,12 +3,14 @@ import crypto from 'node:crypto';
 import { mkdirSync } from 'node:fs';
 import { chromium } from 'playwright';
 import { createClient } from '@supabase/supabase-js';
+import { setUpAdminAuthenticator } from '../admin-mfa.mjs';
 import { adminKey, hostedProject } from '../supabase-project.mjs';
 
 // Requires the mobile web app on port 8081 and the admin website on port 5173.
 // Creates three temporary accounts (an author, a reporter and a moderator), a
 // session, a chat message and a photo post on the configured hosted project,
-// and removes them when it finishes. No email is sent.
+// and removes them when it finishes. The moderator sets up an authenticator on
+// the admin website, which goes with the account. No email is sent.
 //
 // It covers what no other check does against a real backend: a report made in
 // the app reaches the admin queue, removing content deletes it and its files,
@@ -177,8 +179,12 @@ try {
       height: 1,
     }),
   );
-  const photoUrl = admin.storage.from('session-media').getPublicUrl(photoPath).data.publicUrl;
-  assert.equal((await fetch(photoUrl)).status, 200, 'the photo is public before it is reported');
+  const publicUrl = admin.storage.from('session-media').getPublicUrl(photoPath).data.publicUrl;
+  assert.notEqual((await fetch(publicUrl)).status, 200, 'the photo is private');
+  const { signedUrl } = unwrap(
+    await reporter.client.storage.from('session-media').createSignedUrl(photoPath, 60),
+  );
+  assert.equal((await fetch(signedUrl)).status, 200, 'a signed-in player opens it by signed link');
 
   browser = await chromium.launch({ headless: true });
   const app = await pageFor(reporter.session);
@@ -199,6 +205,7 @@ try {
   console.log('PASS: a post reported in the app is recorded as an open report');
 
   await adminSite.goto(`${ADMIN_SITE}/#reports`);
+  await setUpAdminAuthenticator(adminSite);
   const reportedPost = adminSite.getByRole('row').filter({ hasText: CAPTION });
   await reportedPost.getByText(`Post by ${AUTHOR}`, { exact: true }).waitFor();
   await reportedPost.getByRole('button', { name: 'Review', exact: true }).click();

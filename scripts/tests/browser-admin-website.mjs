@@ -117,22 +117,35 @@ try {
   page.on('pageerror', (error) => errors.push(error.message));
   await page.goto(base);
   await page.getByRole('heading', { name: 'Admin sign in' }).waitFor();
-  await page.evaluate(() =>
-    localStorage.setItem(
-      'sb-admin-test-auth-token',
-      JSON.stringify({
-        access_token: 'test-token',
-        refresh_token: 'test-refresh',
-        expires_at: Math.floor(Date.now() / 1000) + 3600,
-        token_type: 'bearer',
-        user: {
-          id: 'admin-1',
-          email: 'admin@example.test',
-          aud: 'authenticated',
-          role: 'authenticated',
-        },
-      }),
-    ),
+  // The auth client reads the sign-in level from the token itself, so the stored
+  // session carries an unsigned token that says the second factor was passed.
+  // Nothing checks its signature: every request below is answered locally.
+  const encode = (part) => Buffer.from(JSON.stringify(part)).toString('base64url');
+  const claims = {
+    sub: 'admin-1',
+    role: 'authenticated',
+    aal: 'aal2',
+    exp: Math.floor(Date.now() / 1000) + 3600,
+  };
+  const accessToken = `${encode({ alg: 'none', typ: 'JWT' })}.${encode(claims)}.unsigned`;
+  await page.evaluate(
+    (accessToken) =>
+      localStorage.setItem(
+        'sb-admin-test-auth-token',
+        JSON.stringify({
+          access_token: accessToken,
+          refresh_token: 'test-refresh',
+          expires_at: Math.floor(Date.now() / 1000) + 3600,
+          token_type: 'bearer',
+          user: {
+            id: 'admin-1',
+            email: 'admin@example.test',
+            aud: 'authenticated',
+            role: 'authenticated',
+          },
+        }),
+      ),
+    accessToken,
   );
   await page.reload();
   await page.getByRole('heading', { name: 'Dashboard', exact: true }).waitFor();
