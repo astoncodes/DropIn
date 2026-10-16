@@ -5,13 +5,13 @@ is done, delete the entry rather than leaving a ticked box behind.
 
 ## App Store release: current decision and order
 
-**Not ready for public App Store submission as of October 15, 2026.** The
+**Not ready for public App Store submission as of October 16, 2026.** The
 production web clients, reviewed Supabase changes and signed EAS iOS build are
 complete; the remaining blockers below are store, moderation and operational work.
 Read the [review evidence](docs/release-readiness.md) and follow the
 [exact App Store steps](docs/app-store-release.md). The EAS owner/project ID and
 production build profile already exist. Apple membership, signing, cloud
-variables and an App Store Connect record still need verification.
+variables and App Store Connect record `6823479580` are verified.
 
 ### Deployment architecture and launch sequence
 
@@ -134,8 +134,9 @@ Deploy in this order so the clients and access rules remain compatible:
 - [ ] Run the complete release checks, regenerate/review schema types against
       the released backend, and commit a reviewed release candidate with lockfile.
 - [ ] Verify privacy manifests/SDK declarations for signed EAS production build
-      `1cd71961-076f-4c19-8f73-58bff955fcf2` after Apple finishes processing it.
-      The binary has been uploaded to App Store Connect.
+      `0b20668d-5ad8-4731-ae2b-2ad1720711d8` after Apple finishes processing it.
+      Version `0.1.0` build `4` was uploaded successfully after adding and
+      inspecting the required `NSMotionUsageDescription` in the signed IPA.
 - [ ] Test the exact uploaded build on real devices: each sign-in provider,
       persistence, location/camera permissions, sessions/chat, uploads, map-only
       signed-out state, private-media links, report/block and account deletion.
