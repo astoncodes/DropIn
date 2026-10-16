@@ -1,10 +1,9 @@
 import fs from 'node:fs';
-import path from 'node:path';
-import os from 'node:os';
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import { chromium } from 'playwright';
 import { createClient } from '@supabase/supabase-js';
+import { adminKey, hostedProject } from '../supabase-project.mjs';
 
 // Explicit target selection is required: this test creates temporary accounts
 // and sessions on the configured hosted project and removes them in finally.
@@ -14,11 +13,11 @@ if (!selectedRef)
     'Pass --project-ref=YOUR_PROJECT_REF to authorize temporary hosted test fixtures.',
   );
 fs.mkdirSync('test-results/ui', { recursive: true });
-if (fs.existsSync('.env')) process.loadEnvFile('.env');
+const { ref, token } = hostedProject();
 const url = process.env.EXPO_PUBLIC_SUPABASE_URL,
-  anon = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY,
-  ref = new URL(url).hostname.split('.')[0];
+  anon = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
 assert.equal(ref, selectedRef, 'Selected test project must match the configured app project.');
+assert.equal(new URL(url).hostname, `${ref}.supabase.co`);
 const users = [];
 let admin, browser;
 const errors = [];
@@ -67,15 +66,7 @@ async function pageFor(session) {
   return page;
 }
 (async () => {
-  const token =
-    process.env.SUPABASE_ACCESS_TOKEN ||
-    fs.readFileSync(path.join(os.homedir(), '.supabase/access-token'), 'utf8').trim();
-  const response = await fetch(`https://api.supabase.com/v1/projects/${ref}/api-keys`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  assert(response.ok);
-  const key = (await response.json()).find((x) => x.name === 'service_role')?.api_key;
-  assert(key);
+  const key = await adminKey({ ref, token });
   admin = createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
   browser = await chromium.launch({ headless: true });
   try {
@@ -176,9 +167,7 @@ async function pageFor(session) {
     console.log('PASS browser: cancel occurrence and schedule history');
     await hostPage.goto('http://localhost:8081/profile');
     await hostPage.getByRole('button', { name: /Sign out/ }).click();
-    await hostPage
-      .getByRole('button', { name: 'Sign in or create account', exact: true })
-      .waitFor();
+    await hostPage.getByRole('button', { name: 'Continue with email', exact: true }).waitFor();
     assert.deepEqual(errors, []);
     console.log('PASS browser: sign out; no runtime exceptions.');
   } finally {

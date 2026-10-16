@@ -17,7 +17,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.5"
+    PostgrestVersion: "14.17"
   }
   public: {
     Tables: {
@@ -1182,26 +1182,6 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      community_feed_posts: {
-        Args: { p_lat?: number; p_limit?: number; p_lon?: number }
-        Returns: Database["public"]["Tables"]["session_posts"]["Row"][]
-        SetofOptions: {
-          from: "*"
-          to: "session_posts"
-          isOneToOne: false
-          isSetofReturn: true
-        }
-      }
-      latest_joined_session_messages: {
-        Args: never
-        Returns: {
-          body: string
-          created_at: string
-          id: string
-          session_id: string
-          user_id: string
-        }[]
-      }
       account_accepts_writes: { Args: never; Returns: boolean }
       account_deletion_objects: {
         Args: { p_user_id: string }
@@ -1261,6 +1241,23 @@ export type Database = {
           p_session_id: string
         }
         Returns: undefined
+      }
+      community_feed_posts: {
+        Args: { p_lat?: number; p_limit?: number; p_lon?: number }
+        Returns: {
+          author_id: string
+          caption: string | null
+          created_at: string
+          id: string
+          location_verified_at: string | null
+          session_id: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "session_posts"
+          isOneToOne: false
+          isSetofReturn: true
+        }
       }
       create_check_in: {
         Args: {
@@ -1375,6 +1372,16 @@ export type Database = {
       join_run_session: {
         Args: { p_occurrence_date: string; p_run_series_id: string }
         Returns: string
+      }
+      latest_joined_session_messages: {
+        Args: never
+        Returns: {
+          body: string
+          created_at: string
+          id: string
+          session_id: string
+          user_id: string
+        }[]
       }
       leave_run_session: { Args: { p_session_id: string }; Returns: undefined }
       lock_session_media_upload: { Args: { p_path: string }; Returns: boolean }

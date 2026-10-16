@@ -18,7 +18,7 @@
     "typecheck": "npm run typecheck --workspaces --if-present",
     "test": "npm run test:js && npm run test:tooling",
     "test:js": "npm run test --workspaces --if-present",
-    "test:tooling": "node scripts/tests/account-deletion-handler.mjs && node scripts/tests/dev-environment.mjs && node scripts/test-database.mjs --self-test && node scripts/check-client-bundles.mjs --self-test",
+    "test:tooling": "node scripts/tests/account-deletion-handler.mjs && node scripts/tests/dev-environment.mjs && node scripts/test-database.mjs --self-test && node scripts/check-client-bundles.mjs --self-test && node scripts/tests/supabase-project.mjs && node scripts/tests/admin-mfa.mjs",
     "db:test": "node scripts/test-database.mjs",
     "db:types": "node scripts/generate-database-types.mjs",
     "db:admin": "node scripts/grant-admin.mjs",
@@ -41,6 +41,7 @@
     "test:browser:location": "node scripts/tests/browser-location-gate.mjs",
     "test:browser:unreachable": "node scripts/tests/browser-unreachable.mjs",
     "test:browser:signed-in": "node scripts/tests/browser-signed-in.mjs",
+    "test:browser:moderation": "node scripts/tests/browser-moderation.mjs",
     "test:presence": "node scripts/tests/live-presence.mjs"
   },
   "devDependencies": {
