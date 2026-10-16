@@ -97,10 +97,11 @@ Deploy in this order so the clients and access rules remain compatible:
 
 ### 2. Verify and deploy the production backend
 
-- [ ] Prove signed-out media denial through real Storage HTTP requests and
-      native/web clients, including old public URLs, link expiry and sign-out.
-      The production bucket is private, but it currently contains no object with
-      which to run the end-to-end HTTP check.
+- [ ] Prove signed-out media denial on the native and web clients, including
+      link expiry and sign-out. Over real Storage HTTP requests on the app
+      project, `test:supabase` and `test:browser:moderation` already show, with
+      temporary photos, that the public URL is refused, a visitor cannot get a
+      link and a signed-in player opens the photo by signed link.
 - [ ] Verify Realtime chat on two authenticated test devices: member inserts
       should update the other device immediately, reconnect/background recovery
       should succeed through the 30-second fallback, and a non-member must
@@ -236,6 +237,19 @@ one, and the file header now says so.
 - [ ] Verify actual production venue coverage and explain it accurately in the
       store listing/review notes. Seed history alone does not establish live
       coverage. Confirm useful nearby data for the intended first launch area.
+- [ ] **The US bands claim southern Canada.** A pin belongs to the smallest
+      published region containing it, and each US band is smaller than the
+      Canadian band it overlaps. Toronto, Montreal, Ottawa, Quebec City,
+      Vancouver, Victoria and Windsor are filed under "United States — Eastern"
+      or "— Pacific"; their clocks happen to match. Decide how a country's
+      coverage should win inside its own borders (metro regions, a priority, or
+      real boundaries).
+- [ ] **Some venue runs would start an hour off.** `create_run` takes a venue
+      run's time zone from the venue's region, and straight-edged bands give
+      Nashville, Birmingham and Pensacola Eastern time, Midland Mountain, Boise
+      Pacific, Phoenix Denver's daylight saving and Kelowna Mountain. Pin runs
+      are unaffected: they use the device's time zone, which the organiser can
+      change.
 
 ## Google sign-in on the web
 
