@@ -167,9 +167,7 @@ async function pageFor(session) {
     console.log('PASS browser: cancel occurrence and schedule history');
     await hostPage.goto('http://localhost:8081/profile');
     await hostPage.getByRole('button', { name: /Sign out/ }).click();
-    await hostPage
-      .getByRole('button', { name: 'Sign in or create account', exact: true })
-      .waitFor();
+    await hostPage.getByRole('button', { name: 'Continue with email', exact: true }).waitFor();
     assert.deepEqual(errors, []);
     console.log('PASS browser: sign out; no runtime exceptions.');
   } finally {
