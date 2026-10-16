@@ -6,8 +6,8 @@ is done, delete the entry rather than leaving a ticked box behind.
 ## App Store release: current decision and order
 
 **Not ready for public App Store submission as of October 15, 2026.** The
-production web clients and reviewed Supabase changes are deployed; the remaining
-blockers below are native/store, support-contact, moderation and operational work.
+production web clients, reviewed Supabase changes and signed EAS iOS build are
+complete; the remaining blockers below are store, moderation and operational work.
 Read the [review evidence](docs/release-readiness.md) and follow the
 [exact App Store steps](docs/app-store-release.md). The EAS owner/project ID and
 production build profile already exist. Apple membership, signing, cloud
@@ -44,9 +44,9 @@ public website at the Supabase database host.
 
 A real email setup is required before inviting public users:
 
-- [ ] Create a monitored support mailbox such as `support@playdropin.app`, or use
-      a reliable existing mailbox if no domain is purchased. Assign a person and
-      escalation path for account deletion, safety reports and App Review mail.
+- [ ] Confirm that the configured `dannyaston916@gmail.com` support mailbox is
+      actively monitored and assign an escalation path for account deletion,
+      safety reports and App Review mail.
 - [ ] Configure a transactional email provider as Supabase custom SMTP for magic
       links and other Auth messages. Keep its SMTP credentials only in Supabase;
       the support inbox and transactional sender may use the same domain but have
@@ -68,13 +68,9 @@ Deploy in this order so the clients and access rules remain compatible:
 - [ ] Configure and verify Apple and Google provider callbacks against the
       production Supabase project. The production Site URL and exact player,
       admin and native callback allowlist are already set.
-- [ ] Verify admin MFA enrollment, AAL1 denial,
-      AAL2 access, sign-out/sign-in and the documented recovery process against
-      production. The MFA-enforcement migration is live, but no production admin
-      has yet completed a verified TOTP enrollment.
-- [ ] Build the EAS binary from the reviewed production commit after setting its
-      production variables and support address. Record the EAS build UUID; both
-      Render sites already deploy commit `41b15654ce808f545e9c2bf16c9ac63f237f3520`.
+- [ ] Test AAL1 denial, sign-out/sign-in and the documented admin MFA recovery
+      process against production. TOTP enrollment and live AAL2 dashboard access
+      are verified.
 - [ ] Test the complete connection path: email/social sign-in returns to the
       correct client; both player clients read/write through RLS; Realtime chat
       works; uploads use private Storage and short signed links; the admin UI can
@@ -139,8 +135,8 @@ Deploy in this order so the clients and access rules remain compatible:
       `supportsTablet` is currently true; iPad testing/screenshots are missing.
 - [ ] Run the complete release checks, regenerate/review schema types against
       the released backend, and commit a reviewed release candidate with lockfile.
-- [ ] Build a signed EAS production IPA using an accepted Xcode/iOS SDK image,
-      verify privacy manifests/SDK declarations and upload that build to TestFlight.
+- [ ] Verify privacy manifests/SDK declarations for signed EAS production build
+      `1cd71961-076f-4c19-8f73-58bff955fcf2`, then upload it to TestFlight.
 - [ ] Test the exact uploaded build on real devices: each sign-in provider,
       persistence, location/camera permissions, sessions/chat, uploads, map-only
       signed-out state, private-media links, report/block and account deletion.
