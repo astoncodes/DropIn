@@ -1,8 +1,20 @@
 # Drop In
 
-Find and organize pickup sports sessions. Create a session at a dropped pin or
-reviewed venue, join its private chat, and share photos or short clips. Organizers
-can edit or cancel individual sessions, and participants can leave and rejoin.
+## About
+
+Drop In helps people find and organize pickup sports nearby. Players can create a
+session at a map pin or reviewed venue, join a game and its member-only chat,
+and share photos or short clips. Organizers can edit or cancel sessions, while
+an admin app supports venue review and moderation.
+
+The project combines an Expo app for iOS, Android, and web with a TypeScript
+admin app and Supabase Postgres/PostGIS backend. Database migrations, row-level
+security, transactional functions, and automated checks keep the product rules
+in one place. See the [architecture](docs/architecture.md) and
+[release readiness](docs/release-readiness.md) notes for implementation details
+and current limitations.
+
+## Getting started
 
 The apps run on your computer and connect to **hosted Supabase** for authentication,
 database access and media storage. **Docker is not required.**
