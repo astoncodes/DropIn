@@ -97,10 +97,11 @@ Deploy in this order so the clients and access rules remain compatible:
 
 ### 2. Verify and deploy the production backend
 
-- [ ] Prove signed-out media denial through real Storage HTTP requests and
-      native/web clients, including old public URLs, link expiry and sign-out.
-      The production bucket is private, but it currently contains no object with
-      which to run the end-to-end HTTP check.
+- [ ] Prove signed-out media denial on the native and web clients, including
+      link expiry and sign-out. Over real Storage HTTP requests on the app
+      project, `test:supabase` and `test:browser:moderation` already show, with
+      temporary photos, that the public URL is refused, a visitor cannot get a
+      link and a signed-in player opens the photo by signed link.
 - [ ] Verify Realtime chat on two authenticated test devices: member inserts
       should update the other device immediately, reconnect/background recovery
       should succeed through the 30-second fallback, and a non-member must
@@ -108,6 +109,10 @@ Deploy in this order so the clients and access rules remain compatible:
       latest-message RPC already pass isolated SQL tests.
 - [ ] Configure a monitored security/error alert destination and test an alert.
       Verify production availability, backup retention and a restore procedure.
+- [ ] Keep the production project from pausing. Free-plan Supabase projects
+      pause after a week without activity; both projects were found paused on
+      9 October. Move to a paid plan, or schedule a request that keeps it
+      active, before TestFlight and App Review.
 - [ ] Triage production Supabase advisors: six anonymous and 32 authenticated
       `SECURITY DEFINER` RPC warnings, leaked-password protection disabled, 27
       unindexed foreign keys, 17 unused indexes and five overlapping permissive
@@ -175,31 +180,23 @@ Deploy in this order so the clients and access rules remain compatible:
 - [ ] **No error reporting.** Neither app sends failures anywhere; the admin
       website writes them to the browser console only. Choose a service before
       launch.
+- [ ] **The map/list toggle covers the first row in list view.** On the live
+      screen at phone width, the floating map button sits over the first
+      venue's figure. Move the toggle or start the list below it.
 - [ ] **Avatars.** `profiles.avatar_path` is granted and returned by
       `venue_activity()`, but nothing uploads or displays a photo, so players
       appear as initials.
 
-## After the redesign
-
-- [ ] **See it on a phone.** The redesign was reviewed in the web build at phone
-      and desktop widths. The display typeface is loaded at startup with
-      `expo-font`; check it, the map pins and the pinned action bars in iOS and
-      Android builds. The redrawn icon and splash screen appear only after
-      `npx expo prebuild`; check them on a home screen and at launch.
-- [ ] **Run the hosted browser scripts.** `browser-social.mjs`,
-      `browser-venue-review.mjs`, `live-presence.mjs --browser` and
-      `account-deletion.mjs` need a Supabase access token, so they have not been
-      run since the redesign. Their steps were brought up to date by reading the
-      screens and by driving the same steps against stubbed responses
-      (`npm run test:browser:signed-in`); the first run against a hosted project
-      may still find a label that differs.
-
 ## Run database tests in CI
 
-- [ ] Add `SUPABASE_TEST_PROJECT_REF`, `SUPABASE_TEST_DB_URL`, and `SUPABASE_ACCESS_TOKEN` to a GitHub
-      environment named `database-tests`, and set its `SUPABASE_PROJECT_REF`
-      variable to the app project for isolation checks. Run
-      `.github/workflows/database.yml` manually to verify the setup.
+The `database-tests` GitHub environment exists and holds the two project
+references. The repository belongs to a personal account, so only its owner can
+add the rest. Tracked in issue #16.
+
+- [ ] Add the secrets `SUPABASE_TEST_DB_URL` (the test connection URL in the
+      root `.env`) and `SUPABASE_ACCESS_TOKEN` (a personal access token starting
+      with `sbp_`, needed only because the workflow regenerates types from the
+      app project), then run `.github/workflows/database.yml` by hand.
 - [ ] Once it passes reliably, move that workflow off `workflow_dispatch` so it
       guards pull requests.
 
@@ -240,20 +237,30 @@ one, and the file header now says so.
 - [ ] Verify actual production venue coverage and explain it accurately in the
       store listing/review notes. Seed history alone does not establish live
       coverage. Confirm useful nearby data for the intended first launch area.
+- [ ] **The US bands claim southern Canada.** A pin belongs to the smallest
+      published region containing it, and each US band is smaller than the
+      Canadian band it overlaps. Toronto, Montreal, Ottawa, Quebec City,
+      Vancouver, Victoria and Windsor are filed under "United States — Eastern"
+      or "— Pacific"; their clocks happen to match. Decide how a country's
+      coverage should win inside its own borders (metro regions, a priority, or
+      real boundaries).
+- [ ] **Some venue runs would start an hour off.** `create_run` takes a venue
+      run's time zone from the venue's region, and straight-edged bands give
+      Nashville, Birmingham and Pensacola Eastern time, Midland Mountain, Boise
+      Pacific, Phoenix Denver's daylight saving and Kelowna Mountain. Pin runs
+      are unaffected: they use the device's time zone, which the organiser can
+      change.
 
-## Verify social sign-in on device
+## Google sign-in on the web
 
-Native configuration has assertions in
-`apps/mobile/tests/node/native-config.test.ts`. Device authentication still needs
-manual verification.
+Apple, Google and email sign-in were verified on iOS and Android in issue #14.
+The web build's "Continue with Google" is refused by Google with
+`redirect_uri_mismatch`, checked again on 16 October. Tracked in issue #18.
 
-- [ ] Confirm `com.playdropin.app` is the identifier registered in the Apple
-      Developer portal and as the Google iOS OAuth client. If it is not, change
-      `APP_IDENTIFIER` in `app.config.ts` and re-run
-      `npx expo prebuild --clean` from `apps/mobile`.
-- [ ] Sign in with Apple on a device build: new account, returning user,
-      cancellation, sign-out, session persistence.
-- [ ] Same for Google on iOS and Android.
-- [ ] Same for Google on web, which takes the `signInWithOAuth` redirect in
-      `google-sign-in.web.ts` rather than the native SDK.
-- [ ] Confirm email magic links still work on both.
+- [ ] In Supabase, under Authentication → Providers → Google, list the Web
+      client ID first and the iOS one second, with the Web client's secret. The
+      first ID is the one sent to Google, and it is the iOS one today.
+- [ ] In Google Cloud, add the project's `/auth/v1/callback` address to the Web
+      client's authorised redirect URIs; Google refuses the Web client without it.
+- [ ] Then check a new account, a returning one, cancelling, signing out and
+      staying signed in after a reload.

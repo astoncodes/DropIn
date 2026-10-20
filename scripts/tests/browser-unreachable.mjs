@@ -118,11 +118,12 @@ async function countAbsences(page, name) {
 mkdirSync('test-results/ui', { recursive: true });
 const browser = await chromium.launch({ headless: true });
 try {
-  // --- Signed out: detail screens and the live map -------------------------
+  // --- Detail screens, which need an account, and the live map, which does not
   const visitor = await unreachableContext(browser, { signedIn: false });
+  const player = await unreachableContext(browser, { signedIn: true });
   const [sessionPage, venuePage, livePage] = await Promise.all([
-    visitor.context.newPage(),
-    visitor.context.newPage(),
+    player.context.newPage(),
+    player.context.newPage(),
     visitor.context.newPage(),
   ]);
   await Promise.all([
@@ -166,12 +167,12 @@ try {
   await venuePage.screenshot({ path: 'test-results/ui/unreachable-venue.png' });
 
   await check('venue: Try again loads the venue once the server answers', async () => {
-    visitor.served.set('/rest/v1/rpc/venue_details', [VENUE]);
+    player.served.set('/rest/v1/rpc/venue_details', [VENUE]);
     await button(venuePage, 'Try again').click();
     await venuePage.getByText(VENUE.name, { exact: true }).first().waitFor({ timeout: PROMPT_MS });
   });
   await check('venue: a loaded venue survives refreshes that fail', async () => {
-    visitor.served.delete('/rest/v1/rpc/venue_details');
+    player.served.delete('/rest/v1/rpc/venue_details');
     await venuePage.waitForTimeout(HOLD_MS);
     assert.ok(await venuePage.getByText(VENUE.name, { exact: true }).first().isVisible());
     assert.equal(
@@ -186,7 +187,7 @@ try {
       ['/venue/not-a-venue-id', 'Venue not found'],
       ['/session/not-a-session-id', 'Session unavailable'],
     ]) {
-      const page = await visitor.context.newPage();
+      const page = await player.context.newPage();
       // Counted per page: the screens opened above are still polling in this context.
       const sent = [];
       page.on('request', (request) => {
@@ -202,7 +203,6 @@ try {
   await visitor.context.close();
 
   // --- Signed in: screens that read the player's own data ------------------
-  const player = await unreachableContext(browser, { signedIn: true });
   const signedIn = async (path) => {
     const page = await player.context.newPage();
     await page.goto(`${APP}${path}`);
