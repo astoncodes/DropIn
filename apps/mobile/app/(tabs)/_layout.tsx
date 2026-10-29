@@ -3,6 +3,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Tabs, Redirect, usePathname } from 'expo-router';
 import { useWindowDimensions } from 'react-native';
 
+import { TAB_TITLES } from '../../src/lib/tab-titles';
 import { usePalette } from '../../src/theme';
 import { useSession } from '../../src/providers/auth-context';
 
@@ -48,7 +49,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Live',
+          title: TAB_TITLES.index,
           tabBarIcon: ({ color, size, focused }) => (
             <MaterialCommunityIcons
               name={focused ? 'map-marker' : 'map-marker-outline'}
@@ -61,7 +62,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="feed"
         options={{
-          title: 'Discover',
+          title: TAB_TITLES.feed,
           href: session ? undefined : null,
           tabBarIcon: ({ color, size, focused }) => (
             <MaterialCommunityIcons
@@ -75,7 +76,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="scheduled"
         options={{
-          title: 'Scheduled',
+          title: TAB_TITLES.scheduled,
           href: session ? undefined : null,
           tabBarIcon: ({ color, size, focused }) => (
             <MaterialCommunityIcons
@@ -89,7 +90,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="chats"
         options={{
-          title: 'Chats',
+          title: TAB_TITLES.chats,
           href: session ? undefined : null,
           tabBarIcon: ({ color, size, focused }) => (
             <MaterialCommunityIcons
@@ -103,7 +104,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="profile"
         options={{
-          title: session ? 'Profile' : 'Sign in',
+          title: session ? TAB_TITLES.profile : 'Sign in',
           tabBarIcon: ({ color, size, focused }) => (
             <MaterialCommunityIcons
               name={focused ? 'account' : 'account-outline'}

@@ -264,6 +264,15 @@ async function signedInPage(browser) {
       );
       return writes.findLast((write) => write.target === target).sent;
     },
+    /**
+     * Checks that the header's back link names the screen it returns to. Screen
+     * readers announce this name, and iOS shows the same title beside the arrow,
+     * so a route group's folder name such as "(tabs)" must never appear in it.
+     */
+    async expectBackTo(screen) {
+      const label = await page.getByRole('link', { name: /back$/i }).getAttribute('aria-label');
+      assert.equal(label, `${screen}, back`, `the back link is called "${label}"`);
+    },
   };
 }
 
@@ -273,7 +282,8 @@ const dayAfterTomorrow = new Intl.DateTimeFormat('en-CA', { timeZone: TIMEZONE }
 
 const browser = await chromium.launch({ headless: true });
 try {
-  const { page, button, inDialog, namedDay, wasSent, sentTo } = await signedInPage(browser);
+  const { page, button, inDialog, namedDay, wasSent, sentTo, expectBackTo } =
+    await signedInPage(browser);
 
   await check('check in: sends the venue, sport, position, length, party and note', async () => {
     await page.goto(`${APP}/venue/${VENUE_ID}`);
@@ -448,6 +458,23 @@ try {
     },
   );
 
+  await check('back: a screen opened from a tab names that tab', async () => {
+    await page.goto(`${APP}/profile`);
+    await page.getByRole('button', { name: /^Privacy policy/ }).click();
+    await page.waitForURL('**/privacy');
+    await expectBackTo('Profile');
+    // Switching tabs without a reload, as on a phone, has to rename the way back.
+    await page.getByRole('link', { name: /back$/i }).click();
+    await page.getByRole('tab', { name: /Live$/ }).click();
+    await button('Show list view').click();
+    await page
+      .getByRole('button', { name: new RegExp(VENUE.name) })
+      .first()
+      .click();
+    await page.waitForURL(`**/venue/${VENUE_ID}`);
+    await expectBackTo('Live');
+  });
+
   await check('profile: saving sends the name and the chosen sports', async () => {
     await page.goto(`${APP}/profile`);
     await button('Edit').click();
@@ -466,6 +493,14 @@ try {
     await page.getByRole('button', { name: /Sign out/ }).click();
     await sentTo('logout');
     await button('Sign in or create account').waitFor();
+  });
+
+  await check('back: a page opened from sign-in names sign-in', async () => {
+    // The check above signed the player out, so sign-in stays open.
+    await page.goto(`${APP}/sign-in`);
+    await page.getByRole('link', { name: 'Terms of use', exact: true }).click();
+    await page.waitForURL('**/terms');
+    await expectBackTo('Sign in');
   });
 
   const deleting = await signedInPage(browser);
