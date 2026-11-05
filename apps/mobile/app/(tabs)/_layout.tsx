@@ -1,8 +1,9 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Tabs, Redirect, usePathname } from 'expo-router';
+import { Tabs, Redirect, useSegments } from 'expo-router';
 import { useWindowDimensions } from 'react-native';
 
+import { ACCOUNT_TABS, needsSignInForTab } from '../../src/lib/tab-access';
 import { TAB_TITLES } from '../../src/lib/tab-titles';
 import { usePalette } from '../../src/theme';
 import { useSession } from '../../src/providers/auth-context';
@@ -24,9 +25,10 @@ export default function TabsLayout() {
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const { session, isLoading } = useSession();
-  const pathname = usePathname();
+  const segments = useSegments();
   if (isLoading) return null;
-  if (!session && pathname !== '/') return <Redirect href="/sign-in" />;
+  if (!session && needsSignInForTab(segments)) return <Redirect href="/sign-in" />;
+  const accountTabHref = (name: string) => (session || !ACCOUNT_TABS.has(name) ? undefined : null);
 
   return (
     <Tabs
@@ -63,7 +65,7 @@ export default function TabsLayout() {
         name="feed"
         options={{
           title: TAB_TITLES.feed,
-          href: session ? undefined : null,
+          href: accountTabHref('feed'),
           tabBarIcon: ({ color, size, focused }) => (
             <MaterialCommunityIcons
               name={focused ? 'compass' : 'compass-outline'}
@@ -77,7 +79,7 @@ export default function TabsLayout() {
         name="scheduled"
         options={{
           title: TAB_TITLES.scheduled,
-          href: session ? undefined : null,
+          href: accountTabHref('scheduled'),
           tabBarIcon: ({ color, size, focused }) => (
             <MaterialCommunityIcons
               name={focused ? 'calendar' : 'calendar-blank-outline'}
@@ -91,7 +93,7 @@ export default function TabsLayout() {
         name="chats"
         options={{
           title: TAB_TITLES.chats,
-          href: session ? undefined : null,
+          href: accountTabHref('chats'),
           tabBarIcon: ({ color, size, focused }) => (
             <MaterialCommunityIcons
               name={focused ? 'chat' : 'chat-outline'}

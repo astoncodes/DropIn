@@ -20,28 +20,22 @@ mkdirSync('test-results/ui', { recursive: true });
       if (m.type() === 'error') errors.push(m.text());
     });
     await page.goto('http://localhost:8081/');
-    await page.getByRole('button', { name: 'Expand venue list', exact: true }).click();
-    await page.waitForTimeout(500);
+    await page.getByRole('button', { name: 'Show list view', exact: true }).click();
     await page
       .getByRole('button', { name: / away\.$/ })
       .first()
       .click();
     await page.getByText('Create a session here', { exact: true }).waitFor();
     await page.screenshot({ path: 'test-results/ui/venue.png' });
+    // Organizing needs an account, so a visitor is taken to sign-in.
     await page.getByText('Create a session here', { exact: true }).click();
-    await page.getByText('Sign in to organize', { exact: true }).waitFor();
-    await page.goto('http://localhost:8081/feed');
-    await page.getByRole('button', { name: 'Search sessions', exact: true }).click();
-    await page
-      .getByRole('textbox', { name: 'Search sessions', exact: true })
-      .fill('NoMatchingGameHere');
-    await page.getByText('No matching sessions', { exact: true }).waitFor();
-    await page.getByRole('button', { name: 'Clear filters', exact: true }).click();
-    await page.getByRole('tab', { name: 'Moments', exact: true }).click();
-    assert.equal(
-      await page.getByRole('tab', { name: 'Moments', exact: true }).getAttribute('aria-selected'),
-      'true',
-    );
+    await page.waitForURL('**/sign-in');
+    // Discover, Scheduled and Chats need an account; a visitor opening one is
+    // sent to sign-in. The signed-in check covers what Discover shows.
+    for (const tab of ['feed', 'scheduled', 'chats']) {
+      await page.goto(`http://localhost:8081/${tab}`);
+      await page.waitForURL('**/sign-in');
+    }
     await page.goto('http://localhost:8081/sign-in');
     await page.getByRole('textbox', { name: 'Email address', exact: true }).fill('invalid');
     await page.getByRole('button', { name: 'Continue with email', exact: true }).click();
@@ -79,7 +73,7 @@ mkdirSync('test-results/ui', { recursive: true });
     );
     assert.deepEqual(errors, []);
     console.log(
-      'PASS: venue navigation; session auth gate; Discover search/filter/Moments; email validation + stubbed delivery; desktop map; responsive admin. No runtime exceptions. No emails sent.',
+      'PASS: visitors open venues; organizing and account tabs lead to sign-in; email validation + stubbed delivery; desktop map; responsive admin. No runtime exceptions. No emails sent.',
     );
   } finally {
     await browser.close();
