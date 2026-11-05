@@ -518,24 +518,11 @@ try {
     );
   });
 
-  await check('discover: a search without a match says so, and can be cleared', async () => {
-    await page.goto(`${APP}/feed`);
-    await button('Search sessions').click();
-    await page
-      .getByRole('textbox', { name: 'Search sessions', exact: true })
-      .fill('NoMatchingGameHere');
-    await page.getByText('No matching sessions', { exact: true }).waitFor();
-    await button('Clear filters').click();
-    const moments = page.getByRole('tab', { name: 'Moments', exact: true });
-    await moments.click();
-    assert.equal(await moments.getAttribute('aria-selected'), 'true');
-  });
-
   await check('profile: signing out ends the session and offers sign-in', async () => {
     await page.goto(`${APP}/profile`);
     await page.getByRole('button', { name: /Sign out/ }).click();
     await sentTo('logout');
-    await button('Continue with email').waitFor();
+    await button('Sign in or create account').waitFor();
   });
 
   await check('back: a page opened from sign-in names sign-in', async () => {

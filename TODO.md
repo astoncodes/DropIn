@@ -111,8 +111,8 @@ Deploy in this order so the clients and access rules remain compatible:
       Verify production availability, backup retention and a restore procedure.
 - [ ] Keep the production project from pausing. Free-plan Supabase projects
       pause after a week without activity; both projects were found paused on
-      9 October. Move to a paid plan, or schedule a request that keeps it
-      active, before TestFlight and App Review.
+      9 October and again on 5 November. Production stays on the free plan, so
+      schedule a request that keeps it active before TestFlight and App Review.
 - [ ] Triage production Supabase advisors: six anonymous and 32 authenticated
       `SECURITY DEFINER` RPC warnings, leaked-password protection disabled, 27
       unindexed foreign keys, 17 unused indexes and five overlapping permissive
