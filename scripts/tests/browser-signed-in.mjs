@@ -58,8 +58,10 @@ const VENUE = {
   here_now: 0,
   heading_there: 0,
   party_count: 0,
-  pulse: null,
   last_activity_at: null,
+  most_here_until: null,
+  phone: null,
+  website: null,
   region_slug: 'charlottetown',
   was_merged: false,
 };
@@ -120,6 +122,16 @@ const READS = {
   nearby_venues: () => [VENUE],
   venue_details: (body) => (body?.p_venue_id === VENUE_ID ? [VENUE] : []),
   venue_activity: () => [],
+  venue_reported_hours: () => [
+    {
+      open_from_hour: null,
+      open_until_hour: null,
+      open_player_count: null,
+      last_closed_at: null,
+      last_closed_player_count: null,
+      closed_now: false,
+    },
+  ],
   upcoming_runs: () => [],
   community_feed_posts: () => [],
   latest_joined_session_messages: () => [],
@@ -266,6 +278,15 @@ async function signedInPage(browser) {
       );
       return writes.findLast((write) => write.target === target).sent;
     },
+    /**
+     * Checks that the header's back link names the screen it returns to. Screen
+     * readers announce this name, and iOS shows the same title beside the arrow,
+     * so a route group's folder name such as "(tabs)" must never appear in it.
+     */
+    async expectBackTo(screen) {
+      const label = await page.getByRole('link', { name: /back$/i }).getAttribute('aria-label');
+      assert.equal(label, `${screen}, back`, `the back link is called "${label}"`);
+    },
   };
 }
 
@@ -275,7 +296,8 @@ const dayAfterTomorrow = new Intl.DateTimeFormat('en-CA', { timeZone: TIMEZONE }
 
 const browser = await chromium.launch({ headless: true });
 try {
-  const { page, button, inDialog, namedDay, wasSent, sentTo } = await signedInPage(browser);
+  const { page, button, inDialog, namedDay, wasSent, sentTo, expectBackTo } =
+    await signedInPage(browser);
 
   await check('check in: sends the venue, sport, position, length, party and note', async () => {
     await page.goto(`${APP}/venue/${VENUE_ID}`);
@@ -450,6 +472,39 @@ try {
     },
   );
 
+  await check(
+    'discover: a search with no match offers to clear it, and Moments opens',
+    async () => {
+      await page.goto(`${APP}/feed`);
+      await button('Search sessions').click();
+      await page
+        .getByRole('textbox', { name: 'Search sessions', exact: true })
+        .fill('NoMatchingGameHere');
+      await page.getByText('No matching sessions', { exact: true }).waitFor();
+      await button('Clear filters').click();
+      const moments = page.getByRole('tab', { name: 'Moments', exact: true });
+      await moments.click();
+      assert.equal(await moments.getAttribute('aria-selected'), 'true');
+    },
+  );
+
+  await check('back: a screen opened from a tab names that tab', async () => {
+    await page.goto(`${APP}/profile`);
+    await page.getByRole('button', { name: /^Privacy policy/ }).click();
+    await page.waitForURL('**/privacy');
+    await expectBackTo('Profile');
+    // Switching tabs without a reload, as on a phone, has to rename the way back.
+    await page.getByRole('link', { name: /back$/i }).click();
+    await page.getByRole('tab', { name: /Live$/ }).click();
+    await button('Show list view').click();
+    await page
+      .getByRole('button', { name: new RegExp(VENUE.name) })
+      .first()
+      .click();
+    await page.waitForURL(`**/venue/${VENUE_ID}`);
+    await expectBackTo('Live');
+  });
+
   await check('profile: saving sends the name and the chosen sports', async () => {
     await page.goto(`${APP}/profile`);
     await button('Edit').click();
@@ -481,6 +536,14 @@ try {
     await page.getByRole('button', { name: /Sign out/ }).click();
     await sentTo('logout');
     await button('Continue with email').waitFor();
+  });
+
+  await check('back: a page opened from sign-in names sign-in', async () => {
+    // The check above signed the player out, so sign-in stays open.
+    await page.goto(`${APP}/sign-in`);
+    await page.getByRole('link', { name: 'Terms of use', exact: true }).click();
+    await page.waitForURL('**/terms');
+    await expectBackTo('Sign in');
   });
 
   const deleting = await signedInPage(browser);

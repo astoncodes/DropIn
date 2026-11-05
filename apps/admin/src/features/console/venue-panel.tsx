@@ -1,4 +1,4 @@
-import { userMessage } from '@dropin/shared';
+import { VENUE_CONTACT, userMessage } from '@dropin/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 
@@ -50,6 +50,8 @@ export function VenuePanel({
   const client = useQueryClient();
   const [name, setName] = useState(v.name);
   const [address, setAddress] = useState(v.address_text ?? '');
+  const [phone, setPhone] = useState(v.phone ?? '');
+  const [website, setWebsite] = useState(v.website ?? '');
   const [indoor, setIndoor] = useState(v.indoor_state);
   const [status, setStatus] = useState(v.status);
   const [verified, setVerified] = useState(v.verification_state === 'admin_verified');
@@ -76,6 +78,8 @@ export function VenuePanel({
         p_status: status,
         p_verified: verified,
         p_sport_ids: ids,
+        p_phone: phone,
+        p_website: website,
       });
       if (error) throw error;
     },
@@ -109,6 +113,25 @@ export function VenuePanel({
           <label>
             Address
             <input maxLength={240} value={address} onChange={(e) => setAddress(e.target.value)} />
+          </label>
+          <label>
+            Phone
+            <input
+              type="tel"
+              maxLength={VENUE_CONTACT.phoneMaxLength}
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+            />
+          </label>
+          <label>
+            Website
+            <input
+              type="url"
+              maxLength={VENUE_CONTACT.websiteMaxLength}
+              placeholder="https://"
+              value={website}
+              onChange={(e) => setWebsite(e.target.value)}
+            />
           </label>
           <label>
             Setting

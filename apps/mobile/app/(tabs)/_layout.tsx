@@ -1,8 +1,10 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Tabs, Redirect, usePathname } from 'expo-router';
+import { Tabs, Redirect, useSegments } from 'expo-router';
 import { useWindowDimensions } from 'react-native';
 
+import { ACCOUNT_TABS, needsSignInForTab } from '../../src/lib/tab-access';
+import { TAB_TITLES } from '../../src/lib/tab-titles';
 import { usePalette } from '../../src/theme';
 import { useSession } from '../../src/providers/auth-context';
 
@@ -23,9 +25,10 @@ export default function TabsLayout() {
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const { session, isLoading } = useSession();
-  const pathname = usePathname();
+  const segments = useSegments();
   if (isLoading) return null;
-  if (!session && pathname !== '/') return <Redirect href="/sign-in" />;
+  if (!session && needsSignInForTab(segments)) return <Redirect href="/sign-in" />;
+  const accountTabHref = (name: string) => (session || !ACCOUNT_TABS.has(name) ? undefined : null);
 
   return (
     <Tabs
@@ -48,7 +51,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Live',
+          title: TAB_TITLES.index,
           tabBarIcon: ({ color, size, focused }) => (
             <MaterialCommunityIcons
               name={focused ? 'map-marker' : 'map-marker-outline'}
@@ -61,8 +64,8 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="feed"
         options={{
-          title: 'Discover',
-          href: session ? undefined : null,
+          title: TAB_TITLES.feed,
+          href: accountTabHref('feed'),
           tabBarIcon: ({ color, size, focused }) => (
             <MaterialCommunityIcons
               name={focused ? 'compass' : 'compass-outline'}
@@ -75,8 +78,8 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="scheduled"
         options={{
-          title: 'Scheduled',
-          href: session ? undefined : null,
+          title: TAB_TITLES.scheduled,
+          href: accountTabHref('scheduled'),
           tabBarIcon: ({ color, size, focused }) => (
             <MaterialCommunityIcons
               name={focused ? 'calendar' : 'calendar-blank-outline'}
@@ -89,8 +92,8 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="chats"
         options={{
-          title: 'Chats',
-          href: session ? undefined : null,
+          title: TAB_TITLES.chats,
+          href: accountTabHref('chats'),
           tabBarIcon: ({ color, size, focused }) => (
             <MaterialCommunityIcons
               name={focused ? 'chat' : 'chat-outline'}
@@ -103,7 +106,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="profile"
         options={{
-          title: session ? 'Profile' : 'Sign in',
+          title: session ? TAB_TITLES.profile : 'Sign in',
           tabBarIcon: ({ color, size, focused }) => (
             <MaterialCommunityIcons
               name={focused ? 'account' : 'account-outline'}

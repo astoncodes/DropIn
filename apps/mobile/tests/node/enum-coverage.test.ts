@@ -4,13 +4,7 @@ import { fileURLToPath, URL } from 'node:url';
 
 import { describe, expect, it } from 'vitest';
 
-import {
-  CONDITION_ICON,
-  CONDITION_IS_BLOCKING,
-  CONDITION_LABEL,
-  PULSE_LABEL,
-  PULSE_TONE,
-} from '../../src/lib/format';
+import { CONDITION_ICON, CONDITION_IS_BLOCKING, CONDITION_LABEL } from '../../src/lib/format';
 
 /**
  * These are the drift checks. The database owns these enums; the maps below are
@@ -32,13 +26,6 @@ describe('database enum coverage', () => {
     return [...match[1].matchAll(/"([^"]+)"/g)].map(([, value]) => value).sort();
   }
 
-  it('labels and tones every venue_pulse the database can return', () => {
-    const pulses = databaseEnum('venue_pulse');
-    expect(pulses.length).toBeGreaterThan(0);
-    expect(Object.keys(PULSE_LABEL).sort()).toEqual(pulses);
-    expect(Object.keys(PULSE_TONE).sort()).toEqual(pulses);
-  });
-
   it('labels, ices and classifies every venue_condition_kind', () => {
     const kinds = databaseEnum('venue_condition_kind');
     expect(kinds.length).toBeGreaterThan(0);
@@ -48,16 +35,14 @@ describe('database enum coverage', () => {
   });
 
   it('treats a condition as blocking only when it means "do not travel"', () => {
-    // Lights being on and a busy court are information; the rest are reasons
-    // not to set out at all.
+    // Lights being on is information; the rest are reasons not to set out at all.
     expect(CONDITION_IS_BLOCKING.lights_on).toBe(false);
-    expect(CONDITION_IS_BLOCKING.crowded).toBe(false);
     expect(CONDITION_IS_BLOCKING.locked).toBe(true);
     expect(CONDITION_IS_BLOCKING.wet_surface).toBe(true);
   });
 
   it('gives every label non-empty text', () => {
-    for (const value of [...Object.values(PULSE_LABEL), ...Object.values(CONDITION_LABEL)]) {
+    for (const value of Object.values(CONDITION_LABEL)) {
       expect(value.trim()).not.toBe('');
     }
   });

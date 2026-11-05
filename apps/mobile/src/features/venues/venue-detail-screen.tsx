@@ -1,5 +1,5 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
-import { userMessage } from '@dropin/shared';
+import { UserFacingError, userMessage } from '@dropin/shared';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Linking, Platform, ScrollView, StyleSheet, View } from 'react-native';
@@ -10,14 +10,12 @@ import { ConditionChip, EmptyState, LoadError, Skeleton, Stat } from '../../comp
 import { Avatar } from '../../components/ui/avatar';
 import { ListRow, ListSection } from '../../components/ui/list-row';
 import { Notice } from '../../components/ui/notice';
-import { AppText, Button, Tag } from '../../components/ui/primitives';
+import { AppText, Button } from '../../components/ui/primitives';
 import type { IconName } from '../../components/ui/primitives';
 import {
   CONDITION_ICON,
   CONDITION_IS_BLOCKING,
   CONDITION_LABEL,
-  PULSE_LABEL,
-  PULSE_TONE,
   dayLabel,
   relativeTime,
   timeOfDay,
@@ -27,11 +25,19 @@ import { uuidParam } from '../../lib/route-params';
 import { useSession } from '../../providers/auth-context';
 import { radius, space, usePalette, useThemeName } from '../../theme';
 import { useJoinSession, useRunAttendance } from '../community/api';
+import { useDeviceLocation } from '../location/use-device-location';
 import { SessionRow } from '../community/session-row';
 import { usePresenceClock } from '../presence/api';
 import { PresenceCard } from '../presence/presence-card';
-import { useUpcomingRuns, useVenueActivity, useVenueConditions, useVenueDetail } from './api';
+import {
+  useReportVenueClosed,
+  useUpcomingRuns,
+  useVenueActivity,
+  useVenueConditions,
+  useVenueDetail,
+} from './api';
 import type { UpcomingRun } from './api';
+import { VenueHours } from './venue-hours';
 
 const SETTING_LABEL = { indoor: 'Indoor', outdoor: 'Outdoor', unknown: null } as const;
 
@@ -50,7 +56,11 @@ export function VenueDetailScreen() {
   const venueId = uuidParam(useLocalSearchParams<{ venueId: string }>().venueId);
   const colors = usePalette();
   const scheme = useThemeName();
-  const [directionError, setDirectionError] = useState('');
+  const [linkError, setLinkError] = useState('');
+  const [closedReport, setClosedReport] = useState<{
+    tone: 'success' | 'error';
+    message: string;
+  } | null>(null);
   const [joinError, setJoinError] = useState('');
   const now = usePresenceClock();
   const router = useRouter();
@@ -61,6 +71,8 @@ export function VenueDetailScreen() {
   const conditions = useVenueConditions(venueId);
   const runs = useUpcomingRuns({ venueId, window: 'discovery', enabled: Boolean(venueId) });
   const join = useJoinSession();
+  const location = useDeviceLocation();
+  const reportClosed = useReportVenueClosed();
   const attendance = useRunAttendance(
     (runs.data ?? []).map((run) => run.run_series_id),
     session?.user.id,
@@ -135,6 +147,16 @@ export function VenueDetailScreen() {
   const sportNames = data.sport_names ?? [];
   const sportName = (slug: string) => sportNames[(data.sport_slugs ?? []).indexOf(slug)] ?? slug;
 
+  const stayingUntil =
+    hereNow > 0 && data.most_here_until && Date.parse(data.most_here_until) > now
+      ? `${data.party_count === 1 ? 'Here' : 'Most here'} until ${timeOfDay(data.most_here_until)}`
+      : null;
+
+  function openLink(url: string, failure: string) {
+    setLinkError('');
+    void Linking.openURL(url).catch(() => setLinkError(failure));
+  }
+
   function openDirections() {
     const label = encodeURIComponent(data.name);
     const url = Platform.select({
@@ -142,10 +164,40 @@ export function VenueDetailScreen() {
       android: `geo:${data.latitude},${data.longitude}?q=${label}`,
       default: `https://www.openstreetmap.org/?mlat=${data.latitude}&mlon=${data.longitude}#map=17/${data.latitude}/${data.longitude}`,
     });
-    setDirectionError('');
-    void Linking.openURL(url).catch(() =>
-      setDirectionError('Could not open directions. Please try again.'),
-    );
+    openLink(url, 'Could not open directions. Please try again.');
+  }
+
+  async function sendClosedReport() {
+    if (!session) return router.push('/sign-in');
+    if (reportClosed.isPending) return;
+    setClosedReport(null);
+    try {
+      const coords = await location.request();
+      if (!coords)
+        throw new UserFacingError(
+          'Location is needed to report a venue closed. Enable location access and try again.',
+        );
+      if (coords.accuracyM == null)
+        throw new UserFacingError(
+          'Your device could not report location accuracy. Try again outdoors.',
+        );
+      await reportClosed.mutateAsync({
+        venueId: data.venue_id,
+        latitude: coords.latitude,
+        longitude: coords.longitude,
+        accuracy: coords.accuracyM,
+        observedAt: coords.observedAt,
+      });
+      setClosedReport({
+        tone: 'success',
+        message: 'Reported closed. Other players will see it for the next two hours.',
+      });
+    } catch (cause) {
+      setClosedReport({
+        tone: 'error',
+        message: userMessage(cause, 'Could not send the report. Please try again.'),
+      });
+    }
   }
 
   return (
@@ -211,7 +263,13 @@ export function VenueDetailScreen() {
             {/* With a next game to show, the two counts take only the room they
                 need so the time fits on one line beside them. */}
             <View style={nextRun ? styles.count : styles.stat}>
-              <Stat value={hereNow} label="Here now" tone={hereNow > 0 ? 'live' : 'quiet'} />
+              {/* No check-ins is not the same as nobody there, so a zero is
+                  never shown as "here now". */}
+              {hereNow > 0 ? (
+                <Stat value={hereNow} label="Here now" tone="live" />
+              ) : (
+                <Stat value="—" label="No check-ins" tone="quiet" />
+              )}
             </View>
             <View
               style={[
@@ -235,12 +293,12 @@ export function VenueDetailScreen() {
               </View>
             )}
           </View>
+          {stayingUntil && <AppText tone="muted">{stayingUntil}</AppText>}
           {hereNow > 0 && (
             <AppText variant="micro" tone="faint">
               Updated {relativeTime(data.last_activity_at).toLowerCase()}
             </AppText>
           )}
-          {data.pulse && <Tag label={PULSE_LABEL[data.pulse]} tone={PULSE_TONE[data.pulse]} />}
           {liveConditions.length > 0 && (
             <View style={styles.conditions}>
               {liveConditions.map((condition) => (
@@ -254,6 +312,8 @@ export function VenueDetailScreen() {
             </View>
           )}
         </View>
+
+        <VenueHours venueId={data.venue_id} />
 
         <PresenceCard venueId={data.venue_id} />
 
@@ -336,6 +396,31 @@ export function VenueDetailScreen() {
 
         <ListSection>
           <ListRow icon="directions" title="Directions" external onPress={openDirections} />
+          {data.phone && (
+            <ListRow
+              icon="phone"
+              title="Call"
+              subtitle={data.phone}
+              external
+              onPress={() =>
+                openLink(
+                  `tel:${data.phone!.replace(/[^0-9+]/g, '')}`,
+                  'Could not start a call from this device.',
+                )
+              }
+            />
+          )}
+          {data.website && (
+            <ListRow
+              icon="web"
+              title="Website"
+              subtitle={data.website.replace(/^https:\/\//, '')}
+              external
+              onPress={() =>
+                openLink(data.website!, 'Could not open the website. Please try again.')
+              }
+            />
+          )}
           <ListRow
             icon="calendar-plus"
             title="Create a session here"
@@ -343,8 +428,16 @@ export function VenueDetailScreen() {
               router.push({ pathname: '/run/new', params: { venueId: data.venue_id } })
             }
           />
+          <ListRow
+            icon="lock-outline"
+            title={reportClosed.isPending ? 'Reporting closed…' : 'Report it’s closed'}
+            subtitle="Only from the venue: other players see it for two hours"
+            disabled={reportClosed.isPending}
+            onPress={() => void sendClosedReport()}
+          />
         </ListSection>
-        {!!directionError && <Notice tone="error" message={directionError} />}
+        {!!linkError && <Notice tone="error" message={linkError} />}
+        {closedReport && <Notice tone={closedReport.tone} message={closedReport.message} />}
       </ScrollView>
 
       <ActionBar>

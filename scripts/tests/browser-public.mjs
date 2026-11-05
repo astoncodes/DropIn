@@ -23,19 +23,21 @@ mkdirSync('test-results/ui', { recursive: true });
     // The results sheet resizes only by dragging; the list view is the control
     // a pointer, a keyboard or a screen reader can all use.
     await page.getByRole('button', { name: 'Show list view', exact: true }).click();
-    // A visitor sees the live map. Venues, sessions and Discover need an account,
-    // so opening one leads to sign-in.
     await page
       .getByRole('button', { name: / away\.$/ })
       .first()
       .click();
-    const signInOffered = async () => {
-      await page.getByRole('button', { name: 'Continue with email', exact: true }).waitFor();
-      assert.equal(new URL(page.url()).pathname, '/sign-in');
-    };
-    await signInOffered();
-    await page.goto('http://localhost:8081/feed');
-    await signInOffered();
+    await page.getByText('Create a session here', { exact: true }).waitFor();
+    await page.screenshot({ path: 'test-results/ui/venue.png' });
+    // Organizing needs an account, so a visitor is taken to sign-in.
+    await page.getByText('Create a session here', { exact: true }).click();
+    await page.waitForURL('**/sign-in');
+    // Discover, Scheduled and Chats need an account; a visitor opening one is
+    // sent to sign-in. The signed-in check covers what Discover shows.
+    for (const tab of ['feed', 'scheduled', 'chats']) {
+      await page.goto(`http://localhost:8081/${tab}`);
+      await page.waitForURL('**/sign-in');
+    }
     await page.goto('http://localhost:8081/sign-in');
     await page.getByRole('textbox', { name: 'Email address', exact: true }).fill('invalid');
     await page.getByRole('button', { name: 'Continue with email', exact: true }).click();
@@ -73,7 +75,7 @@ mkdirSync('test-results/ui', { recursive: true });
     );
     assert.deepEqual(errors, []);
     console.log(
-      'PASS: live map list view; venues and Discover ask a visitor to sign in; email validation + stubbed delivery; desktop map; responsive admin. No runtime exceptions. No emails sent.',
+      'PASS: visitors open venues; organizing and account tabs lead to sign-in; email validation + stubbed delivery; desktop map; responsive admin. No runtime exceptions. No emails sent.',
     );
   } finally {
     await browser.close();

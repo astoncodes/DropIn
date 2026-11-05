@@ -1,6 +1,5 @@
 import type { Database } from '@dropin/database-types';
 
-type VenuePulse = Database['public']['Enums']['venue_pulse'];
 type ConditionKind = Database['public']['Enums']['venue_condition_kind'];
 
 /**
@@ -62,26 +61,11 @@ export function distanceLabel(metres: number | null | undefined): string {
   return `${(metres / 1000).toFixed(metres < 10_000 ? 1 : 0)} km`;
 }
 
-export const PULSE_LABEL: Record<VenuePulse, string> = {
-  need_players: 'Need players',
-  game_on: 'Game on',
-  full_next_game: 'Full · next game',
-  wrapping_up: 'Wrapping up',
-};
-
-export const PULSE_TONE: Record<VenuePulse, 'live' | 'soon' | 'neutral'> = {
-  need_players: 'soon',
-  game_on: 'live',
-  full_next_game: 'neutral',
-  wrapping_up: 'neutral',
-};
-
 export const CONDITION_LABEL: Record<ConditionKind, string> = {
   lights_on: 'Lights on',
   lights_off: 'Lights off',
   wet_surface: 'Wet surface',
   locked: 'Locked',
-  crowded: 'Crowded',
   equipment_issue: 'Equipment issue',
 };
 
@@ -90,7 +74,6 @@ export const CONDITION_ICON: Record<ConditionKind, string> = {
   lights_off: 'lightbulb-off',
   wet_surface: 'water',
   locked: 'lock',
-  crowded: 'account-group',
   equipment_issue: 'wrench',
 };
 
@@ -100,7 +83,6 @@ export const CONDITION_IS_BLOCKING: Record<ConditionKind, boolean> = {
   lights_off: true,
   wet_surface: true,
   locked: true,
-  crowded: false,
   equipment_issue: true,
 };
 
@@ -127,7 +109,7 @@ export function activitySummary(input: {
   if (input.nextRunAt) {
     return { label: `Run ${relativeFuture(input.nextRunAt)}`, tone: 'info' };
   }
-  return { label: 'Quiet', tone: 'quiet' };
+  return { label: 'No check-ins', tone: 'quiet' };
 }
 
 /** Whole calendar days from `now` to `iso` on the device's calendar: 0 is today. */
@@ -152,4 +134,38 @@ export function dayLabel(iso: string, now = new Date()): string {
 
 export function timeOfDay(iso: string): string {
   return new Date(iso).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+}
+
+/** An hour of the day as players say it: "7am", "12pm". 24 is the midnight that ends a day. */
+export function hourLabel(hour: number): string {
+  const inDay = hour % 24;
+  const onClock = inDay % 12 === 0 ? 12 : inDay % 12;
+  return `${onClock}${inDay < 12 ? 'am' : 'pm'}`;
+}
+
+/**
+ * The hours players found a venue open, from venue_reported_hours(). The end
+ * hour is exclusive and may be past midnight, so 21 to 1 reads "9pm–1am".
+ */
+export function reportedHoursLabel(fromHour: number, untilHour: number): string {
+  if (fromHour === 0 && untilHour === 24) return 'All hours';
+  return `${hourLabel(fromHour)}–${hourLabel(untilHour)}`;
+}
+
+/** "Reported closed · Yesterday 9:10 PM · 3 players". */
+export function closedReportLabel(iso: string, players: number, now = new Date()): string {
+  const daysAgo = -calendarDaysAhead(iso, now);
+  const date = new Date(iso);
+  const day =
+    daysAgo === 0
+      ? 'Today'
+      : daysAgo === 1
+        ? 'Yesterday'
+        : date.toLocaleDateString(
+            undefined,
+            daysAgo < 7
+              ? { weekday: 'short' }
+              : { weekday: 'short', day: 'numeric', month: 'short' },
+          );
+  return `Reported closed · ${day} ${timeOfDay(iso)} · ${players} ${players === 1 ? 'player' : 'players'}`;
 }

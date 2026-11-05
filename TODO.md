@@ -205,8 +205,6 @@ add the rest. Tracked in issue #16.
 Each of these is fully modelled, read by an RPC, and rendered by the app, but has
 no write path. They are not placeholders — they are finished halves.
 
-- [ ] **Venue pulse.** `create_check_in()` takes no pulse argument, so
-      `check_ins.pulse` is always null. Add the parameter and a picker.
 - [ ] **Venue conditions.** No insert policy, grant or RPC. Adding one must also
       fix `venue_conditions_one_per_kind_per_reporter`, whose predicate
       `expires_at > '-infinity'` matches every row — it currently means "one

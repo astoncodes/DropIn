@@ -3,6 +3,7 @@ import { BarlowCondensed_600SemiBold } from '@expo-google-fonts/barlow-condensed
 import { BarlowCondensed_700Bold } from '@expo-google-fonts/barlow-condensed/700Bold';
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
+import { getFocusedRouteNameFromRoute } from 'expo-router/react-navigation';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
@@ -13,6 +14,7 @@ import { fonts, usePalette } from '../src/theme';
 import { AppProviders } from '../src/providers';
 import { ToastProvider } from '../src/components/ui/toast';
 import { LocationAccessProvider } from '../src/features/location/location-access';
+import { tabTitle } from '../src/lib/tab-titles';
 
 /**
  * Root layout.
@@ -27,6 +29,10 @@ import { LocationAccessProvider } from '../src/features/location/location-access
  * The splash screen stays up until the display typeface has loaded, so titles
  * never flash in the system font first. If it cannot be loaded the app still
  * opens; those styles fall back to the system font.
+ *
+ * The route groups have titles even though they show no header: a screen
+ * opened on top of a group names it on its back button, and a group without a
+ * title would be named by its folder, such as "(tabs)".
  */
 void SplashScreen.preventAutoHideAsync();
 
@@ -59,8 +65,11 @@ export default function RootLayout() {
                 contentStyle: { backgroundColor: colors.background },
               }}
             >
-              <Stack.Screen name="(tabs)" />
-              <Stack.Screen name="(auth)" options={{ presentation: 'modal' }} />
+              <Stack.Screen
+                name="(tabs)"
+                options={({ route }) => ({ title: tabTitle(getFocusedRouteNameFromRoute(route)) })}
+              />
+              <Stack.Screen name="(auth)" options={{ presentation: 'modal', title: 'Sign in' }} />
               <Stack.Screen
                 name="venue/[venueId]"
                 options={{ headerShown: true, title: 'Venue' }}

@@ -40,8 +40,10 @@ const VENUE = {
   here_now: 0,
   heading_there: 0,
   party_count: 0,
-  pulse: null,
   last_activity_at: null,
+  most_here_until: null,
+  phone: null,
+  website: null,
   region_slug: 'charlottetown',
   was_merged: false,
 };

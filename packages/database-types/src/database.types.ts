@@ -181,7 +181,6 @@ export type Database = {
           location_verified: boolean
           note: string | null
           party_size: number
-          pulse: Database["public"]["Enums"]["venue_pulse"] | null
           region_id: number
           reported_accuracy_m: number | null
           sport_id: number
@@ -199,7 +198,6 @@ export type Database = {
           location_verified?: boolean
           note?: string | null
           party_size?: number
-          pulse?: Database["public"]["Enums"]["venue_pulse"] | null
           region_id: number
           reported_accuracy_m?: number | null
           sport_id: number
@@ -217,7 +215,6 @@ export type Database = {
           location_verified?: boolean
           note?: string | null
           party_size?: number
-          pulse?: Database["public"]["Enums"]["venue_pulse"] | null
           region_id?: number
           reported_accuracy_m?: number | null
           sport_id?: number
@@ -969,6 +966,7 @@ export type Database = {
           id: string
           indoor_state: Database["public"]["Enums"]["indoor_state"]
           location: unknown
+          phone: string | null
           proposed_name: string
           published_venue_id: string | null
           region_id: number
@@ -978,6 +976,7 @@ export type Database = {
           status: Database["public"]["Enums"]["venue_candidate_status"]
           submitted_by: string
           updated_at: string
+          website: string | null
         }
         Insert: {
           address_text?: string | null
@@ -986,6 +985,7 @@ export type Database = {
           id?: string
           indoor_state: Database["public"]["Enums"]["indoor_state"]
           location: unknown
+          phone?: string | null
           proposed_name: string
           published_venue_id?: string | null
           region_id: number
@@ -995,6 +995,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["venue_candidate_status"]
           submitted_by: string
           updated_at?: string
+          website?: string | null
         }
         Update: {
           address_text?: string | null
@@ -1003,6 +1004,7 @@ export type Database = {
           id?: string
           indoor_state?: Database["public"]["Enums"]["indoor_state"]
           location?: unknown
+          phone?: string | null
           proposed_name?: string
           published_venue_id?: string | null
           region_id?: number
@@ -1012,6 +1014,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["venue_candidate_status"]
           submitted_by?: string
           updated_at?: string
+          website?: string | null
         }
         Relationships: [
           {
@@ -1033,6 +1036,41 @@ export type Database = {
             columns: ["region_id"]
             isOneToOne: false
             referencedRelation: "regions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      venue_closed_reports: {
+        Row: {
+          distance_to_venue_m: number
+          id: string
+          reported_accuracy_m: number
+          reported_at: string
+          user_id: string
+          venue_id: string
+        }
+        Insert: {
+          distance_to_venue_m: number
+          id?: string
+          reported_accuracy_m: number
+          reported_at?: string
+          user_id: string
+          venue_id: string
+        }
+        Update: {
+          distance_to_venue_m?: number
+          id?: string
+          reported_accuracy_m?: number
+          reported_at?: string
+          user_id?: string
+          venue_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "venue_closed_reports_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "venues"
             referencedColumns: ["id"]
           },
         ]
@@ -1118,6 +1156,7 @@ export type Database = {
           location: unknown
           merged_into_venue_id: string | null
           name: string
+          phone: string | null
           region_id: number
           status: Database["public"]["Enums"]["venue_status"]
           updated_at: string
@@ -1125,6 +1164,7 @@ export type Database = {
           verification_state: Database["public"]["Enums"]["verification_state"]
           verified_at: string | null
           verified_by: string | null
+          website: string | null
         }
         Insert: {
           address_text?: string | null
@@ -1135,6 +1175,7 @@ export type Database = {
           location: unknown
           merged_into_venue_id?: string | null
           name: string
+          phone?: string | null
           region_id: number
           status?: Database["public"]["Enums"]["venue_status"]
           updated_at?: string
@@ -1142,6 +1183,7 @@ export type Database = {
           verification_state?: Database["public"]["Enums"]["verification_state"]
           verified_at?: string | null
           verified_by?: string | null
+          website?: string | null
         }
         Update: {
           address_text?: string | null
@@ -1152,6 +1194,7 @@ export type Database = {
           location?: unknown
           merged_into_venue_id?: string | null
           name?: string
+          phone?: string | null
           region_id?: number
           status?: Database["public"]["Enums"]["venue_status"]
           updated_at?: string
@@ -1159,6 +1202,7 @@ export type Database = {
           verification_state?: Database["public"]["Enums"]["verification_state"]
           verified_at?: string | null
           verified_by?: string | null
+          website?: string | null
         }
         Relationships: [
           {
@@ -1210,7 +1254,9 @@ export type Database = {
           p_decision: string
           p_name?: string
           p_note?: string
+          p_phone?: string
           p_target_venue_id?: string
+          p_website?: string
         }
         Returns: string
       }
@@ -1219,10 +1265,12 @@ export type Database = {
           p_address: string
           p_indoor_state: Database["public"]["Enums"]["indoor_state"]
           p_name: string
+          p_phone: string
           p_sport_ids: number[]
           p_status: Database["public"]["Enums"]["venue_status"]
           p_venue_id: string
           p_verified: boolean
+          p_website: string
         }
         Returns: undefined
       }
@@ -1405,7 +1453,6 @@ export type Database = {
           name: string
           next_run_at: string
           party_count: number
-          pulse: Database["public"]["Enums"]["venue_pulse"]
           sport_names: string[]
           sport_slugs: string[]
           venue_id: string
@@ -1422,6 +1469,16 @@ export type Database = {
           p_reason: Database["public"]["Enums"]["report_reason"]
           p_target_id: string
           p_target_kind: Database["public"]["Enums"]["report_target"]
+        }
+        Returns: string
+      }
+      report_venue_closed: {
+        Args: {
+          p_accuracy: number
+          p_lat: number
+          p_lon: number
+          p_observed_at: string
+          p_venue_id: string
         }
         Returns: string
       }
@@ -1455,7 +1512,9 @@ export type Database = {
           p_lat: number
           p_lon: number
           p_name: string
+          p_phone?: string
           p_sport_ids: number[]
+          p_website?: string
         }
         Returns: {
           candidate_id: string
@@ -1523,7 +1582,6 @@ export type Database = {
           kind: string
           note: string
           party_size: number
-          pulse: Database["public"]["Enums"]["venue_pulse"]
           sport_slug: string
           started_at: string
         }[]
@@ -1540,9 +1598,10 @@ export type Database = {
           last_activity_at: string
           latitude: number
           longitude: number
+          most_here_until: string
           name: string
           party_count: number
-          pulse: Database["public"]["Enums"]["venue_pulse"]
+          phone: string
           region_slug: string
           sport_ids: number[]
           sport_names: string[]
@@ -1550,6 +1609,18 @@ export type Database = {
           venue_id: string
           verification_state: Database["public"]["Enums"]["verification_state"]
           was_merged: boolean
+          website: string
+        }[]
+      }
+      venue_reported_hours: {
+        Args: { p_venue_id: string }
+        Returns: {
+          closed_now: boolean
+          last_closed_at: string
+          last_closed_player_count: number
+          open_from_hour: number
+          open_player_count: number
+          open_until_hour: number
         }[]
       }
     }
@@ -1588,9 +1659,7 @@ export type Database = {
         | "lights_off"
         | "wet_surface"
         | "locked"
-        | "crowded"
         | "equipment_issue"
-      venue_pulse: "need_players" | "game_on" | "full_next_game" | "wrapping_up"
       venue_status: "active" | "merged" | "removed"
       verification_state: "unverified" | "admin_verified" | "community_verified"
     }
@@ -1757,10 +1826,8 @@ export const Constants = {
         "lights_off",
         "wet_surface",
         "locked",
-        "crowded",
         "equipment_issue",
       ],
-      venue_pulse: ["need_players", "game_on", "full_next_game", "wrapping_up"],
       venue_status: ["active", "merged", "removed"],
       verification_state: [
         "unverified",

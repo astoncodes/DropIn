@@ -1,4 +1,11 @@
-import { DUPLICATE_DISTANCE_METRES, userMessage } from '@dropin/shared';
+import {
+  DUPLICATE_DISTANCE_METRES,
+  userMessage,
+  VENUE_CONTACT,
+  isVenuePhone,
+  isVenueWebsite,
+  normaliseVenueContact,
+} from '@dropin/shared';
 import type { IndoorState } from '@dropin/shared';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { useRouter } from 'expo-router';
@@ -47,6 +54,9 @@ export function VenueSubmissionForm() {
     longitudeDelta: 0.025,
   });
   const [address, setAddress] = useState('');
+  const [phone, setPhone] = useState('');
+  const [website, setWebsite] = useState('');
+  const [contactErrors, setContactErrors] = useState<{ phone?: string; website?: string }>({});
   const [duplicateCheckAccepted, setDuplicateCheckAccepted] = useState(false);
   const [name, setName] = useState('');
   const [sportIds, setSportIds] = useState<number[]>([]);
@@ -142,6 +152,20 @@ export function VenueSubmissionForm() {
       setValidationError('Choose at least one sport.');
       return;
     }
+    const phoneValue = normaliseVenueContact(phone);
+    const websiteValue = normaliseVenueContact(website);
+    const errors = {
+      phone:
+        phoneValue && !isVenuePhone(phoneValue)
+          ? 'Use digits, spaces and + ( ) - . with at least 7 digits.'
+          : undefined,
+      website:
+        websiteValue && !isVenueWebsite(websiteValue)
+          ? 'Enter the full address, starting with https://.'
+          : undefined,
+    };
+    setContactErrors(errors);
+    if (errors.phone || errors.website) return;
 
     try {
       await submitVenue.mutateAsync({
@@ -151,6 +175,8 @@ export function VenueSubmissionForm() {
         sportIds,
         indoorState,
         addressText: address.trim() || undefined,
+        phone: phoneValue ?? undefined,
+        website: websiteValue ?? undefined,
       });
     } catch {
       // The mutation error is rendered below with the server-provided message.
@@ -366,6 +392,30 @@ export function VenueSubmissionForm() {
               onChangeText={setAddress}
               maxLength={240}
               placeholder="Street address, if it has one"
+            />
+            <TextField
+              label="Phone (optional)"
+              accessibilityLabel="Venue phone"
+              value={phone}
+              onChangeText={setPhone}
+              maxLength={VENUE_CONTACT.phoneMaxLength}
+              keyboardType="phone-pad"
+              textContentType="telephoneNumber"
+              hint="The venue's public number. Shown on the venue page after review."
+              error={contactErrors.phone}
+            />
+            <TextField
+              label="Website (optional)"
+              accessibilityLabel="Venue website"
+              value={website}
+              onChangeText={setWebsite}
+              maxLength={VENUE_CONTACT.websiteMaxLength}
+              keyboardType="url"
+              textContentType="URL"
+              autoCapitalize="none"
+              autoCorrect={false}
+              placeholder="https://"
+              error={contactErrors.website}
             />
           </View>
 

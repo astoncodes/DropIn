@@ -1,4 +1,4 @@
-import { UserFacingError, userMessage } from '@dropin/shared';
+import { UserFacingError, VENUE_CONTACT, userMessage } from '@dropin/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 
@@ -19,6 +19,8 @@ export function CandidatePanel({
 }) {
   const client = useQueryClient();
   const [name, setName] = useState(c.proposed_name);
+  const [phone, setPhone] = useState(c.phone ?? '');
+  const [website, setWebsite] = useState(c.website ?? '');
   const [note, setNote] = useState('');
   const [target, setTarget] = useState('');
   const [decision, setDecision] = useState<'approve' | 'reject' | 'merge' | null>(null);
@@ -58,6 +60,7 @@ export function CandidatePanel({
         p_name: name.trim(),
         p_note: note.trim(),
         ...(decision === 'merge' ? { p_target_venue_id: target } : {}),
+        ...(decision === 'reject' ? {} : { p_phone: phone, p_website: website }),
       });
       if (error) throw error;
     },
@@ -185,6 +188,34 @@ export function CandidatePanel({
                   required
                 />
               </label>
+            </>
+          )}
+          {(decision === 'approve' || decision === 'merge') && (
+            <>
+              <label>
+                Phone
+                <input
+                  type="tel"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  maxLength={VENUE_CONTACT.phoneMaxLength}
+                />
+              </label>
+              <label>
+                Website
+                <input
+                  type="url"
+                  value={website}
+                  onChange={(e) => setWebsite(e.target.value)}
+                  maxLength={VENUE_CONTACT.websiteMaxLength}
+                  placeholder="https://"
+                />
+              </label>
+              <p className="hint">
+                {decision === 'merge'
+                  ? 'Contacts fill in only where the existing location has none.'
+                  : 'Published on the venue page. Leave blank to keep what was submitted.'}
+              </p>
             </>
           )}
           {decision === 'merge' && (
