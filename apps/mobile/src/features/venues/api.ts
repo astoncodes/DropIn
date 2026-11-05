@@ -1,5 +1,5 @@
 import type { FunctionReturns, Tables } from '@dropin/database-types';
-import { keepPreviousData, useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { supabase } from '../../lib/supabase';
 import { runWindowDays } from './run-window';
@@ -16,6 +16,7 @@ import type { RunWindow } from './run-window';
 export type NearbyVenue = FunctionReturns<'nearby_venues'>[number];
 export type VenueDetail = FunctionReturns<'venue_details'>[number];
 export type VenueActivity = FunctionReturns<'venue_activity'>[number];
+export type VenueReportedHours = FunctionReturns<'venue_reported_hours'>[number];
 export type UpcomingRun = FunctionReturns<'upcoming_runs'>[number];
 export type Sport = Tables<'sports'>;
 
@@ -95,6 +96,51 @@ export function useVenueActivity(venueId: string | undefined) {
       if (error) throw error;
       return data ?? [];
     },
+  });
+}
+
+/** Hours and closed reports built from player activity; changes slowly. */
+export function useVenueReportedHours(venueId: string | undefined) {
+  return useQuery({
+    queryKey: ['venue-hours', venueId],
+    enabled: Boolean(venueId),
+    staleTime: 5 * 60 * 1000,
+    queryFn: async (): Promise<VenueReportedHours | null> => {
+      const { data, error } = await supabase.rpc('venue_reported_hours', {
+        p_venue_id: venueId!,
+      });
+      if (error) throw error;
+      return data?.[0] ?? null;
+    },
+  });
+}
+
+export function useReportVenueClosed() {
+  const cache = useQueryClient();
+  return useMutation({
+    mutationFn: async (report: {
+      venueId: string;
+      latitude: number;
+      longitude: number;
+      accuracy: number;
+      observedAt: string;
+    }) => {
+      const { error } = await supabase.rpc('report_venue_closed', {
+        p_venue_id: report.venueId,
+        p_lat: report.latitude,
+        p_lon: report.longitude,
+        p_accuracy: report.accuracy,
+        p_observed_at: report.observedAt,
+      });
+      if (error) throw error;
+    },
+    // A report also ends the reporter's own check-in at the venue.
+    onSuccess: () =>
+      Promise.all(
+        ['venue-hours', 'venue', 'venue-activity', 'own-presence', 'nearby-venues'].map((key) =>
+          cache.invalidateQueries({ queryKey: [key] }),
+        ),
+      ),
   });
 }
 

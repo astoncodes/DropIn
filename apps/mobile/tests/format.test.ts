@@ -2,11 +2,14 @@ import { describe, expect, it } from 'vitest';
 
 import {
   activitySummary,
+  closedReportLabel,
   dayLabel,
   distanceLabel,
+  hourLabel,
   relativeFuture,
   relativeTime,
   remainingTime,
+  reportedHoursLabel,
   timeOfDay,
 } from '../src/lib/format';
 
@@ -132,8 +135,10 @@ describe('activitySummary', () => {
     expect(activitySummary({ hereNow: 0, headingThere: 0, nextRunAt: ahead(HOUR) })).toMatchObject({
       tone: 'info',
     });
+    // Nobody checked in is not the same as nobody there, and "Quiet" reads as
+    // a reason not to go.
     expect(activitySummary({ hereNow: 0, headingThere: 0, nextRunAt: null })).toEqual({
-      label: 'Quiet',
+      label: 'No check-ins',
       tone: 'quiet',
     });
   });
@@ -157,5 +162,52 @@ describe('dayLabel — which day a session is on, as a player would say it', () 
 
   it('names the date for a day that has passed, rather than calling it Today', () => {
     expect(dayLabel(new Date(2026, 9, 6, 19, 0).toISOString(), now)).toMatch(/Tue.*6/);
+  });
+});
+
+describe('reported hours', () => {
+  it('names an hour of the day as players would say it', () => {
+    expect(hourLabel(0)).toBe('12am');
+    expect(hourLabel(24)).toBe('12am');
+    expect(hourLabel(7)).toBe('7am');
+    expect(hourLabel(12)).toBe('12pm');
+    expect(hourLabel(19)).toBe('7pm');
+  });
+
+  it('formats a range within one day', () => {
+    expect(reportedHoursLabel(7, 22)).toBe('7am–10pm');
+  });
+
+  it('formats a range that wraps midnight', () => {
+    expect(reportedHoursLabel(21, 1)).toBe('9pm–1am');
+  });
+
+  it('names a venue used at every hour', () => {
+    expect(reportedHoursLabel(0, 24)).toBe('All hours');
+  });
+});
+
+describe('closedReportLabel', () => {
+  const now = new Date(2026, 9, 9, 15, 0); // Friday 9 October 2026
+
+  it('says when and by how many players a venue was reported closed', () => {
+    const label = closedReportLabel(new Date(2026, 9, 9, 13, 10).toISOString(), 3, now);
+    expect(label).toMatch(/^Reported closed · Today 1.10.* · 3 players$/);
+  });
+
+  it('uses yesterday, a weekday within the week, then a date', () => {
+    expect(closedReportLabel(new Date(2026, 9, 8, 21, 0).toISOString(), 2, now)).toMatch(
+      /^Reported closed · Yesterday /,
+    );
+    expect(closedReportLabel(new Date(2026, 9, 4, 21, 0).toISOString(), 2, now)).toMatch(
+      /^Reported closed · Sun /,
+    );
+    expect(closedReportLabel(new Date(2026, 8, 20, 21, 0).toISOString(), 2, now)).toMatch(
+      /^Reported closed · Sun,? 20 Sept?|^Reported closed · Sun,? Sep 20/,
+    );
+  });
+
+  it('counts a single player in the singular', () => {
+    expect(closedReportLabel(now.toISOString(), 1, now)).toMatch(/ · 1 player$/);
   });
 });

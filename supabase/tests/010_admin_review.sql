@@ -29,7 +29,7 @@ select lives_ok($$select public.admin_review_candidate('85555555-5555-4555-8555-
 select throws_ok($$select public.admin_review_candidate('84444444-4444-4444-8444-444444444444','merge',null,'89999999-9999-4999-8999-999999999999')$$,'22023','Choose an active venue in the same region','invalid target refused');
 select lives_ok($$select public.admin_review_candidate('84444444-4444-4444-8444-444444444444','merge','Same court',(select published_venue_id from public.venue_candidates where id='83333333-3333-4333-8333-333333333333'))$$,'link duplicate to existing venue');
 select is((select count(*)::int from public.venue_aliases where alias='Duplicate court'),1,'duplicate name preserved');
-select lives_ok($$select public.admin_update_venue((select published_venue_id from public.venue_candidates where id='83333333-3333-4333-8333-333333333333'),'Updated court','Test address','outdoor','removed',true,array[(select id from public.sports where slug='basketball')])$$,'admin can edit and remove venue');
+select lives_ok($$select public.admin_update_venue((select published_venue_id from public.venue_candidates where id='83333333-3333-4333-8333-333333333333'),'Updated court','Test address','outdoor','removed',true,array[(select id from public.sports where slug='basketball')],null,null)$$,'admin can edit and remove venue');
 select is((select count(*)::int from public.admin_audit_log),4,'only successful mutations are audited');
 select * from finish();
 rollback;

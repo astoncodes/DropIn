@@ -12,6 +12,8 @@ export type VenueSubmissionInput = {
   sportIds: number[];
   indoorState: IndoorState;
   addressText?: string;
+  phone?: string;
+  website?: string;
 };
 
 export type VenueSubmissionResult = FunctionReturns<'submit_venue'>[number];
@@ -27,6 +29,8 @@ export function useSubmitVenue() {
         p_sport_ids: input.sportIds,
         p_indoor_state: input.indoorState,
         p_address_text: input.addressText,
+        p_phone: input.phone,
+        p_website: input.website,
       });
       if (error) throw error;
       if (!data?.[0]) throw new UserFacingError('The submission did not return a confirmation.');

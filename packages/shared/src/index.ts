@@ -64,6 +64,40 @@ export const DUPLICATE_DISTANCE_METRES = {
   highConfidenceReview: 40,
 } as const;
 
+/**
+ * Venue phone and website limits, mirroring private.is_venue_phone and
+ * private.is_venue_website. The database enforces them on venues and venue
+ * submissions; these let a form explain a problem before it submits.
+ */
+export const VENUE_CONTACT = {
+  phoneMinDigits: 7,
+  phoneMaxLength: 20,
+  websiteMaxLength: 200,
+} as const;
+
+/** Trims a contact field. Blank means "no contact", as the database treats it. */
+export function normaliseVenueContact(value: string): string | null {
+  const trimmed = value.trim();
+  return trimmed === '' ? null : trimmed;
+}
+
+/** Digits with the usual separators, and enough digits to be dialable. */
+export function isVenuePhone(value: string): boolean {
+  return (
+    value.length <= VENUE_CONTACT.phoneMaxLength &&
+    /^[0-9+().\- ]+$/.test(value) &&
+    value.replace(/\D/g, '').length >= VENUE_CONTACT.phoneMinDigits
+  );
+}
+
+/** An https address with a dotted host and no spaces. */
+export function isVenueWebsite(value: string): boolean {
+  return (
+    value.length <= VENUE_CONTACT.websiteMaxLength &&
+    /^https:\/\/[^\s/]+\.[^\s/]+(\/\S*)?$/.test(value)
+  );
+}
+
 /** Recurring runs expire so a series needs a deliberate renewal. */
 export const RUN_SERIES = {
   maxWeeksValid: 12,
