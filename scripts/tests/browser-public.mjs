@@ -20,6 +20,8 @@ mkdirSync('test-results/ui', { recursive: true });
       if (m.type() === 'error') errors.push(m.text());
     });
     await page.goto('http://localhost:8081/');
+    // The results sheet resizes only by dragging; the list view is the control
+    // a pointer, a keyboard or a screen reader can all use.
     await page.getByRole('button', { name: 'Show list view', exact: true }).click();
     await page
       .getByRole('button', { name: / away\.$/ })

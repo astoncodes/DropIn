@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
-import { homedir } from 'node:os';
 import { createClient } from '@supabase/supabase-js';
 import ts from 'typescript';
+import { adminKey, hostedProject } from '../supabase-project.mjs';
 
 // Fixture writes require an explicitly selected hosted project matching .env.
 const hostedRef = process.argv.find((arg) => arg.startsWith('--project-ref='))?.split('=')[1];
@@ -11,20 +11,11 @@ if (!hostedRef)
   throw new Error(
     'Pass --project-ref=YOUR_TEST_PROJECT_REF explicitly; the test creates and removes temporary fixtures.',
   );
-process.loadEnvFile('.env');
+const project = hostedProject();
 const url = process.env.EXPO_PUBLIC_SUPABASE_URL;
 assert.equal(new URL(url).hostname, `${hostedRef}.supabase.co`);
-const token =
-  process.env.SUPABASE_ACCESS_TOKEN ||
-  readFileSync(`${homedir()}/.supabase/access-token`, 'utf8').trim();
-const response = await fetch(`https://api.supabase.com/v1/projects/${hostedRef}/api-keys`, {
-  headers: { Authorization: `Bearer ${token}` },
-  signal: AbortSignal.timeout(15000),
-});
-assert.ok(response.ok, 'Management access is required for hosted smoke tests');
-const keys = await response.json();
-const serviceKey = keys.find((key) => key.name === 'service_role')?.api_key;
-assert.ok(serviceKey, 'Service role key is required for temporary test fixtures');
+assert.equal(project.ref, hostedRef, 'Selected project must match the configured app project.');
+const serviceKey = await adminKey(project);
 const config = {
   API_URL: url,
   ANON_KEY: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY,
@@ -207,11 +198,22 @@ try {
   );
 
   // Exercise the real mobile publishing implementation with a real hosted API.
-  const source = readFileSync('apps/mobile/src/features/community/api.ts', 'utf8');
+  const transpile = (path) =>
+    ts.transpileModule(readFileSync(path, 'utf8'), {
+      compilerOptions: { module: ts.ModuleKind.CommonJS },
+    }).outputText;
+  const feedOrder = { exports: {} };
+  vm.runInNewContext(transpile('apps/mobile/src/features/community/feed-order.ts'), feedOrder);
   const context = {
     exports: {},
-    require: (name) =>
-      name.endsWith('/supabase') ? { supabase: member } : { useQuery: (options) => options },
+    require: (name) => {
+      if (name.endsWith('/supabase')) return { supabase: member };
+      // The feed loads only for a signed-in player: the member, users[0].
+      if (name.endsWith('/auth-context'))
+        return { useSession: () => ({ session: { user: { id: users[0] } } }) };
+      if (name === './feed-order') return feedOrder.exports;
+      return { useQuery: (options) => options };
+    },
     fetch,
     Date,
     Math,
@@ -219,10 +221,7 @@ try {
     Error,
     Promise,
   };
-  vm.runInNewContext(
-    ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText,
-    context,
-  );
+  vm.runInNewContext(transpile('apps/mobile/src/features/community/api.ts'), context);
   const photoArgs = {
     p_session_id: sessionId,
     p_lat: pinInput.p_lat,
@@ -301,9 +300,15 @@ try {
   objectPath = media.storage_path;
   assert.ok(objectPath.startsWith(users[0] + '/'));
   assert.equal(
-    unwrap(await anonymous.from('session_posts').select('caption').eq('id', postId).single())
+    (await anonymous.from('session_posts').select('caption').eq('id', postId)).error?.code,
+    '42501',
+    'posts need sign-in',
+  );
+  assert.equal(
+    unwrap(await outsider.from('session_posts').select('caption').eq('id', postId).single())
       .caption,
     caption,
+    'any signed-in player can read a post, member or not',
   );
   const publicPins = await context.exports.usePublicSessionPins([sport.id]).queryFn();
   assert.ok(
@@ -320,7 +325,15 @@ try {
     pinInput.p_location_name,
   );
   const url = anonymous.storage.from('session-media').getPublicUrl(objectPath).data.publicUrl;
-  assert.equal((await fetch(url)).status, 200);
+  assert.notEqual((await fetch(url)).status, 200, 'photos are not public');
+  assert.ok(
+    (await anonymous.storage.from('session-media').createSignedUrl(objectPath, 60)).error,
+    'a visitor cannot get a photo link',
+  );
+  const { signedUrl } = unwrap(
+    await outsider.storage.from('session-media').createSignedUrl(objectPath, 60),
+  );
+  assert.equal((await fetch(signedUrl)).status, 200, 'a signed-in player opens it by signed link');
   for (const verification of [null, new Date(Date.now() - 16 * 60000).toISOString()]) {
     unwrap(
       await admin
@@ -575,7 +588,7 @@ try {
   assert.equal(weeksAfter.length, 3, 'cancel applies to one week only');
   assert.ok(weeksAfter.every((item) => item.title === newRunInput.p_title));
   console.log(
-    'PASS: signup token verification, account sign-in, profile update, venue/pin session creation without moderation, discovery, chat privacy, proximity enforcement (venue/pin, boundary, stale/inaccurate GPS, direct-insert and expired-upload rejection), mobile image publishing, public feed/image access, storage cleanup, organizer editing/cancellation, participant leave/rejoin, and recurrence isolation.',
+    'PASS: signup token verification, account sign-in, profile update, venue/pin session creation without moderation, discovery, chat privacy, proximity enforcement (venue/pin, boundary, stale/inaccurate GPS, direct-insert and expired-upload rejection), mobile image publishing, signed-in feed and signed-link photo access, storage cleanup, organizer editing/cancellation, participant leave/rejoin, and recurrence isolation.',
   );
 } finally {
   if (objectPath) unwrap(await admin.storage.from('session-media').remove([objectPath]));

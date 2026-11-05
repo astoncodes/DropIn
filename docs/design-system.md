@@ -163,6 +163,7 @@ npm run test:browser:supabase -- --project-ref=YOUR_PROJECT_REF
 npm run test:presence -- --project-ref=YOUR_PROJECT_REF --browser
 node scripts/tests/account-deletion.mjs --project-ref=YOUR_PROJECT_REF
 npm run test:browser:venues -- --project-ref=YOUR_PROJECT_REF
+npm run test:browser:moderation -- --project-ref=YOUR_PROJECT_REF
 ```
 
 The first four need no credentials: the public test stubs email delivery, the
@@ -171,10 +172,13 @@ refuses every API request in the browser to check what players see when the
 server cannot be reached, and the signed-in test stores a session and stubs the
 API to check the request each signed-in action sends (check-in, creating and
 editing a session, answering, chat, leaving, cancelling, adding a venue, the
-profile, sign-out and account deletion). The hosted tests need a
-Supabase management token (`SUPABASE_ACCESS_TOKEN`) and an explicit project
-matching the root configuration; they create temporary accounts, exercise the UI
-with two accounts, and clean up in `finally`. The admin website test is described
+profile, sign-out and account deletion). The hosted tests need the project's
+secret key (`SUPABASE_SECRET_KEY` in `.env`, or `SUPABASE_ACCESS_TOKEN` to look
+it up) and an explicit project matching the root configuration; they create
+temporary accounts, exercise the UI with two or three of them, and clean up in
+`finally`. The moderation test reports a post and a message in the app, removes
+one and dismisses the other in the admin website, then blocks and unblocks the
+author. The admin website test is described
 in the [admin guide](admin-app.md). Screenshots are written to gitignored
 `test-results/ui/`.
 
