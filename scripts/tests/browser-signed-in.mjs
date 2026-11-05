@@ -121,6 +121,8 @@ const READS = {
   venue_details: (body) => (body?.p_venue_id === VENUE_ID ? [VENUE] : []),
   venue_activity: () => [],
   upcoming_runs: () => [],
+  community_feed_posts: () => [],
+  latest_joined_session_messages: () => [],
   run_attendance: (body) =>
     [JOINED, HOSTED]
       .filter(({ series }) => body?.p_series_ids?.includes(series))
@@ -455,6 +457,22 @@ try {
         p_address_text: '1 Check Street',
       });
       await page.getByText('Submitted for review', { exact: true }).waitFor();
+    },
+  );
+
+  await check(
+    'discover: a search with no match offers to clear it, and Moments opens',
+    async () => {
+      await page.goto(`${APP}/feed`);
+      await button('Search sessions').click();
+      await page
+        .getByRole('textbox', { name: 'Search sessions', exact: true })
+        .fill('NoMatchingGameHere');
+      await page.getByText('No matching sessions', { exact: true }).waitFor();
+      await button('Clear filters').click();
+      const moments = page.getByRole('tab', { name: 'Moments', exact: true });
+      await moments.click();
+      assert.equal(await moments.getAttribute('aria-selected'), 'true');
     },
   );
 
