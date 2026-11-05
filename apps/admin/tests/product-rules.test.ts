@@ -5,6 +5,10 @@ import {
   LOCATION_GATE,
   PARTY_SIZE,
   RUN_SERIES,
+  VENUE_CONTACT,
+  isVenuePhone,
+  isVenueWebsite,
+  normaliseVenueContact,
 } from '@dropin/shared';
 import { describe, expect, it } from 'vitest';
 
@@ -55,5 +59,39 @@ describe('shared product rules', () => {
 
   it('keeps notes short enough to be a status, not a message', () => {
     expect(CHECK_IN_NOTE_MAX_LENGTH).toBe(120);
+  });
+});
+
+/**
+ * The contact checks mirror private.is_venue_phone / is_venue_website so a form
+ * can explain a problem before the database rejects it. The cases match
+ * supabase/tests/020_venue_hours_games_contacts.sql.
+ */
+describe('venue contact mirrors', () => {
+  it('accepts a formatted phone number with at least seven digits', () => {
+    expect(isVenuePhone('+1 (902) 555-0100')).toBe(true);
+    expect(isVenuePhone('555.0100')).toBe(true);
+  });
+
+  it('rejects phone numbers that are too short, too long or not numbers', () => {
+    expect(isVenuePhone('-------')).toBe(false);
+    expect(isVenuePhone('12345')).toBe(false);
+    expect(isVenuePhone('call me maybe')).toBe(false);
+    expect(isVenuePhone('1'.repeat(VENUE_CONTACT.phoneMaxLength + 1))).toBe(false);
+  });
+
+  it('accepts only https websites within the length limit', () => {
+    expect(isVenueWebsite('https://a.ca')).toBe(true);
+    expect(isVenueWebsite('https://parks.example.org/courts?id=4')).toBe(true);
+    expect(isVenueWebsite('http://x.com')).toBe(false);
+    expect(isVenueWebsite('https://localhost')).toBe(false);
+    expect(isVenueWebsite('https://example.com/has space')).toBe(false);
+    const long = `https://example.com/${'a'.repeat(VENUE_CONTACT.websiteMaxLength)}`;
+    expect(isVenueWebsite(long)).toBe(false);
+  });
+
+  it('contact mirrors trim and treat blank input as absent', () => {
+    expect(normaliseVenueContact('  ')).toBeNull();
+    expect(normaliseVenueContact(' https://a.ca ')).toBe('https://a.ca');
   });
 });

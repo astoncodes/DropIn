@@ -127,7 +127,7 @@ export function activitySummary(input: {
   if (input.nextRunAt) {
     return { label: `Run ${relativeFuture(input.nextRunAt)}`, tone: 'info' };
   }
-  return { label: 'Quiet', tone: 'quiet' };
+  return { label: 'No check-ins', tone: 'quiet' };
 }
 
 /** Whole calendar days from `now` to `iso` on the device's calendar: 0 is today. */
@@ -152,4 +152,38 @@ export function dayLabel(iso: string, now = new Date()): string {
 
 export function timeOfDay(iso: string): string {
   return new Date(iso).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+}
+
+/** An hour of the day as players say it: "7am", "12pm". 24 is the midnight that ends a day. */
+export function hourLabel(hour: number): string {
+  const inDay = hour % 24;
+  const onClock = inDay % 12 === 0 ? 12 : inDay % 12;
+  return `${onClock}${inDay < 12 ? 'am' : 'pm'}`;
+}
+
+/**
+ * The hours players found a venue open, from venue_reported_hours(). The end
+ * hour is exclusive and may be past midnight, so 21 to 1 reads "9pm–1am".
+ */
+export function reportedHoursLabel(fromHour: number, untilHour: number): string {
+  if (fromHour === 0 && untilHour === 24) return 'All hours';
+  return `${hourLabel(fromHour)}–${hourLabel(untilHour)}`;
+}
+
+/** "Reported closed · Yesterday 9:10 PM · 3 players". */
+export function closedReportLabel(iso: string, players: number, now = new Date()): string {
+  const daysAgo = -calendarDaysAhead(iso, now);
+  const date = new Date(iso);
+  const day =
+    daysAgo === 0
+      ? 'Today'
+      : daysAgo === 1
+        ? 'Yesterday'
+        : date.toLocaleDateString(
+            undefined,
+            daysAgo < 7
+              ? { weekday: 'short' }
+              : { weekday: 'short', day: 'numeric', month: 'short' },
+          );
+  return `Reported closed · ${day} ${timeOfDay(iso)} · ${players} ${players === 1 ? 'player' : 'players'}`;
 }
