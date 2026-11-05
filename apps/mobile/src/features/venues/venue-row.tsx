@@ -2,13 +2,11 @@ import { StyleSheet, View } from 'react-native';
 
 import { SportBadge } from '../../components/ui/brand';
 import { ConditionChip, Stat } from '../../components/ui/activity';
-import { AppText, PressableSurface, Tag } from '../../components/ui/primitives';
+import { AppText, PressableSurface } from '../../components/ui/primitives';
 import {
   CONDITION_ICON,
   CONDITION_IS_BLOCKING,
   CONDITION_LABEL,
-  PULSE_LABEL,
-  PULSE_TONE,
   activitySummary,
   distanceLabel,
   relativeFuture,
@@ -60,7 +58,6 @@ export function VenueRow({ venue, onPress }: { venue: NearbyVenue; onPress: () =
           <AppText variant="caption" tone="muted" numberOfLines={1}>
             {meta.join(' · ')}
           </AppText>
-          {venue.pulse && <Tag label={PULSE_LABEL[venue.pulse]} tone={PULSE_TONE[venue.pulse]} />}
           {blockingConditions.map((kind) => (
             <ConditionChip
               key={kind}

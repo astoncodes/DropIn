@@ -226,7 +226,7 @@ on conflict do nothing;
 -- ---------------------------------------------------------------------------
 
 insert into public.check_ins (
-  user_id, venue_id, region_id, sport_id, party_size, note, pulse,
+  user_id, venue_id, region_id, sport_id, party_size, note,
   started_at, expires_at, location_verified, distance_to_venue_m, reported_accuracy_m
 )
 select c.user_id::uuid,
@@ -235,7 +235,6 @@ select c.user_id::uuid,
        s.id,
        c.party_size::smallint,
        c.note,
-       c.pulse::public.venue_pulse,
        now() - make_interval(mins => c.started_mins_ago),
        now() + make_interval(mins => c.expires_in_mins),
        true,
@@ -243,13 +242,13 @@ select c.user_id::uuid,
        c.accuracy_m
   from (values
     -- Victoria Park: a full run, five-a-side plus spectators arriving
-    ('5eed0001-0000-4000-8000-000000000001', '5eedbbbb-0000-4000-8000-000000000001', 'basketball', 4, 'Full court, winners stay on', 'game_on',      38, 52, 41.2, 12.0),
-    ('5eed0001-0000-4000-8000-000000000002', '5eedbbbb-0000-4000-8000-000000000001', 'basketball', 2, null,                          'game_on',      22, 68, 63.8, 18.5),
+    ('5eed0001-0000-4000-8000-000000000001', '5eedbbbb-0000-4000-8000-000000000001', 'basketball', 4, 'Full court, winners stay on', 38, 52, 41.2, 12.0),
+    ('5eed0001-0000-4000-8000-000000000002', '5eedbbbb-0000-4000-8000-000000000001', 'basketball', 2, null,                          22, 68, 63.8, 18.5),
     -- Simmons: short-handed, actively wants people
-    ('5eed0001-0000-4000-8000-000000000003', '5eedbbbb-0000-4000-8000-000000000006', 'volleyball', 3, 'Need 2 more for 3s',          'need_players', 15, 75, 22.4,  9.0),
+    ('5eed0001-0000-4000-8000-000000000003', '5eedbbbb-0000-4000-8000-000000000006', 'volleyball', 3, 'Need 2 more for 3s',          15, 75, 22.4,  9.0),
     -- Orlebar: winding down
-    ('5eed0001-0000-4000-8000-000000000004', '5eedbbbb-0000-4000-8000-000000000004', 'soccer',     2, null,                          'wrapping_up',  95, 18, 88.1, 25.0)
-  ) as c(user_id, venue_id, sport_slug, party_size, note, pulse, started_mins_ago, expires_in_mins, distance_m, accuracy_m)
+    ('5eed0001-0000-4000-8000-000000000004', '5eedbbbb-0000-4000-8000-000000000004', 'soccer',     2, null,                          95, 18, 88.1, 25.0)
+  ) as c(user_id, venue_id, sport_slug, party_size, note, started_mins_ago, expires_in_mins, distance_m, accuracy_m)
   join public.sports s on s.slug = c.sport_slug
   cross join (select id from public.regions where slug = 'charlottetown') r
 on conflict do nothing;

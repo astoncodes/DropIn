@@ -58,8 +58,10 @@ const VENUE = {
   here_now: 0,
   heading_there: 0,
   party_count: 0,
-  pulse: null,
   last_activity_at: null,
+  most_here_until: null,
+  phone: null,
+  website: null,
   region_slug: 'charlottetown',
   was_merged: false,
 };
@@ -120,6 +122,16 @@ const READS = {
   nearby_venues: () => [VENUE],
   venue_details: (body) => (body?.p_venue_id === VENUE_ID ? [VENUE] : []),
   venue_activity: () => [],
+  venue_reported_hours: () => [
+    {
+      open_from_hour: null,
+      open_until_hour: null,
+      open_player_count: null,
+      last_closed_at: null,
+      last_closed_player_count: null,
+      closed_now: false,
+    },
+  ],
   upcoming_runs: () => [],
   community_feed_posts: () => [],
   latest_joined_session_messages: () => [],

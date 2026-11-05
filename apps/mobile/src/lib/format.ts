@@ -1,6 +1,5 @@
 import type { Database } from '@dropin/database-types';
 
-type VenuePulse = Database['public']['Enums']['venue_pulse'];
 type ConditionKind = Database['public']['Enums']['venue_condition_kind'];
 
 /**
@@ -62,26 +61,11 @@ export function distanceLabel(metres: number | null | undefined): string {
   return `${(metres / 1000).toFixed(metres < 10_000 ? 1 : 0)} km`;
 }
 
-export const PULSE_LABEL: Record<VenuePulse, string> = {
-  need_players: 'Need players',
-  game_on: 'Game on',
-  full_next_game: 'Full · next game',
-  wrapping_up: 'Wrapping up',
-};
-
-export const PULSE_TONE: Record<VenuePulse, 'live' | 'soon' | 'neutral'> = {
-  need_players: 'soon',
-  game_on: 'live',
-  full_next_game: 'neutral',
-  wrapping_up: 'neutral',
-};
-
 export const CONDITION_LABEL: Record<ConditionKind, string> = {
   lights_on: 'Lights on',
   lights_off: 'Lights off',
   wet_surface: 'Wet surface',
   locked: 'Locked',
-  crowded: 'Crowded',
   equipment_issue: 'Equipment issue',
 };
 
@@ -90,7 +74,6 @@ export const CONDITION_ICON: Record<ConditionKind, string> = {
   lights_off: 'lightbulb-off',
   wet_surface: 'water',
   locked: 'lock',
-  crowded: 'account-group',
   equipment_issue: 'wrench',
 };
 
@@ -100,7 +83,6 @@ export const CONDITION_IS_BLOCKING: Record<ConditionKind, boolean> = {
   lights_off: true,
   wet_surface: true,
   locked: true,
-  crowded: false,
   equipment_issue: true,
 };
 
