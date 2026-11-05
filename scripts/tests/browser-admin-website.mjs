@@ -21,6 +21,41 @@ const candidate = {
   indoor_state: 'outdoor',
   location: point.toString('hex'),
 };
+const ADMIN_USER = {
+  id: 'admin-1',
+  email: 'admin@example.test',
+  aud: 'authenticated',
+  role: 'authenticated',
+  factors: [{ id: 'factor-1', factor_type: 'totp', status: 'verified', friendly_name: 'Phone' }],
+};
+/**
+ * A stored session for the admin. The two-step gate reads the assurance level
+ * from the access token's claims without checking its signature, so the token
+ * only has to be shaped like a JWT; `aal2` means the authenticator code was
+ * entered.
+ */
+function adminSession(aal) {
+  const part = (value) => Buffer.from(JSON.stringify(value)).toString('base64url');
+  const issued = Math.floor(Date.now() / 1000);
+  const claims = {
+    sub: ADMIN_USER.id,
+    role: 'authenticated',
+    aal,
+    amr: [{ method: aal === 'aal2' ? 'totp' : 'otp', timestamp: issued }],
+    exp: issued + 3600,
+  };
+  return {
+    access_token: [
+      part({ alg: 'HS256', typ: 'JWT' }),
+      part(claims),
+      Buffer.from('test-signature').toString('base64url'),
+    ].join('.'),
+    refresh_token: 'test-refresh',
+    expires_at: issued + 3600,
+    token_type: 'bearer',
+    user: ADMIN_USER,
+  };
+}
 let pending = true;
 let decisions = [];
 const report = {
@@ -62,6 +97,7 @@ try {
         body: JSON.stringify(failure.body),
       });
     let data = [];
+    if (url.pathname === '/auth/v1/user') data = ADMIN_USER;
     if (table === 'is_admin') data = true;
     if (table === 'regions')
       data = [{ id: 1, name: 'Toronto', timezone: 'America/Toronto', is_published: true }];
@@ -117,23 +153,20 @@ try {
   page.on('pageerror', (error) => errors.push(error.message));
   await page.goto(base);
   await page.getByRole('heading', { name: 'Admin sign in' }).waitFor();
-  await page.evaluate(() =>
-    localStorage.setItem(
-      'sb-admin-test-auth-token',
-      JSON.stringify({
-        access_token: 'test-token',
-        refresh_token: 'test-refresh',
-        expires_at: Math.floor(Date.now() / 1000) + 3600,
-        token_type: 'bearer',
-        user: {
-          id: 'admin-1',
-          email: 'admin@example.test',
-          aud: 'authenticated',
-          role: 'authenticated',
-        },
-      }),
-    ),
-  );
+  const storeSession = (aal) =>
+    page.evaluate(
+      ([key, session]) => localStorage.setItem(key, JSON.stringify(session)),
+      ['sb-admin-test-auth-token', adminSession(aal)],
+    );
+
+  // A sign-in link alone does not open the console: the authenticator code is asked for.
+  await storeSession('aal1');
+  await page.reload();
+  await page.getByRole('heading', { name: 'Protect your admin access' }).waitFor();
+  await page.getByLabel('Six-digit code').waitFor();
+  assert.equal(await page.getByRole('heading', { name: 'Dashboard', exact: true }).count(), 0);
+
+  await storeSession('aal2');
   await page.reload();
   await page.getByRole('heading', { name: 'Dashboard', exact: true }).waitFor();
   await page.getByText('Riverside Basketball Court').waitFor();
@@ -271,7 +304,7 @@ try {
 
   assert.deepEqual(errors, []);
   console.log(
-    'Admin website passed: sign in, dashboard, approval, duplicate linking, rejection payload and validation, report removal with storage clean-up, success feedback, empty states, navigation, back, reload, reference pages, mobile width, safe and prompt failure messages, and no browser errors.',
+    'Admin website passed: sign in, the two-step gate, dashboard, approval, duplicate linking, rejection payload and validation, report removal with storage clean-up, success feedback, empty states, navigation, back, reload, reference pages, mobile width, safe and prompt failure messages, and no browser errors.',
   );
 } finally {
   await browser.close();
