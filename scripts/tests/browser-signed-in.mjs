@@ -270,6 +270,7 @@ async function signedInPage(browser) {
     namedDay: (index) =>
       page.getByRole('button', { name: /^(Mon|Tue|Wed|Thu|Fri|Sat|Sun) \d{1,2}$/ }).nth(index),
     wasSent: (target) => writes.some((write) => write.target === target),
+    expectSoon,
     /** Waits for the app to send `target`, and returns what it sent. */
     async sentTo(target) {
       await expectSoon(
@@ -296,7 +297,7 @@ const dayAfterTomorrow = new Intl.DateTimeFormat('en-CA', { timeZone: TIMEZONE }
 
 const browser = await chromium.launch({ headless: true });
 try {
-  const { page, button, inDialog, namedDay, wasSent, sentTo, expectBackTo } =
+  const { page, button, inDialog, namedDay, wasSent, sentTo, expectSoon, expectBackTo } =
     await signedInPage(browser);
 
   await check('check in: sends the venue, sport, position, length, party and note', async () => {
@@ -388,6 +389,33 @@ try {
         p_timezone: TIMEZONE,
       },
     );
+  });
+
+  await check('venue search: a typed name is sent once, when submitted', async () => {
+    /** The `name` filter of every venues read, in order; null is the unfiltered list. */
+    const searches = [];
+    const record = (request) => {
+      const url = new URL(request.url());
+      if (url.pathname.endsWith('/rest/v1/venues')) searches.push(url.searchParams.get('name'));
+    };
+    page.on('request', record);
+    try {
+      await page.goto(`${APP}/run/new`);
+      await page.getByRole('tab', { name: 'Listed venue' }).click();
+      const row = button(`${VENUE.name}. ${VENUE.address_text}`);
+      await row.waitFor();
+      const box = page.getByRole('textbox', { name: 'Search venues' });
+      await box.pressSequentially('court');
+      await page.waitForTimeout(500);
+      assert.deepEqual(searches, [null], 'typing sent a request before the name was submitted');
+      await box.press('Enter');
+      await expectSoon(() => searches.length === 2, 'submitting the name sent no request');
+      assert.equal(searches[1], 'ilike.%court%');
+      await row.click();
+      await button('Change').waitFor();
+    } finally {
+      page.off('request', record);
+    }
   });
 
   await check('session: changing the answer sends the series, date and answer', async () => {

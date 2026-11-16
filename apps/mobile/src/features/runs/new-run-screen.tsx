@@ -26,6 +26,7 @@ import { SportsUnavailableNotice } from '../venues/sports-unavailable-notice';
 import { SessionTimeFields, sessionEnd } from './session-time-fields';
 import type { SessionTimes } from './session-time-fields';
 import { defaultSessionStart } from './session-times';
+import { VenueSearch } from './venue-search';
 
 const REPEATS = [
   { weeks: 1, label: 'Just once' },
@@ -43,7 +44,6 @@ export function NewRunScreen() {
   const initialLocation = useRequiredLocation();
   const initialVenueId = uuidParam(useLocalSearchParams<{ venueId?: string }>().venueId);
   const [selectedVenueId, setSelectedVenueId] = useState(initialVenueId);
-  const [venueSearch, setVenueSearch] = useState('');
   const [locationMode, setLocationMode] = useState<'pin' | 'venue'>(
     initialVenueId ? 'venue' : 'pin',
   );
@@ -68,23 +68,6 @@ export function NewRunScreen() {
   const router = useRouter();
   const client = useQueryClient();
   const { session } = useSession();
-  const venueOptions = useQuery({
-    queryKey: ['session-venues', venueSearch.trim()],
-    enabled: Boolean(session) && locationMode === 'venue' && !venueId,
-    queryFn: async () => {
-      let query = supabase
-        .from('venues')
-        .select('id,name,address_text,regions!inner(is_published)')
-        .eq('status', 'active')
-        .eq('regions.is_published', true)
-        .order('name')
-        .limit(50);
-      if (venueSearch.trim()) query = query.ilike('name', `%${venueSearch.trim()}%`);
-      const result = await query;
-      if (result.error) throw result.error;
-      return result.data;
-    },
-  });
   const venue = useVenueDetail(venueId);
   const sports = useSports();
   const zone = useQuery({
@@ -165,7 +148,6 @@ export function NewRunScreen() {
 
   // The form needs both the venue and the time zone its times are entered in.
   const venuePhase = venueId ? combineLoadPhases(loadPhase(venue), loadPhase(zone)) : 'ready';
-  const venueOptionsPhase = loadPhase(venueOptions);
   const available = (sports.data ?? []).filter(
     (sport) => sport.is_active && (!venueId || venue.data?.sport_slugs.includes(sport.slug)),
   );
@@ -336,47 +318,7 @@ export function NewRunScreen() {
           </>
         ) : !venueId ? (
           <>
-            <TextField
-              label="Search venues"
-              value={venueSearch}
-              onChangeText={setVenueSearch}
-              placeholder="Court, gym or park name"
-              autoCorrect={false}
-            />
-            {venueOptionsPhase === 'loading' ? (
-              <AppText tone="muted">Loading venues…</AppText>
-            ) : venueOptionsPhase === 'failed' ? (
-              <Notice
-                tone="error"
-                message="Could not load venues. Check your connection and try again."
-                action={
-                  <Button
-                    label="Try again"
-                    size="sm"
-                    variant="outline"
-                    loading={venueOptions.isFetching}
-                    onPress={() => void venueOptions.refetch()}
-                  />
-                }
-              />
-            ) : venueOptions.data?.length ? (
-              <ListSection>
-                {venueOptions.data.map((place) => (
-                  <ListRow
-                    key={place.id}
-                    title={place.name}
-                    subtitle={place.address_text ?? undefined}
-                    onPress={() => setSelectedVenueId(place.id)}
-                  />
-                ))}
-              </ListSection>
-            ) : (
-              <AppText tone="muted">
-                {venueSearch.trim()
-                  ? 'No venue matches that name.'
-                  : 'No venues are listed yet. Drop a pin to meet anywhere.'}
-              </AppText>
-            )}
+            <VenueSearch onSelect={setSelectedVenueId} />
             <Button
               label="Add a venue"
               icon="map-marker-plus-outline"
