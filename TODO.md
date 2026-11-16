@@ -109,10 +109,13 @@ Deploy in this order so the clients and access rules remain compatible:
       latest-message RPC already pass isolated SQL tests.
 - [ ] Configure a monitored security/error alert destination and test an alert.
       Verify production availability, backup retention and a restore procedure.
-- [ ] Keep the production project from pausing. Free-plan Supabase projects
-      pause after a week without activity; both projects were found paused on
-      9 October and again on 5 November. Production stays on the free plan, so
-      schedule a request that keeps it active before TestFlight and App Review.
+- [ ] Keep both projects from pausing. Free-plan Supabase projects pause after
+      a week without activity; both were found paused on 9 October, 5 November
+      and 13 November. `.github/workflows/keep-alive.yml` reads one row a day
+      from each project. It needs the repository variables `SUPABASE_URL`,
+      `SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_TEST_URL` and
+      `SUPABASE_TEST_PUBLISHABLE_KEY` (publishable keys only), then a manual run
+      to confirm, then a check after a week that neither project paused.
 - [ ] Triage production Supabase advisors: six anonymous and 32 authenticated
       `SECURITY DEFINER` RPC warnings, leaked-password protection disabled, 27
       unindexed foreign keys, 17 unused indexes and five overlapping permissive

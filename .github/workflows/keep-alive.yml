@@ -1,0 +1,39 @@
+name: Keep Supabase projects awake
+# Free-plan Supabase projects pause after about a week without API activity.
+# One small read a day keeps both projects active. GitHub stops scheduled runs
+# in a repository with no commits for 60 days, so check the run history before
+# a long quiet stretch.
+on:
+  schedule:
+    - cron: '17 9 * * *'
+  workflow_dispatch:
+permissions: {}
+jobs:
+  ping:
+    name: Read one row from the ${{ matrix.project }} project
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    strategy:
+      fail-fast: false
+      matrix:
+        project: [app, test]
+    env:
+      # Publishable keys only. They ship in every client bundle, and RLS limits
+      # what they can read.
+      SUPABASE_URL: ${{ matrix.project == 'app' && vars.SUPABASE_URL || vars.SUPABASE_TEST_URL }}
+      SUPABASE_PUBLISHABLE_KEY: ${{ matrix.project == 'app' && vars.SUPABASE_PUBLISHABLE_KEY || vars.SUPABASE_TEST_PUBLISHABLE_KEY }}
+    steps:
+      - name: Query the sports table
+        run: |
+          if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_PUBLISHABLE_KEY" ]; then
+            echo "::error::Set the ${{ matrix.project }} project's URL and publishable key as repository variables."
+            exit 1
+          fi
+          body=$(curl --silent --show-error --fail --max-time 30 \
+            --header "apikey: $SUPABASE_PUBLISHABLE_KEY" \
+            --header "Authorization: Bearer $SUPABASE_PUBLISHABLE_KEY" \
+            "${SUPABASE_URL%/}/rest/v1/sports?select=id&limit=1")
+          case "$body" in
+            \[*\]) echo "The ${{ matrix.project }} project answered." ;;
+            *) echo "::error::Unexpected response from the ${{ matrix.project }} project."; exit 1 ;;
+          esac
