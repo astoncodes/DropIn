@@ -8,3 +8,5 @@ enabled = true
 enabled = false
 [functions.delete-account]
 verify_jwt = true
+[functions.apple-sign-in]
+verify_jwt = true

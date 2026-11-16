@@ -1,18 +1,37 @@
 import assert from 'node:assert/strict';
-import {
-  createDeleteAccountHandler,
-  parseAllowedOrigins,
-} from '../../supabase/functions/delete-account/handler.mts';
+import { parseAllowedOrigins } from '../../supabase/functions/_shared/player-request.mts';
+import { createDeleteAccountHandler } from '../../supabase/functions/delete-account/handler.mts';
 
 function fixture({
   invalidToken = false,
   storageFails = false,
   manyBatches = false,
   origins = [],
+  /** The stored Sign in with Apple refresh token, if the account has one. */
+  appleToken = null,
+  /** Whether the function was deployed with the APPLE_* settings. */
+  appleConfigured = true,
+  revokeFails = null,
 } = {}) {
   const calls = [];
   let files = true;
   const admin = {
+    from: (table) => ({
+      select: () => ({
+        eq: () => ({
+          maybeSingle: async () => {
+            calls.push(['read', table]);
+            return { data: appleToken ? { refresh_token: appleToken } : null, error: null };
+          },
+        }),
+      }),
+      delete: () => ({
+        eq: async (column, value) => {
+          calls.push(['forget', table, value]);
+          return { error: null };
+        },
+      }),
+    }),
     auth: {
       getUser: async (token) => {
         calls.push(['verify', token]);
@@ -44,7 +63,18 @@ function fixture({
       }),
     },
   };
-  return { handler: createDeleteAccountHandler(admin, origins), calls };
+  const apple = appleConfigured
+    ? {
+        revoke: async (token) => {
+          calls.push(['revoke', token]);
+          if (revokeFails) throw revokeFails;
+        },
+        exchangeCode: async () => {
+          throw new Error('Deletion never exchanges a code.');
+        },
+      }
+    : null;
+  return { handler: createDeleteAccountHandler(admin, origins, apple), calls };
 }
 const request = (body, token = 'valid-session') =>
   new Request('https://example.test/delete-account', {
@@ -170,6 +200,45 @@ for (const body of [null, [], {}, { confirmation: 'delete' }]) {
   assert.equal((await badBody.handler(request(body))).status, 400);
   assert(!badBody.calls.some(([kind]) => kind === 'prepare_account_deletion'));
 }
+// --- Sign in with Apple revocation ------------------------------------------
+assert(!success.calls.some(([kind]) => kind === 'revoke'), 'no token means nothing to revoke');
+const appleUser = fixture({ appleToken: 'refresh-abc' });
+assert.deepEqual(await (await appleUser.handler(request({ confirmation: 'DELETE' }))).json(), {
+  deleted: true,
+});
+const order = appleUser.calls.map(([kind]) => kind);
+assert(
+  order.indexOf('revoke') < order.indexOf('prepare_account_deletion'),
+  'Apple is revoked before any data is removed',
+);
+assert.deepEqual(
+  appleUser.calls.find(([kind]) => kind === 'revoke'),
+  ['revoke', 'refresh-abc'],
+);
+assert.deepEqual(
+  appleUser.calls.find(([kind]) => kind === 'forget'),
+  ['forget', 'apple_refresh_tokens', 'verified-user'],
+  'a revoked token is forgotten so a retry does not revoke it again',
+);
+const appleDown = fixture({ appleToken: 'refresh-abc', revokeFails: new Error('503') });
+assert.equal((await appleDown.handler(request({ confirmation: 'DELETE' }))).status, 503);
+assert(
+  !appleDown.calls.some(([kind]) =>
+    ['forget', 'prepare_account_deletion', 'delete'].includes(kind),
+  ),
+  'a failed revocation leaves the account intact for a retry',
+);
+const unconfigured = fixture({ appleToken: 'refresh-abc', appleConfigured: false });
+assert.equal((await unconfigured.handler(request({ confirmation: 'DELETE' }))).status, 503);
+assert(
+  !unconfigured.calls.some(([kind]) => kind === 'prepare_account_deletion'),
+  'missing Apple settings never skip the revocation silently',
+);
+const emailOnly = fixture({ appleConfigured: false });
+assert.deepEqual(await (await emailOnly.handler(request({ confirmation: 'DELETE' }))).json(), {
+  deleted: true,
+});
+
 console.log(
-  'PASS: deletion identity, ownership, cleanup, CORS allowlist, body limits, content type and response headers.',
+  'PASS: deletion identity, ownership, Apple revocation, cleanup, CORS allowlist, body limits, content type and response headers.',
 );

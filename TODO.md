@@ -82,8 +82,14 @@ Deploy in this order so the clients and access rules remain compatible:
 
 ### 1. Close code and safety blockers
 
-- [ ] Implement and test Sign in with Apple token revocation during account
-      deletion, including retry/failure behavior.
+- [ ] Finish Sign in with Apple token revocation. The code is in place:
+      `apple-sign-in` keeps each Apple session's refresh token and
+      `delete-account` revokes it first, failing closed for a retry. Still
+      needed: a Sign in with Apple key from Apple Developer, the four `APPLE_*`
+      secrets (see `.env.example`) on the production project, deploying both
+      functions, and deleting a real Apple account on a TestFlight build.
+      Apple sessions from before the deploy have no stored token, so deleting
+      them revokes nothing.
 - [ ] Complete objectionable-content filtering and report/moderation coverage
       for the content players can publish. Verify reporting, blocking, takedown
       and support response operations against Apple's UGC requirements.
