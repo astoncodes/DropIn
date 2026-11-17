@@ -1,6 +1,6 @@
 /*
  * The admin website shares the player app's language (docs/design-system.md):
- * ink on white, rows divided by rules, condensed type for titles, figures,
+ * ink on white cards over a cool grey page, condensed type for titles, figures,
  * small-capital labels and buttons, and the system font for sentences.
  *
  * Green means live in the player app. Nothing on this site is live, so the only
@@ -14,10 +14,12 @@
 :root {
   --ink: #0f1a16;
   --muted: #525d58;
-  --faint: #69736e;
-  --rule: rgba(15, 26, 22, 0.13);
-  --control: rgba(15, 26, 22, 0.32);
-  --fill: #ecefec;
+  --faint: #5e6964;
+  --page: #f2f4f3;
+  --surface: #fff;
+  --rule: rgba(15, 26, 22, 0.09);
+  --control: rgba(15, 26, 22, 0.26);
+  --fill: #e8ecea;
   --live: #00865c;
   --soon-fill: #f8e7cc;
   --soon-text: #7a4300;
@@ -25,6 +27,15 @@
   --alert-fill: #f8e0dd;
   --alert-text: #a82726;
   --scrim: rgba(15, 26, 22, 0.5);
+  /* Corners and depths mirror the app's radius and elevation tokens. */
+  --radius-xs: 6px;
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --radius-xl: 24px;
+  --shadow-card: 0 3px 12px rgba(15, 26, 22, 0.05);
+  --shadow-raised: 0 4px 10px rgba(15, 26, 22, 0.16);
+  --shadow-floating: 0 6px 18px rgba(15, 26, 22, 0.14);
 
   --display: 'Barlow Condensed', 'Arial Narrow', sans-serif;
   --body: ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -34,7 +45,7 @@
   font-family: var(--body);
   line-height: 1.5;
   color: var(--ink);
-  background: #fff;
+  background: var(--page);
   color-scheme: light;
   font-synthesis: none;
 }
@@ -115,12 +126,13 @@ button {
   min-height: 44px;
   padding: 8px 18px;
   border: 1.5px solid var(--ink);
-  border-radius: 10px;
+  border-radius: 999px;
   background: var(--ink);
   color: #fff;
   font: 600 18px/1.2 var(--display);
   letter-spacing: 0.01em;
   white-space: nowrap;
+  box-shadow: var(--shadow-raised);
   cursor: pointer;
   transition: transform 120ms ease-out;
 }
@@ -133,12 +145,14 @@ button:disabled {
   border-color: var(--fill);
   background: var(--fill);
   color: var(--faint);
+  box-shadow: none;
   cursor: not-allowed;
 }
 button.secondary {
   border-color: var(--control);
-  background: transparent;
+  background: var(--surface);
   color: var(--ink);
+  box-shadow: none;
 }
 button.secondary:disabled {
   border-color: var(--rule);
@@ -153,10 +167,10 @@ select,
 textarea {
   min-height: 46px;
   max-width: 100%;
-  padding: 10px 12px;
-  border: 1.5px solid var(--control);
-  border-radius: 10px;
-  background: #fff;
+  padding: 10px 14px;
+  border: 1.5px solid var(--rule);
+  border-radius: var(--radius-md);
+  background: var(--surface);
   color: var(--ink);
   font: 400 16px/1.4 var(--body);
 }
@@ -221,28 +235,34 @@ textarea {
 }
 .site-navigation {
   display: flex;
-  gap: 28px;
-  margin: 0 var(--gutter);
-  border-bottom: 1px solid var(--rule);
+  gap: 2px;
+  width: fit-content;
+  max-width: 100%;
+  margin: 10px var(--gutter) 0;
+  padding: 3px;
+  border-radius: 999px;
+  background: var(--fill);
   overflow-x: auto;
 }
 .nav-link {
-  padding: 12px 0 10px;
-  border-bottom: 2px solid transparent;
-  color: var(--faint);
-  font: 600 20px/1.2 var(--display);
+  padding: 8px 18px;
+  border-radius: 999px;
+  color: var(--muted);
+  font: 600 18px/1.2 var(--display);
   text-decoration: none;
   white-space: nowrap;
+  transition: background-color 160ms ease-out;
 }
 .nav-link:hover {
   color: var(--ink);
 }
 .nav-link.selected {
-  border-color: var(--ink);
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
   color: var(--ink);
 }
 .nav-link:focus-visible {
-  outline-offset: -2px;
+  outline-offset: 0;
 }
 
 /* --- Page ---------------------------------------------------------------- */
@@ -272,11 +292,16 @@ textarea {
   flex-shrink: 0;
 }
 
-/* A section is a heading and what follows it, straight on the page. */
+/* A section is one white card: a heading and what follows it. */
 .card {
   display: flex;
   flex-direction: column;
   min-width: 0;
+  padding: 22px 24px;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
 }
 .card > * + * {
   margin-top: 14px;
@@ -288,11 +313,11 @@ textarea {
   align-self: flex-start;
 }
 
-/* The scoreboard: figures in a row between two rules, each one a way in. */
+/* The scoreboard: a row of figure cards, each one a way in. */
 .stats {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  border-block: 1px solid var(--rule);
+  gap: 14px;
 }
 .stat {
   flex-direction: column;
@@ -300,21 +325,17 @@ textarea {
   justify-content: flex-start;
   gap: 6px;
   min-height: 0;
-  padding: 18px 20px;
-  border: 0;
-  border-left: 1px solid var(--rule);
-  border-radius: 0;
-  background: transparent;
+  padding: 20px 22px;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
   color: var(--ink);
   white-space: normal;
   text-align: left;
 }
-.stat:first-child {
-  padding-left: 0;
-  border-left: 0;
-}
 .stat:active:not(:disabled) {
-  transform: none;
+  transform: scale(0.98);
 }
 .stat strong {
   font: 700 56px/0.9 var(--display);
@@ -330,17 +351,18 @@ textarea {
   }
 }
 
-/* Rows in a list touch, so the rules between them read as one ruled block. */
+/* Rows in a card touch, divided by rules; the card's edge closes the list. */
 .review-row,
 .reference-row,
 .audit-row {
   padding: 14px 0;
   border-top: 1px solid var(--rule);
 }
-.review-row:last-child,
-.reference-row:last-child,
-.audit-row:last-child {
-  border-bottom: 1px solid var(--rule);
+.card > .review-row:first-child,
+.card > .reference-row:first-child,
+.card > .audit-row:first-child {
+  padding-top: 0;
+  border-top: 0;
 }
 .card > .review-row + .review-row,
 .card > .reference-row + .reference-row,
@@ -404,7 +426,10 @@ td {
 }
 th {
   padding-block: 8px;
-  border-bottom-color: var(--ink);
+  border-bottom-color: var(--control);
+}
+tr:last-child td {
+  border-bottom: 0;
 }
 th:last-child,
 td:last-child {
@@ -425,8 +450,8 @@ td .snapshot {
 /* A state in small capitals. Waiting is amber, refused is red, the rest is ink. */
 .badge {
   display: inline-block;
-  padding: 2px 6px;
-  border-radius: 4px;
+  padding: 2px 7px;
+  border-radius: var(--radius-xs);
   background: var(--fill);
   color: var(--ink);
   font: 600 13px/1.25 var(--display);
@@ -468,7 +493,7 @@ td .snapshot {
 pre {
   margin: 8px 0 0;
   padding: 14px;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   background: var(--fill);
   font-size: 12px;
   white-space: pre-wrap;
@@ -486,7 +511,7 @@ summary {
   justify-content: space-between;
   gap: 16px;
   padding: 12px 16px;
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   background: var(--fill);
   font-weight: 600;
 }
@@ -506,8 +531,9 @@ summary {
   width: 620px;
   max-width: 100%;
   padding: 28px;
-  background: #fff;
-  box-shadow: -6px 0 18px rgba(15, 26, 22, 0.14);
+  border-radius: var(--radius-xl) 0 0 var(--radius-xl);
+  background: var(--surface);
+  box-shadow: var(--shadow-floating);
   overflow-y: auto;
 }
 .detail-panel > header {
@@ -538,10 +564,14 @@ summary {
 .detail-panel > h3:not(.subject) {
   margin-top: 28px;
 }
-/* Inside the panel each block of evidence sits under its own rule. */
+/* Inside the panel each block of evidence sits under its own rule, not on a card. */
 .detail-panel .card {
-  padding-top: 14px;
+  padding: 14px 0 0;
+  border: 0;
   border-top: 1px solid var(--rule);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
 }
 .detail-panel .card > * + * {
   margin-top: 6px;
@@ -611,7 +641,7 @@ form .checkbox,
   min-height: 48px;
   padding: 10px 14px;
   border: 1.5px solid var(--control);
-  border-radius: 10px;
+  border-radius: var(--radius-md);
 }
 .decision-options label:has(:checked) {
   border-color: var(--ink);
@@ -625,7 +655,7 @@ form .checkbox,
   display: block;
   max-width: 100%;
   max-height: 360px;
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   background: var(--fill);
 }
 
@@ -639,9 +669,14 @@ form .checkbox,
 .auth-entry {
   display: flex;
   flex-direction: column;
-  gap: 40px;
+  gap: 32px;
   width: 100%;
-  max-width: 400px;
+  max-width: 440px;
+  padding: 36px 32px;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
 }
 .auth-form {
   display: flex;
@@ -697,13 +732,6 @@ form .checkbox,
   .stats {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
-  .stat:nth-child(odd) {
-    padding-left: 0;
-    border-left: 0;
-  }
-  .stat:nth-child(n + 3) {
-    border-top: 1px solid var(--rule);
-  }
   .reference-grid {
     grid-template-columns: 1fr;
     gap: 40px;
@@ -729,11 +757,14 @@ form .checkbox,
     flex-direction: column;
     gap: 14px;
   }
+  .card {
+    padding: 18px 16px;
+  }
   .stat {
-    padding: 14px 16px;
+    padding: 16px;
   }
   .stat strong {
-    font-size: 48px;
+    font-size: 44px;
   }
   th,
   td {
