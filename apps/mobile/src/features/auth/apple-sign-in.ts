@@ -44,5 +44,29 @@ export async function signInWithApple(): Promise<{ error: Error | null }> {
     token: credential.identityToken,
     nonce: rawNonce,
   });
-  return { error };
+  if (error) return { error };
+
+  await keepAppleAuthorization(credential.authorizationCode);
+  return { error: null };
+}
+
+/**
+ * Hands the one-time authorization code to the server so deleting the account
+ * can revoke Apple's authorization later, as App Review requires. The code is
+ * valid for five minutes, so this runs before anything else. The player is
+ * already signed in: a failure here is logged for the developer and does not
+ * undo the sign-in, and deletion then has nothing to revoke.
+ */
+async function keepAppleAuthorization(authorizationCode: string | null): Promise<void> {
+  if (!authorizationCode) {
+    console.warn('[auth] Apple returned no authorization code; nothing kept for revocation');
+    return;
+  }
+  const { error } = await supabase.functions.invoke('apple-sign-in', {
+    body: { authorizationCode },
+  });
+  if (error) {
+    // The function's answer names the cause without any token or personal data.
+    console.warn('[auth] Apple authorization was not kept for revocation', error.message);
+  }
 }

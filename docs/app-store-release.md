@@ -83,9 +83,13 @@ test/development project `wejyydujrhirezljvgub` out of the store binary.
    non-idempotent CREATE statements blindly or mark unapplied SQL as applied.
 3. Test backup/restore and the migration plan. Deploy the MFA-capable admin site
    before enforcing database MFA; verify an admin can enroll and recover access.
-4. Apply reviewed production migrations and deploy `delete-account` with its
-   required secrets. Coordinate the private bucket with the updated clients:
-   clients using the previous public URLs cannot read a private bucket.
+4. Apply reviewed production migrations and deploy the `apple-sign-in` and
+   `delete-account` functions with their secrets: `ALLOWED_WEB_ORIGINS`, and the
+   four `APPLE_*` values described in `.env.example`, which need a Sign in with
+   Apple key from Apple Developer → Keys. Without them, Apple sessions keep no
+   refresh token and deleting an Apple account fails. Coordinate the private
+   bucket with the updated clients: clients using the previous public URLs
+   cannot read a private bucket.
 5. Regenerate database types using `npm run db:types` against the intended
    released schema, review the diff, and rerun the database tests on test.
 6. Check anonymous/cross-account requests over the actual APIs. Old public media
