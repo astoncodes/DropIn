@@ -14,7 +14,7 @@ import { SegmentedControl } from '../../components/ui/segmented-control';
 import { dayLabel, timeOfDay } from '../../lib/format';
 import { combineLoadPhases, loadPhase } from '../../lib/load-phase';
 import { useSession } from '../../providers/auth-context';
-import { space, usePalette } from '../../theme';
+import { elevation, radius, space, usePalette } from '../../theme';
 import { useUpcomingRuns } from '../venues/api';
 import type { UpcomingRun } from '../venues/api';
 import { useJoinedSessions, useJoinSession, useRunAttendance } from './api';
@@ -149,7 +149,13 @@ export function ScheduledScreen() {
                 onPress={() => router.push(`/session/${item.id}`)}
                 accessibilityLabel={`Open ${item.title}`}
               >
-                <View style={[styles.pastRow, { borderBottomColor: colors.border }]}>
+                <View
+                  style={[
+                    styles.pastRow,
+                    elevation.card,
+                    { backgroundColor: colors.surface, borderColor: colors.border },
+                  ]}
+                >
                   <SportBadge slug={item.sportSlug} />
                   <View style={styles.pastCopy}>
                     <AppText variant="label" tone="muted">
@@ -230,8 +236,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: space.md,
-    paddingVertical: space.lg,
-    borderBottomWidth: 1,
+    padding: space.lg,
+    borderWidth: 1,
+    borderRadius: radius.lg,
+    marginBottom: space.sm,
   },
   pastCopy: { flex: 1, gap: space.xs },
   tags: { flexDirection: 'row', paddingTop: 2 },

@@ -12,14 +12,14 @@ import {
   relativeFuture,
   relativeTime,
 } from '../../lib/format';
-import { space, usePalette } from '../../theme';
+import { elevation, radius, space, usePalette } from '../../theme';
 import type { IconName } from '../../components/ui/primitives';
 import type { NearbyVenue } from './api';
 
 const SETTING_LABEL = { indoor: 'Indoor', outdoor: 'Outdoor', unknown: null } as const;
 
 /**
- * One venue as a line on the scoreboard.
+ * One venue as a card on the scoreboard.
  *
  * The right-hand figure answers the question the list exists for — is anybody
  * there — and is the only place a count appears. Under the name: how far, what
@@ -49,7 +49,13 @@ export function VenueRow({ venue, onPress }: { venue: NearbyVenue; onPress: () =
       accessibilityLabel={`${venue.name}. ${summary.label}. ${distanceLabel(venue.distance_m)} away.`}
       accessibilityHint="Opens venue details"
     >
-      <View style={[styles.row, { borderBottomColor: colors.border }]}>
+      <View
+        style={[
+          styles.row,
+          elevation.card,
+          { backgroundColor: colors.surface, borderColor: colors.border },
+        ]}
+      >
         <SportBadge slug={venue.sport_slugs?.[0]} />
         <View style={styles.copy}>
           <AppText variant="heading" numberOfLines={2}>
@@ -94,8 +100,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: space.md,
-    paddingVertical: space.lg,
-    borderBottomWidth: 1,
+    padding: space.lg,
+    borderWidth: 1,
+    borderRadius: radius.lg,
+    marginBottom: space.sm,
   },
   copy: { flex: 1, gap: space.xs },
   next: { alignItems: 'flex-end', gap: 2 },

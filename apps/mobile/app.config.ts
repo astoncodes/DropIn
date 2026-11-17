@@ -171,7 +171,7 @@ const config: ExpoConfig = {
     [
       'expo-splash-screen',
       {
-        backgroundColor: '#FFFFFF',
+        backgroundColor: '#F2F4F3',
         image: './assets/images/splash-icon.png',
         // The size of Android's splash image box, which crops anything larger.
         // The wordmark spans a little over half of the square image.

@@ -3,12 +3,12 @@ import { Children, Fragment, isValidElement } from 'react';
 import type { ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
 
-import { space, usePalette } from '../../theme';
+import { elevation, radius, space, usePalette } from '../../theme';
 import { AppText, PressableSurface } from './primitives';
 import type { IconName } from './primitives';
 
 /**
- * A labelled run of rows divided by rules, sitting directly on the page. Rules
+ * A labelled group of rows on one white card, divided by inset rules. Rules
  * are inserted between rows here so no row has to know whether it is first or
  * last.
  */
@@ -33,7 +33,13 @@ export function ListSection({
           {title}
         </AppText>
       )}
-      <View style={[styles.group, { borderColor: colors.border }]}>
+      <View
+        style={[
+          styles.group,
+          elevation.card,
+          { backgroundColor: colors.surface, borderColor: colors.border },
+        ]}
+      >
         {rows.map((row, index) => (
           <Fragment key={row.key ?? index}>
             {index > 0 && <View style={[styles.rule, { backgroundColor: colors.border }]} />}
@@ -129,14 +135,15 @@ export function ListRow({
 
 const styles = StyleSheet.create({
   section: { gap: space.sm },
-  group: { borderTopWidth: 1, borderBottomWidth: 1 },
-  rule: { height: 1 },
+  group: { borderRadius: radius.lg, borderWidth: 1, overflow: 'hidden' },
+  rule: { height: 1, marginLeft: space.lg },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: space.md,
     minHeight: 56,
     paddingVertical: space.md,
+    paddingHorizontal: space.lg,
   },
   copy: { flex: 1, gap: 2 },
   value: { maxWidth: '45%' },

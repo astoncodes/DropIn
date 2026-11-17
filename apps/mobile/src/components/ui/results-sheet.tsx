@@ -173,7 +173,7 @@ export function ResultsSheet({
       <View
         style={[
           styles.panel,
-          { backgroundColor: colors.surface, borderColor: colors.border },
+          { backgroundColor: colors.background, borderColor: colors.border },
           elevation.floating,
         ]}
       >
@@ -203,7 +203,7 @@ export function ResultsSheet({
       <View
         style={[
           styles.sheetSurface,
-          { backgroundColor: colors.surface, borderColor: colors.border },
+          { backgroundColor: colors.background, borderColor: colors.border },
         ]}
       >
         {/* No web `cursor: grab`: React Native's CursorValue only admits auto

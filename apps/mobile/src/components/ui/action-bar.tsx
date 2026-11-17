@@ -21,7 +21,7 @@ export function ActionBar({ children }: { children: ReactNode }) {
       style={[
         styles.bar,
         {
-          backgroundColor: colors.background,
+          backgroundColor: colors.surface,
           borderTopColor: colors.border,
           paddingBottom: Math.max(insets.bottom, space.md),
         },

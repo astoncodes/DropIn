@@ -43,7 +43,7 @@ export function TextField({
 }: TextFieldProps) {
   const colors = usePalette();
   const [focused, setFocused] = useState(false);
-  const borderColor = error ? colors.alert : focused ? colors.text : colors.borderStrong;
+  const borderColor = error ? colors.alert : focused ? colors.text : colors.border;
   const helper = error ?? hint;
 
   return (

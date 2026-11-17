@@ -9,9 +9,10 @@ them. The admin website follows the same rules in plain CSS; see
 ## The idea
 
 Drop In is a scoreboard for the neighbourhood: where people are playing now, and
-what is on later. The interface is built like a printed box score — ink on
-white, ruled rows, large condensed numerals — so that the one thing it adds,
-colour, can carry the one thing that matters.
+what is on later. The interface is built like a box score set on soft white
+cards — ink on white, large condensed numerals, rounded surfaces on a cool grey
+page — so that the one thing it adds, colour, can carry the one thing that
+matters.
 
 ## Principles
 
@@ -25,9 +26,11 @@ colour, can carry the one thing that matters.
   There is no colour per sport, because colour is taken.
 - **Two voices.** Barlow Condensed carries titles, numbers, small-capital
   labels and buttons. The platform's own font carries sentences.
-- **Rows, not cards.** A list is rows divided by rules, sitting on the page. A
-  card is for the rare thing that is one object rather than a line in a list.
-  Only surfaces that float over the page or the map cast a shadow.
+- **White on grey.** The page is a cool light grey and everything on it sits
+  on a white, rounded surface: a venue or session is a card, a run of settings
+  is one card of rows divided by inset rules, a scoreboard is a card of figures.
+  Cards cast a faint shadow; solid buttons a little more; only sheets, dialogs
+  and panels over the map cast a real one.
 - **One primary action per screen.** Detail screens pin it at the bottom in an
   `ActionBar`. A row carries at most one control. Two solid buttons side by side
   means one of them should be outlined.
@@ -47,15 +50,15 @@ colour, can carry the one thing that matters.
 
 ## Tokens
 
-| Token       | Values                                                                                              | Use                                                             |
-| ----------- | --------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
-| `palettes`  | white `background` and `surface`, grey `surfaceMuted`, ink `text`, `live`, `soon`, `alert`          | Colour by meaning; text on a tint uses the matching `…Text`     |
-| `space`     | 2, 4, 8, 12, 16, 24, 32, 48                                                                         | All padding, gaps and margins; the page gutter is 16            |
-| `radius`    | xs 4, sm 6, md 10, lg 14, xl 18                                                                     | Tags xs; chips sm; controls md; maps and cards lg; sheets xl    |
-| `fonts`     | `display` (Barlow Condensed Bold), `displayMedium` (SemiBold)                                       | Loaded in the root layout; never combined with `fontWeight`     |
-| `typeScale` | display 40, title 32, heading 22, label 13 caps, button 19, body 16, caption 14, micro 12, score 44 | `display` for tab titles, `title` for a detail screen's subject |
-| `motion`    | 120–260 ms, `easeOut`, `easeInOut`, press scale 0.97                                                | Every animation                                                 |
-| `elevation` | `floating`                                                                                          | Dialogs, sheets, toasts and panels over the map                 |
+| Token       | Values                                                                                              | Use                                                                                                  |
+| ----------- | --------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `palettes`  | white `background` and `surface`, grey `surfaceMuted`, ink `text`, `live`, `soon`, `alert`          | Colour by meaning; text on a tint uses the matching `…Text`                                          |
+| `space`     | 2, 4, 8, 12, 16, 24, 32, 48                                                                         | All padding, gaps and margins; the page gutter is 16                                                 |
+| `radius`    | xs 6, sm 10, md 14, lg 20, xl 24, xxl 32, pill                                                      | Tags xs; inputs and badges md; cards and groups lg; sheets xxl; buttons, chips and icon buttons pill |
+| `fonts`     | `display` (Barlow Condensed Bold), `displayMedium` (SemiBold)                                       | Loaded in the root layout; never combined with `fontWeight`                                          |
+| `typeScale` | display 40, title 32, heading 22, label 13 caps, button 19, body 16, caption 14, micro 12, score 44 | `display` for tab titles, `title` for a detail screen's subject                                      |
+| `motion`    | 120–260 ms, `easeOut`, `easeInOut`, press scale 0.97                                                | Every animation                                                                                      |
+| `elevation` | `card`, `raised`, `floating`                                                                        | Cards and groups; solid buttons; dialogs, sheets, toasts and map panels                              |
 
 ## Components
 
@@ -66,12 +69,12 @@ colour, can carry the one thing that matters.
 | `IconButton`                          | Icon-only actions; always pass `label`. `filled` for the one primary action in a header                                       |
 | `Chip`                                | One choice among several: sport filters, durations, repeats. Selected is ink                                                  |
 | `Tag`                                 | A state in small capitals: GOING, HOSTING, CANCELLED. Never tappable                                                          |
-| `SegmentedControl`                    | Switching sections of one page (Upcoming/Past, Details/Chat/Photos), as underlined text tabs                                  |
+| `SegmentedControl`                    | Switching sections of one page (Upcoming/Past, Details/Chat/Photos): a pill track with a sliding white thumb                  |
 | `TextField`                           | Every text input: visible label, hint, error, optional character count                                                        |
-| `ListSection`, `ListRow`              | Rows divided by rules, with optional icon, subtitle, trailing control and chevron                                             |
+| `ListSection`, `ListRow`              | One white card of rows divided by inset rules, with optional icon, subtitle, trailing control and chevron                     |
 | `Stat`                                | One scoreboard figure: a large number or time over a small-capitals label                                                     |
 | `ActionBar`                           | The primary action of a detail screen, pinned above the home indicator                                                        |
-| `Card`                                | A white panel for a single object, such as the profile summary                                                                |
+| `Card`                                | A white panel for a single object, such as the profile summary or a scoreboard                                                |
 | `Notice`                              | Inline errors, warnings, confirmations and information on the current screen                                                  |
 | `ConfirmDialog`, `Dialog`             | Decisions with consequences, such as leaving a session or deleting an account                                                 |
 | `Sheet`                               | Choices tied to something on screen, such as the report and block flow                                                        |
@@ -89,11 +92,13 @@ Feature components built from these and reused across screens: `VenueRow`
 
 ## Patterns
 
-- **Lists:** rows on the page with a rule under each. The trailing edge holds the
-  figure or the one control; a chevron shows that the row opens something.
-- **Detail screens:** the subject as a `title`, one muted line of facts, a row of
-  `Stat`s between two rules, then labelled sections. The primary action goes in
-  an `ActionBar`; secondary ones are `ListRow`s in the content.
+- **Lists:** venues and sessions are one card each, stacked with a small gap;
+  settings and secondary actions are a `ListSection`, one card of rows. The
+  trailing edge holds the figure or the one control; a chevron shows that the
+  row opens something.
+- **Detail screens:** the subject as a `title`, one muted line of facts, a card
+  of `Stat`s, then labelled sections. The primary action goes in an
+  `ActionBar`; secondary ones are `ListRow`s in the content.
 - **Errors:** pass the caught error through `userMessage(error, fallback)` and
   show it in a `Notice` (or a toast only when nothing on screen changed). Never
   render `error.message` directly.
@@ -117,7 +122,7 @@ Feature components built from these and reused across screens: `VenueRow`
 ## Icon, splash screen and favicons
 
 The app icon is the name stacked on ink. The splash screen is the wordmark on
-the page's white, so the first screen appears without a change of colour. Both
+the page's grey, so the first screen appears without a change of colour. Both
 favicons are the initial and its full stop on an ink tile.
 
 `node scripts/brand-assets.mjs` draws all of them from the brand colours in

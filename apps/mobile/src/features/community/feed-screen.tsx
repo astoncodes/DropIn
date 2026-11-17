@@ -12,7 +12,7 @@ import { AppText, IconButton, PressableSurface } from '../../components/ui/primi
 import { dayLabel, relativeTime, timeOfDay } from '../../lib/format';
 import { loadPhase } from '../../lib/load-phase';
 import { useSession } from '../../providers/auth-context';
-import { radius, space, usePalette } from '../../theme';
+import { elevation, radius, space, usePalette } from '../../theme';
 import { useLocationAccess } from '../location/location-access';
 import { ModerationSheet } from '../moderation/moderation-sheet';
 import type { ModerationSubject } from '../moderation/api';
@@ -82,7 +82,14 @@ export function MomentsFeed({ sessionId }: { sessionId?: string } = {}) {
           {feed.data.map((post) => {
             const firstMedia = post.media[0];
             return (
-              <View key={post.id} style={[styles.post, { borderBottomColor: colors.border }]}>
+              <View
+                key={post.id}
+                style={[
+                  styles.post,
+                  elevation.card,
+                  { backgroundColor: colors.surface, borderColor: colors.border },
+                ]}
+              >
                 <View style={styles.authorRow}>
                   <Avatar name={post.authorName} size={36} />
                   <View style={{ flex: 1 }}>
@@ -165,7 +172,13 @@ export function MomentsFeed({ sessionId }: { sessionId?: string } = {}) {
 
 const styles = StyleSheet.create({
   skeletons: { gap: space.lg, paddingTop: space.lg },
-  post: { gap: space.md, paddingVertical: space.lg, borderBottomWidth: 1 },
+  post: {
+    gap: space.md,
+    padding: space.lg,
+    borderWidth: 1,
+    borderRadius: radius.lg,
+    marginBottom: space.md,
+  },
   authorRow: { flexDirection: 'row', alignItems: 'center', gap: space.md },
   mediaFrame: { aspectRatio: 4 / 3, borderRadius: radius.lg, overflow: 'hidden' },
   sessionLink: { flexDirection: 'row', alignItems: 'center', gap: space.sm },

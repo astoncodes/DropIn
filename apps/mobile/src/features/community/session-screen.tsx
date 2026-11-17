@@ -22,7 +22,7 @@ import { AppText, Button, IconButton } from '../../components/ui/primitives';
 import { SegmentedControl } from '../../components/ui/segmented-control';
 import { dayLabel, timeOfDay } from '../../lib/format';
 import { useSession } from '../../providers/auth-context';
-import { radius, space, usePalette, useThemeName } from '../../theme';
+import { elevation, radius, space, usePalette, useThemeName } from '../../theme';
 import { ModerationSheet } from '../moderation/moderation-sheet';
 import type { ModerationSubject } from '../moderation/api';
 import {
@@ -274,7 +274,11 @@ function SessionContent({ sessionId, initialTab }: { sessionId: string; initialT
 
         <View
           accessibilityLiveRegion="polite"
-          style={[styles.board, { borderColor: colors.border }]}
+          style={[
+            styles.board,
+            elevation.card,
+            { backgroundColor: colors.surface, borderColor: colors.border },
+          ]}
         >
           {attendancePhase === 'ready' ? (
             <>
@@ -553,8 +557,13 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
   },
   identity: { gap: space.xs },
-  board: { flexDirection: 'row', borderTopWidth: 1, borderBottomWidth: 1 },
-  count: { paddingVertical: space.md, paddingRight: space.xl },
+  board: {
+    flexDirection: 'row',
+    borderWidth: 1,
+    borderRadius: radius.lg,
+    paddingHorizontal: space.lg,
+  },
+  count: { paddingVertical: space.lg, paddingRight: space.xl },
   countDivided: { borderLeftWidth: 1, paddingLeft: space.lg },
   boardNote: { paddingVertical: space.md },
   map: { height: 180, borderRadius: radius.lg, overflow: 'hidden' },
