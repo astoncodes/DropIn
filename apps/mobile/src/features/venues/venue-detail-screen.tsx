@@ -23,7 +23,7 @@ import {
 import { loadPhase } from '../../lib/load-phase';
 import { uuidParam } from '../../lib/route-params';
 import { useSession } from '../../providers/auth-context';
-import { radius, space, usePalette, useThemeName } from '../../theme';
+import { elevation, radius, space, usePalette, useThemeName } from '../../theme';
 import { useJoinSession, useRunAttendance } from '../community/api';
 import { useDeviceLocation } from '../location/use-device-location';
 import { SessionRow } from '../community/session-row';
@@ -55,6 +55,7 @@ const SETTING_LABEL = { indoor: 'Indoor', outdoor: 'Outdoor', unknown: null } as
 export function VenueDetailScreen() {
   const venueId = uuidParam(useLocalSearchParams<{ venueId: string }>().venueId);
   const colors = usePalette();
+  const groupColors = { backgroundColor: colors.surface, borderColor: colors.border };
   const scheme = useThemeName();
   const [linkError, setLinkError] = useState('');
   const [closedReport, setClosedReport] = useState<{
@@ -259,7 +260,13 @@ export function VenueDetailScreen() {
         </View>
 
         <View style={styles.scoreboard}>
-          <View style={[styles.board, { borderColor: colors.border }]}>
+          <View
+            style={[
+              styles.board,
+              elevation.card,
+              { backgroundColor: colors.surface, borderColor: colors.border },
+            ]}
+          >
             {/* With a next game to show, the two counts take only the room they
                 need so the time fits on one line beside them. */}
             <View style={nextRun ? styles.count : styles.stat}>
@@ -322,24 +329,29 @@ export function VenueDetailScreen() {
             <AppText variant="label" tone="muted">
               Here now
             </AppText>
-            {checkIns.map((row, index) => (
-              <View
-                key={`${row.display_name}-${index}`}
-                style={[styles.player, { borderBottomColor: colors.border }]}
-              >
-                <Avatar name={row.display_name} size={36} />
-                <View style={{ flex: 1 }}>
-                  <AppText variant="bodyStrong">
-                    {row.display_name}
-                    {row.party_size > 1 && <AppText tone="muted"> +{row.party_size - 1}</AppText>}
-                  </AppText>
-                  <AppText variant="caption" tone="muted">
-                    {row.note ??
-                      `${sportName(row.sport_slug)} · ${relativeTime(row.started_at).toLowerCase()}`}
-                  </AppText>
+            <View style={[styles.group, elevation.card, groupColors]}>
+              {checkIns.map((row, index) => (
+                <View
+                  key={`${row.display_name}-${index}`}
+                  style={[
+                    styles.player,
+                    index > 0 && { borderTopWidth: 1, borderTopColor: colors.border },
+                  ]}
+                >
+                  <Avatar name={row.display_name} size={36} />
+                  <View style={{ flex: 1 }}>
+                    <AppText variant="bodyStrong">
+                      {row.display_name}
+                      {row.party_size > 1 && <AppText tone="muted"> +{row.party_size - 1}</AppText>}
+                    </AppText>
+                    <AppText variant="caption" tone="muted">
+                      {row.note ??
+                        `${sportName(row.sport_slug)} · ${relativeTime(row.started_at).toLowerCase()}`}
+                    </AppText>
+                  </View>
                 </View>
-              </View>
-            ))}
+              ))}
+            </View>
           </View>
         )}
 
@@ -348,17 +360,25 @@ export function VenueDetailScreen() {
             <AppText variant="label" tone="muted">
               On the way
             </AppText>
-            {intents.map((row, index) => (
-              <View key={index} style={[styles.player, { borderBottomColor: colors.border }]}>
-                <Avatar name={row.display_name} size={36} />
-                <View style={{ flex: 1 }}>
-                  <AppText variant="bodyStrong">{row.display_name}</AppText>
-                  <AppText variant="caption" tone="muted">
-                    {sportName(row.sport_slug)}
-                  </AppText>
+            <View style={[styles.group, elevation.card, groupColors]}>
+              {intents.map((row, index) => (
+                <View
+                  key={index}
+                  style={[
+                    styles.player,
+                    index > 0 && { borderTopWidth: 1, borderTopColor: colors.border },
+                  ]}
+                >
+                  <Avatar name={row.display_name} size={36} />
+                  <View style={{ flex: 1 }}>
+                    <AppText variant="bodyStrong">{row.display_name}</AppText>
+                    <AppText variant="caption" tone="muted">
+                      {sportName(row.sport_slug)}
+                    </AppText>
+                  </View>
                 </View>
-              </View>
-            ))}
+              ))}
+            </View>
           </View>
         )}
 
@@ -480,17 +500,23 @@ const styles = StyleSheet.create({
   identity: { gap: space.xs },
   inline: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingTop: 2 },
   scoreboard: { gap: space.sm },
-  board: { flexDirection: 'row', borderTopWidth: 1, borderBottomWidth: 1 },
-  stat: { flex: 1, paddingVertical: space.md },
-  count: { paddingVertical: space.md, paddingRight: space.lg },
+  board: {
+    flexDirection: 'row',
+    borderWidth: 1,
+    borderRadius: radius.lg,
+    paddingHorizontal: space.lg,
+  },
+  stat: { flex: 1, paddingVertical: space.lg },
+  count: { paddingVertical: space.lg, paddingRight: space.lg },
   statDivided: { borderLeftWidth: 1, paddingLeft: space.lg },
   conditions: { flexDirection: 'row', flexWrap: 'wrap', columnGap: space.lg, rowGap: space.xs },
+  group: { marginTop: space.sm, borderWidth: 1, borderRadius: radius.lg, overflow: 'hidden' },
   player: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: space.md,
     paddingVertical: space.md,
-    borderBottomWidth: 1,
+    paddingHorizontal: space.lg,
   },
   action: { flex: 1 },
 });

@@ -2,15 +2,15 @@ import type { ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
 import type { StyleProp, ViewStyle } from 'react-native';
 
-import { radius, space, usePalette } from '../../theme';
+import { elevation, radius, space, usePalette } from '../../theme';
 import { PressableSurface } from './primitives';
 
 const PADDING = { none: 0, sm: space.md, md: space.lg, lg: space.xl } as const;
 
 /**
- * An outlined panel for the few things that are one object rather than a row
- * in a list: a profile summary, a numbered step. Most content needs none —
- * rows divided by rules carry a list better than a stack of cards.
+ * A white panel on the grey page for one object: a profile summary, a
+ * scoreboard, a numbered step. Lists use ListSection, which draws the same
+ * surface around a run of rows.
  *
  * Pass `onPress` for a card that opens something — the whole surface then
  * becomes one target with a single accessible label.
@@ -35,6 +35,7 @@ export function Card({
     <View
       style={[
         styles.card,
+        elevation.card,
         { padding: PADDING[padding], backgroundColor: colors.surface, borderColor: colors.border },
         style,
       ]}

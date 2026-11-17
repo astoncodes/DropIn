@@ -5,7 +5,7 @@ import { ActivityIndicator, Animated, Pressable, StyleSheet, Text, View } from '
 import type { Insets, StyleProp, TextStyle, ViewStyle } from 'react-native';
 
 import { useReduceMotion } from '../../lib/accessibility';
-import { motion, radius, space, typeScale, usePalette } from '../../theme';
+import { elevation, motion, radius, space, typeScale, usePalette } from '../../theme';
 
 export type IconName = keyof typeof MaterialCommunityIcons.glyphMap;
 
@@ -245,6 +245,7 @@ export function Button({
       <View
         style={[
           styles.button,
+          variant === 'solid' && !unavailable && elevation.raised,
           {
             minHeight: BUTTON_HEIGHT[size],
             backgroundColor: background,
@@ -414,14 +415,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: space.sm,
     paddingVertical: space.sm,
-    borderRadius: radius.md,
+    borderRadius: radius.pill,
   },
   smallLabel: { fontSize: 17, lineHeight: 20 },
   iconButton: {
     // Never below 44: anything smaller is a target people miss.
     width: 44,
     height: 44,
-    borderRadius: radius.md,
+    borderRadius: radius.pill,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -432,7 +433,7 @@ const styles = StyleSheet.create({
     gap: 6,
     minHeight: 38,
     paddingHorizontal: space.md,
-    borderRadius: radius.sm,
+    borderRadius: radius.pill,
     borderWidth: 1,
   },
   chipLabel: { ...typeScale.heading, fontSize: 17, lineHeight: 20 },
@@ -442,7 +443,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 4,
     paddingVertical: 2,
-    paddingHorizontal: 6,
+    paddingHorizontal: 7,
     borderRadius: radius.xs,
   },
 });

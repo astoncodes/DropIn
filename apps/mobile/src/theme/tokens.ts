@@ -22,10 +22,10 @@ const brand = {
 export type ThemeName = 'light';
 
 export type Palette = {
-  /** The page: white. Content sits directly on it, divided by rules. */
+  /** The page: a cool light grey, so the white surfaces on it read as objects. */
   background: string;
   backgroundElevated: string;
-  /** Things that float over the page or the map, and inputs. */
+  /** Cards, groups of rows, inputs, bars, and things that float over the map. */
   surface: string;
   /** A grey leaning slightly green, for quiet fills such as skeletons and avatars. */
   surfaceMuted: string;
@@ -56,17 +56,17 @@ export type Palette = {
 
 export const palettes: Record<ThemeName, Palette> = {
   light: {
-    background: '#FFFFFF',
+    background: '#F2F4F3',
     backgroundElevated: '#FFFFFF',
     surface: '#FFFFFF',
-    surfaceMuted: '#ECEFEC',
+    surfaceMuted: '#E8ECEA',
     surfaceInverse: brand.ink,
-    border: 'rgba(15,26,22,0.13)',
-    borderStrong: 'rgba(15,26,22,0.32)',
+    border: 'rgba(15,26,22,0.09)',
+    borderStrong: 'rgba(15,26,22,0.26)',
 
     text: brand.ink,
     textMuted: '#525D58',
-    textFaint: '#69736E',
+    textFaint: '#5E6964',
     textInverse: '#FFFFFF',
 
     live: brand.courtGreen,
@@ -96,17 +96,19 @@ export const space = {
 } as const;
 
 /**
- * Corners are crisp. Tags are nearly square, controls slightly rounded, and
- * only surfaces that float (sheets, dialogs, map panels) are rounder. Nothing
- * is a pill: pills on every element is what made the old interface generic.
+ * Corners are soft. Tags are the squarest thing on screen, inputs and badges
+ * are rounded, cards and groups of rows rounder still, and sheets the most.
+ * Buttons, chips and icon buttons are full pills, which is what makes a card
+ * of straight text and a row of actions read as two different things.
  */
 export const radius = {
-  xs: 4,
-  sm: 6,
-  md: 10,
-  lg: 14,
-  xl: 18,
-  xxl: 28,
+  xs: 6,
+  sm: 10,
+  md: 14,
+  lg: 20,
+  xl: 24,
+  xxl: 32,
+  pill: 999,
 } as const;
 
 /**
@@ -162,8 +164,26 @@ export const motion = {
   pressScale: 0.97,
 } as const;
 
-/** Only things that float above the page or the map cast a shadow. */
+/**
+ * Three depths. `card` lifts a white surface off the grey page just enough to
+ * read as an object; `raised` sits under solid buttons; `floating` is for
+ * things over the page or the map: sheets, dialogs, toasts, map panels.
+ */
 export const elevation = {
+  card: {
+    shadowColor: '#0F1A16',
+    shadowOpacity: 0.05,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 2,
+  },
+  raised: {
+    shadowColor: '#0F1A16',
+    shadowOpacity: 0.16,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 4,
+  },
   floating: {
     shadowColor: '#0F1A16',
     shadowOpacity: 0.14,

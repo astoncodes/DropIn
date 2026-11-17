@@ -6,7 +6,7 @@ import type { TagTone } from '../../components/ui/primitives';
 import { EmptyState, LoadError, Skeleton } from '../../components/ui/activity';
 import { loadPhase } from '../../lib/load-phase';
 import { useSession } from '../../providers/auth-context';
-import { space, usePalette } from '../../theme';
+import { elevation, radius, space, usePalette } from '../../theme';
 import { useOwnVenueSubmissions } from './api';
 
 const STATUS: Record<string, { label: string; tone: TagTone }> = {
@@ -55,12 +55,18 @@ export function SubmissionsScreen() {
           {items.map((item) => (
             <View
               key={item.id}
-              style={{
-                gap: space.xs,
-                paddingVertical: space.lg,
-                borderBottomWidth: 1,
-                borderBottomColor: colors.border,
-              }}
+              style={[
+                elevation.card,
+                {
+                  gap: space.xs,
+                  padding: space.lg,
+                  marginBottom: space.sm,
+                  borderWidth: 1,
+                  borderRadius: radius.lg,
+                  backgroundColor: colors.surface,
+                  borderColor: colors.border,
+                },
+              ]}
             >
               <Tag label={STATUS[item.status]!.label} tone={STATUS[item.status]!.tone} />
               <AppText variant="heading">{item.proposed_name}</AppText>

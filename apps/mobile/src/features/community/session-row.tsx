@@ -4,7 +4,7 @@ import { StyleSheet, View } from 'react-native';
 import { SportBadge } from '../../components/ui/brand';
 import { AppText, Button, PressableSurface, Tag } from '../../components/ui/primitives';
 import { dayLabel, timeOfDay } from '../../lib/format';
-import { space, usePalette } from '../../theme';
+import { elevation, radius, space, usePalette } from '../../theme';
 import type { UpcomingRun } from '../venues/api';
 import type { useRunAttendance } from './api';
 
@@ -82,7 +82,13 @@ export function SessionRow({
   );
 
   return (
-    <View style={[styles.row, { borderBottomColor: colors.border }]}>
+    <View
+      style={[
+        styles.row,
+        elevation.card,
+        { backgroundColor: colors.surface, borderColor: colors.border },
+      ]}
+    >
       {onOpen ? (
         <PressableSurface onPress={onOpen} accessibilityLabel={`Open ${title}`} style={styles.fill}>
           {summary}
@@ -119,8 +125,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: space.md,
-    paddingVertical: space.lg,
-    borderBottomWidth: 1,
+    padding: space.lg,
+    borderWidth: 1,
+    borderRadius: radius.lg,
+    marginBottom: space.sm,
   },
   fill: { flex: 1 },
   summary: { flexDirection: 'row', alignItems: 'flex-start', gap: space.md },

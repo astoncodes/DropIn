@@ -10,7 +10,7 @@ import { ScreenHeader } from '../../components/ui/screen-header';
 import { dayLabel, relativeTime, timeOfDay } from '../../lib/format';
 import { loadPhase } from '../../lib/load-phase';
 import { useSession } from '../../providers/auth-context';
-import { space, usePalette } from '../../theme';
+import { elevation, radius, space, usePalette } from '../../theme';
 import { useJoinedSessions } from './api';
 
 /** The chats of every session the player has joined, most recent session first. */
@@ -57,8 +57,14 @@ export function ChatsScreen() {
           retrying={chats.isFetching}
         />
       ) : chats.data?.length ? (
-        <View style={[styles.list, { borderTopColor: colors.border }]}>
-          {chats.data.map((chat) => (
+        <View
+          style={[
+            styles.list,
+            elevation.card,
+            { backgroundColor: colors.surface, borderColor: colors.border },
+          ]}
+        >
+          {chats.data.map((chat, index) => (
             <PressableSurface
               key={chat.id}
               onPress={() =>
@@ -69,7 +75,12 @@ export function ChatsScreen() {
               }
               accessibilityLabel={`Open ${chat.title} chat`}
             >
-              <View style={[styles.row, { borderBottomColor: colors.border }]}>
+              <View
+                style={[
+                  styles.row,
+                  index > 0 && { borderTopWidth: 1, borderTopColor: colors.border },
+                ]}
+              >
                 <SportBadge slug={chat.sportSlug} />
                 <View style={styles.copy}>
                   {/* Sessions in one series share a title; the date tells them apart. */}
@@ -115,13 +126,13 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
   },
   skeletons: { gap: space.md, paddingTop: space.lg },
-  list: { marginTop: space.md, borderTopWidth: 1 },
+  list: { marginTop: space.md, borderWidth: 1, borderRadius: radius.lg, overflow: 'hidden' },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: space.md,
     paddingVertical: space.md,
-    borderBottomWidth: 1,
+    paddingHorizontal: space.lg,
   },
   copy: { flex: 1, gap: 2 },
   titleLine: { flexDirection: 'row', alignItems: 'baseline', gap: space.sm },
