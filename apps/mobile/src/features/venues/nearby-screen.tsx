@@ -15,7 +15,7 @@ import {
   PressableSurface,
   sportIcon,
 } from '../../components/ui/primitives';
-import { ResultsSheet } from '../../components/ui/results-sheet';
+import { ResultsHeader, ResultsSheet } from '../../components/ui/results-sheet';
 import { usePublicSessionPins } from '../community/api';
 import { useAccountSports } from '../account/api';
 import { useRequiredLocation } from '../location/required-location';
@@ -164,6 +164,53 @@ export function NearbyScreen() {
     elevation.floating,
   ];
 
+  const viewControls = (
+    <View style={panel}>
+      <PressableSurface
+        onPress={() => setView(view === 'map' ? 'list' : 'map')}
+        accessibilityLabel={view === 'map' ? 'Show list view' : 'Show map view'}
+      >
+        <View style={styles.controlButton}>
+          <MaterialCommunityIcons
+            name={view === 'map' ? 'format-list-bulleted' : 'map-outline'}
+            size={22}
+            color={colors.text}
+          />
+        </View>
+      </PressableSurface>
+
+      {showRecenter && (
+        <>
+          <View style={[styles.controlDivider, { backgroundColor: colors.border }]} />
+          <PressableSurface
+            onPress={() => {
+              setCenter(deviceLocation);
+              setVisibleCenter(deviceLocation);
+              setRecenterRequest((current) => current + 1);
+            }}
+            accessibilityLabel="Centre the map on my location"
+          >
+            <View style={styles.controlButton}>
+              <MaterialCommunityIcons name="crosshairs-gps" size={22} color={colors.text} />
+            </View>
+          </PressableSurface>
+        </>
+      )}
+    </View>
+  );
+
+  const resultsTitle =
+    liveCount > 0 ? `${liveCount} live now` : `${venues.data?.length ?? 0} nearby`;
+  const addVenue = (
+    <Button
+      label="Add venue"
+      size="sm"
+      variant="ghost"
+      icon="map-marker-plus-outline"
+      onPress={() => router.push('/venue-submission/new')}
+    />
+  );
+
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       {view === 'map' && (
@@ -250,66 +297,40 @@ export function NearbyScreen() {
         </View>
       </View>
 
-      <View
-        style={[
-          styles.sideControls,
-          { top: insets.top + 68, right: isWide && view === 'map' ? 432 : space.md },
-        ]}
-        pointerEvents="box-none"
-      >
-        <View style={panel}>
-          <PressableSurface
-            onPress={() => setView(view === 'map' ? 'list' : 'map')}
-            accessibilityLabel={view === 'map' ? 'Show list view' : 'Show map view'}
-          >
-            <View style={styles.controlButton}>
-              <MaterialCommunityIcons
-                name={view === 'map' ? 'format-list-bulleted' : 'map-outline'}
-                size={22}
-                color={colors.text}
-              />
-            </View>
-          </PressableSurface>
-
-          {showRecenter && (
-            <>
-              <View style={[styles.controlDivider, { backgroundColor: colors.border }]} />
-              <PressableSurface
-                onPress={() => {
-                  setCenter(deviceLocation);
-                  setVisibleCenter(deviceLocation);
-                  setRecenterRequest((current) => current + 1);
-                }}
-                accessibilityLabel="Centre the map on my location"
-              >
-                <View style={styles.controlButton}>
-                  <MaterialCommunityIcons name="crosshairs-gps" size={22} color={colors.text} />
-                </View>
-              </PressableSurface>
-            </>
-          )}
+      {view === 'map' && (
+        <View
+          style={[styles.sideControls, { top: insets.top + 68, right: isWide ? 432 : space.md }]}
+          pointerEvents="box-none"
+        >
+          {viewControls}
         </View>
-      </View>
+      )}
 
       {view === 'map' ? (
         <ResultsSheet
           live={liveCount > 0}
           expandable={sheetExpandable}
-          title={liveCount > 0 ? `${liveCount} live now` : `${venues.data?.length ?? 0} nearby`}
-          headerAction={
-            <Button
-              label="Add venue"
-              size="sm"
-              variant="ghost"
-              icon="map-marker-plus-outline"
-              onPress={() => router.push('/venue-submission/new')}
-            />
-          }
+          title={resultsTitle}
+          headerAction={addVenue}
         >
           {listContent}
         </ResultsSheet>
       ) : (
-        <View style={{ flex: 1, paddingTop: insets.top + 68 }}>{listContent}</View>
+        // The list starts below the floating chrome, with the view toggle in
+        // its header so it covers no row.
+        <View style={{ flex: 1, paddingTop: insets.top + 68 }}>
+          <ResultsHeader
+            title={resultsTitle}
+            live={liveCount > 0}
+            action={
+              <View style={styles.listActions}>
+                {addVenue}
+                {viewControls}
+              </View>
+            }
+          />
+          {listContent}
+        </View>
       )}
     </View>
   );
@@ -334,6 +355,7 @@ const styles = StyleSheet.create({
   sideControls: { position: 'absolute', zIndex: 20 },
   controlButton: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   controlDivider: { height: 1, marginHorizontal: space.sm },
+  listActions: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
   list: { paddingHorizontal: space.lg },
   nearbyEmpty: { paddingBottom: space.sm },
 });

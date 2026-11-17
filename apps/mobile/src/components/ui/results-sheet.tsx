@@ -19,6 +19,27 @@ import { AppText } from './primitives';
  * occupies a third of a desktop screen is a phone gesture applied where it does
  * not belong.
  */
+/** The result count above a venue list, with the live pulse and the list's actions. */
+export function ResultsHeader({
+  title,
+  live = false,
+  action,
+}: {
+  title: string;
+  live?: boolean;
+  action?: ReactNode;
+}) {
+  return (
+    <View style={styles.header}>
+      {live && <LivePulse />}
+      <View accessibilityRole="header" style={{ flex: 1 }}>
+        <AppText variant="heading">{title}</AppText>
+      </View>
+      {action}
+    </View>
+  );
+}
+
 export function ResultsSheet({
   children,
   title,
@@ -145,15 +166,7 @@ export function ResultsSheet({
     [peekOffset, compactOffset, expandedOffset, expandable, reduceMotion, snap, translateY],
   );
 
-  const header = (
-    <View style={styles.header}>
-      {live && <LivePulse />}
-      <View accessibilityRole="header" style={{ flex: 1 }}>
-        <AppText variant="heading">{title}</AppText>
-      </View>
-      {headerAction}
-    </View>
-  );
+  const header = <ResultsHeader title={title} live={live} action={headerAction} />;
 
   if (isWide) {
     return (

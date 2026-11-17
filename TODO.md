@@ -180,9 +180,6 @@ Deploy in this order so the clients and access rules remain compatible:
 - [ ] **No error reporting.** Neither app sends failures anywhere; the admin
       website writes them to the browser console only. Choose a service before
       launch.
-- [ ] **The map/list toggle covers the first row in list view.** On the live
-      screen at phone width, the floating map button sits over the first
-      venue's figure. Move the toggle or start the list below it.
 - [ ] **Avatars.** `profiles.avatar_path` is granted and returned by
       `venue_activity()`, but nothing uploads or displays a photo, so players
       appear as initials.
