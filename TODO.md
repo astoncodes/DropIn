@@ -177,9 +177,6 @@ Deploy in this order so the clients and access rules remain compatible:
 
 ## Client gaps
 
-- [ ] **Venue search sends a request on every keystroke** when choosing an
-      existing venue for a session (the `session-venues` query in
-      `new-run-screen.tsx`). Search on submit, as place search does, or debounce.
 - [ ] **No error reporting.** Neither app sends failures anywhere; the admin
       website writes them to the browser console only. Choose a service before
       launch.
