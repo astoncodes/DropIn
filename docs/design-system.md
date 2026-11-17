@@ -129,10 +129,11 @@ up any of this only after `npx expo prebuild`.
 ## Admin website
 
 `apps/admin/src/index.css` applies the same language to the admin website: the
-wordmark, ink on white, Barlow Condensed (from `@fontsource/barlow-condensed`)
-for titles, figures, small-capital labels and buttons, ruled rows and tables in
-place of cards, and the dashboard totals as a row of scoreboard figures. Its
-colour variables mirror `tokens.ts` and are changed together with it.
+wordmark, ink on white cards over the grey page, Barlow Condensed (from
+`@fontsource/barlow-condensed`) for titles, figures, small-capital labels and
+buttons, pill buttons and a pill navigation, rows and tables inside cards, and
+the dashboard totals as a row of figure cards. Its colour, radius and shadow
+variables mirror `tokens.ts` and are changed together with it.
 
 Nothing on the admin website is live, so the only green there is the full stop
 in the wordmark. Primary and publishing actions are ink, removing content is
