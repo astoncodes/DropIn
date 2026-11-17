@@ -19,7 +19,16 @@ export function initials(name: string): string {
  * avatar; it is hidden from screen readers because the name beside it is what
  * should be read.
  */
-export function Avatar({ name, size = 40 }: { name: string; size?: number }) {
+export function Avatar({
+  name,
+  size = 40,
+  inverse = false,
+}: {
+  name: string;
+  size?: number;
+  /** On an ink surface. */
+  inverse?: boolean;
+}) {
   const colors = usePalette();
   return (
     <View
@@ -29,7 +38,7 @@ export function Avatar({ name, size = 40 }: { name: string; size?: number }) {
         width: size,
         height: size,
         borderRadius: size / 2,
-        backgroundColor: colors.surfaceMuted,
+        backgroundColor: inverse ? colors.inkSoft : colors.surfaceMuted,
         alignItems: 'center',
         justifyContent: 'center',
         flexShrink: 0,
@@ -40,6 +49,7 @@ export function Avatar({ name, size = 40 }: { name: string; size?: number }) {
           fontFamily: fonts.displayMedium,
           fontSize: Math.round(size * 0.44),
           lineHeight: Math.round(size * 0.52),
+          color: inverse ? colors.textInverse : colors.text,
         }}
       >
         {initials(name)}

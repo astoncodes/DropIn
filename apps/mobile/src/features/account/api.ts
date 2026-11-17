@@ -33,6 +33,28 @@ export function useAccountSports(userId: string | undefined) {
   });
 }
 
+/** The player's own figures: check-ins made, sessions joined, venues played at. */
+export function useOwnActivityCounts(userId: string | undefined) {
+  return useQuery({
+    queryKey: ['account-activity', userId],
+    enabled: Boolean(userId),
+    staleTime: 60_000,
+    queryFn: async (): Promise<{ checkIns: number; sessions: number; venues: number }> => {
+      const [checkIns, sessions] = await Promise.all([
+        supabase.from('check_ins').select('venue_id').eq('user_id', userId!),
+        supabase.from('session_memberships').select('session_id').eq('user_id', userId!),
+      ]);
+      if (checkIns.error) throw checkIns.error;
+      if (sessions.error) throw sessions.error;
+      return {
+        checkIns: checkIns.data.length,
+        sessions: sessions.data.length,
+        venues: new Set(checkIns.data.map((row) => row.venue_id)).size,
+      };
+    },
+  });
+}
+
 export function useUpdateAccount(userId: string) {
   const queryClient = useQueryClient();
 

@@ -53,10 +53,14 @@ export function VenueRow({ venue, onPress }: { venue: NearbyVenue; onPress: () =
         style={[
           styles.row,
           elevation.card,
-          { backgroundColor: colors.surface, borderColor: colors.border },
+          {
+            backgroundColor: colors.surface,
+            // A green edge is the card-level version of the green figure.
+            borderColor: venue.here_now > 0 ? colors.live : colors.border,
+          },
         ]}
       >
-        <SportBadge slug={venue.sport_slugs?.[0]} />
+        <SportBadge slug={venue.sport_slugs?.[0]} size={48} />
         <View style={styles.copy}>
           <AppText variant="heading" numberOfLines={2}>
             {venue.name}

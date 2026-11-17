@@ -1,8 +1,7 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { StyleSheet, View } from 'react-native';
 
-import { SportBadge } from '../../components/ui/brand';
-import { AppText, Button, PressableSurface, Tag } from '../../components/ui/primitives';
+import { AppText, Button, PressableSurface, Tag, sportIcon } from '../../components/ui/primitives';
 import { dayLabel, timeOfDay } from '../../lib/format';
 import { elevation, radius, space, usePalette } from '../../theme';
 import type { UpcomingRun } from '../venues/api';
@@ -11,9 +10,11 @@ import type { useRunAttendance } from './api';
 type Attendance = NonNullable<ReturnType<typeof useRunAttendance>['data']>[number];
 
 /**
- * One dated session as a line in a schedule: when, what, where, and how many
- * are going. The same row is used wherever sessions are listed, so the same
- * session never looks like two different things.
+ * One dated session as a card in a schedule: the day as a calendar tile, then
+ * what, where, and how many are going. The same card is used wherever
+ * sessions are listed, so the same session never looks like two different
+ * things. A session today gets an ink tile, so tonight's games stand out of
+ * the week.
  *
  * It carries at most one control. A session the player has not answered offers
  * Join; one they have answered shows their answer as a tag and opens when
@@ -42,19 +43,28 @@ export function SessionRow({
 }) {
   const colors = usePalette();
   const title = item.title ?? `${item.sport_name} session`;
-  const when = `${dayLabel(item.starts_at)} · ${timeOfDay(item.starts_at)} – ${timeOfDay(item.ends_at)}`;
+  const day = dayLabel(item.starts_at);
+  const today = day === 'Today';
+  const when = `${day} · ${timeOfDay(item.starts_at)} – ${timeOfDay(item.ends_at)}`;
   const going = attendanceUnavailable ? null : `${response?.going_count ?? 0} going`;
   const mine = hosting || Boolean(response?.my_response);
 
   const summary = (
     <View style={styles.summary}>
-      <SportBadge slug={item.sport_slug} />
+      <DateTile iso={item.starts_at} today={today} />
       <View style={styles.copy}>
-        <AppText variant="label">{when}</AppText>
+        <AppText variant="label" tone={today ? 'default' : 'muted'}>
+          {when}
+        </AppText>
         <AppText variant="heading" numberOfLines={2}>
           {title}
         </AppText>
         <View style={styles.meta}>
+          <MaterialCommunityIcons
+            name={sportIcon(item.sport_slug)}
+            size={15}
+            color={colors.textMuted}
+          />
           <AppText variant="caption" tone="muted" numberOfLines={1} style={styles.venue}>
             {item.venue_name}
           </AppText>
@@ -120,6 +130,32 @@ export function SessionRow({
   );
 }
 
+/** The day as a calendar tile: weekday over the day of the month. */
+function DateTile({ iso, today }: { iso: string; today: boolean }) {
+  const colors = usePalette();
+  const date = new Date(iso);
+  return (
+    <View
+      accessibilityElementsHidden
+      importantForAccessibility="no-hide-descendants"
+      style={[
+        styles.tile,
+        { backgroundColor: today ? colors.surfaceInverse : colors.surfaceMuted },
+      ]}
+    >
+      <AppText variant="label" tone={today ? 'inverseMuted' : 'muted'}>
+        {date.toLocaleDateString(undefined, { weekday: 'short' })}
+      </AppText>
+      <AppText
+        variant="score"
+        style={[styles.tileDay, { color: today ? colors.textInverse : colors.text }]}
+      >
+        {date.getDate()}
+      </AppText>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
@@ -132,8 +168,17 @@ const styles = StyleSheet.create({
   },
   fill: { flex: 1 },
   summary: { flexDirection: 'row', alignItems: 'flex-start', gap: space.md },
+  tile: {
+    width: 56,
+    paddingVertical: space.sm,
+    borderRadius: radius.md,
+    alignItems: 'center',
+    gap: 2,
+    flexShrink: 0,
+  },
+  tileDay: { fontSize: 30, lineHeight: 32 },
   copy: { flex: 1, gap: space.xs },
-  meta: { flexDirection: 'row' },
+  meta: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   venue: { flexShrink: 1 },
   going: { flexShrink: 0 },
   tags: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, paddingTop: 2 },

@@ -11,15 +11,15 @@ import { Card } from '../../components/ui/card';
 import { ListRow, ListSection } from '../../components/ui/list-row';
 import { Notice } from '../../components/ui/notice';
 import { AppText, Button } from '../../components/ui/primitives';
-import { ScreenHeader } from '../../components/ui/screen-header';
+import { HeroHeader } from '../../components/ui/hero-header';
 import { useToast } from '../../components/ui/toast';
 import { userMessage } from '@dropin/shared';
 import { loadPhase } from '../../lib/load-phase';
 import { supabase } from '../../lib/supabase';
 import { useSession } from '../../providers/auth-context';
-import { space } from '../../theme';
+import { space, usePalette } from '../../theme';
 import { PresenceCard } from '../presence/presence-card';
-import { useAccountProfile } from './api';
+import { useAccountProfile, useOwnActivityCounts } from './api';
 import { DeleteAccountDialog, useAccountDeletionStatus } from './delete-account';
 import { ProfileForm } from './profile-form';
 
@@ -28,13 +28,18 @@ export function ProfileAccountScreen() {
   const { session, isLoading } = useSession();
 
   return (
-    <Screen>
-      <ScreenHeader title="Profile" />
+    <Screen
+      header={
+        <HeroHeader title="Profile">
+          {session && <ProfileHero userId={session.user.id} email={session.user.email ?? ''} />}
+        </HeroHeader>
+      }
+    >
       <PresenceCard />
       {isLoading ? (
         <Skeleton height={180} />
       ) : session ? (
-        <SignedInProfile userId={session.user.id} email={session.user.email ?? ''} />
+        <SignedInProfile userId={session.user.id} />
       ) : (
         <Card>
           <EmptyState
@@ -70,7 +75,45 @@ export function ProfileAccountScreen() {
   );
 }
 
-function SignedInProfile({ userId, email }: { userId: string; email: string }) {
+/** Who the player is and what they have done, inside the ink header. */
+function ProfileHero({ userId, email }: { userId: string; email: string }) {
+  const colors = usePalette();
+  const profile = useAccountProfile(userId);
+  const counts = useOwnActivityCounts(userId);
+  const name = profile.data?.display_name ?? 'Your profile';
+  const figure = (value: number | undefined, label: string) => (
+    <View style={styles.figure} accessible accessibilityLabel={`${value ?? 0} ${label}`}>
+      <AppText variant="score" tone="inverse">
+        {value ?? '–'}
+      </AppText>
+      <AppText variant="label" tone="inverseMuted">
+        {label}
+      </AppText>
+    </View>
+  );
+  return (
+    <View style={styles.hero}>
+      <View style={styles.identity}>
+        <Avatar name={name} size={64} inverse />
+        <View style={styles.identityCopy}>
+          <AppText variant="heading" tone="inverse" numberOfLines={1}>
+            {name}
+          </AppText>
+          <AppText variant="caption" tone="inverseMuted" numberOfLines={1}>
+            {email}
+          </AppText>
+        </View>
+      </View>
+      <View style={[styles.figures, { borderTopColor: colors.inkSoft }]}>
+        {figure(counts.data?.checkIns, 'Check-ins')}
+        {figure(counts.data?.sessions, 'Sessions')}
+        {figure(counts.data?.venues, 'Venues')}
+      </View>
+    </View>
+  );
+}
+
+function SignedInProfile({ userId }: { userId: string }) {
   const router = useRouter();
   const showToast = useToast();
   const profile = useAccountProfile(userId);
@@ -79,7 +122,6 @@ function SignedInProfile({ userId, email }: { userId: string; email: string }) {
   const [deleting, setDeleting] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [signOutError, setSignOutError] = useState<string | null>(null);
-  const name = profile.data?.display_name ?? 'Your profile';
 
   async function signOut() {
     if (isSigningOut) return;
@@ -131,13 +173,10 @@ function SignedInProfile({ userId, email }: { userId: string; email: string }) {
       )}
       <Card>
         <View style={styles.identity}>
-          <Avatar name={name} size={56} />
           <View style={styles.identityCopy}>
-            <AppText variant="heading" numberOfLines={1}>
-              {name}
-            </AppText>
-            <AppText variant="caption" tone="muted" numberOfLines={1}>
-              {email}
+            <AppText variant="heading">Your name and sports</AppText>
+            <AppText variant="caption" tone="muted">
+              What other players see on your sessions and check-ins.
             </AppText>
           </View>
           <Button
@@ -193,7 +232,10 @@ function SignedInProfile({ userId, email }: { userId: string; email: string }) {
 }
 
 const styles = StyleSheet.create({
+  hero: { gap: space.lg, paddingTop: space.sm },
   identity: { flexDirection: 'row', alignItems: 'center', gap: space.md },
   identityCopy: { flex: 1, gap: 2 },
+  figures: { flexDirection: 'row', gap: space.lg, paddingTop: space.lg, borderTopWidth: 1 },
+  figure: { flex: 1, gap: 2 },
   footer: { alignItems: 'center', gap: space.sm, paddingVertical: space.xl },
 });

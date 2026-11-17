@@ -9,9 +9,10 @@ import { SignInForm } from '../../src/features/auth/sign-in-form';
 import { SignedInRouting } from '../../src/features/auth/signed-in-routing';
 import { usePostSignInRouting } from '../../src/features/auth/use-post-sign-in-routing';
 import { useSession } from '../../src/providers/auth-context';
-import { space } from '../../src/theme';
+import { elevation, radius, space, usePalette } from '../../src/theme';
 
 export default function SignInScreen() {
+  const colors = usePalette();
   const router = useRouter();
   const { accountDeleted } = useLocalSearchParams<{ accountDeleted?: string }>();
   const { session } = useSession();
@@ -35,14 +36,14 @@ export default function SignInScreen() {
       {accountDeleted === 'true' && (
         <Notice tone="success" message="Your account and its data have been deleted." />
       )}
-      <View style={styles.hero}>
-        <BrandMark size={26} />
+      <View style={[styles.hero, elevation.floating, { backgroundColor: colors.surfaceInverse }]}>
+        <BrandMark size={26} inverse />
         <View accessibilityRole="header">
-          <AppText variant="display" style={styles.headline}>
+          <AppText variant="display" tone="inverse" style={styles.headline}>
             Find a game.{'\n'}Meet your people.
           </AppText>
         </View>
-        <AppText tone="muted">
+        <AppText tone="inverseMuted">
           See where people are playing right now, and join the sessions coming up near you.
         </AppText>
       </View>
@@ -78,7 +79,7 @@ export default function SignInScreen() {
 }
 
 const styles = StyleSheet.create({
-  hero: { gap: space.md, paddingTop: space.lg, paddingBottom: space.xl },
-  headline: { fontSize: 46, lineHeight: 46, paddingTop: space.lg },
+  hero: { gap: space.md, padding: space.xl, borderRadius: radius.xl },
+  headline: { fontSize: 46, lineHeight: 46, paddingTop: space.md },
   link: { fontWeight: '600', textDecorationLine: 'underline' },
 });

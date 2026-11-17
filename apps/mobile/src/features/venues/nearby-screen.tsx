@@ -20,6 +20,8 @@ import { usePublicSessionPins } from '../community/api';
 import { useAccountSports } from '../account/api';
 import { useRequiredLocation } from '../location/required-location';
 import { useNearbyVenues, useSports } from './api';
+import type { NearbyVenue } from './api';
+import { LiveHero } from './live-hero';
 import { VenueRow } from './venue-row';
 import { loadPhase } from '../../lib/load-phase';
 import { useSession } from '../../providers/auth-context';
@@ -112,6 +114,12 @@ export function NearbyScreen() {
 
   const venuesPhase = loadPhase(venues);
   const liveCount = (venues.data ?? []).filter((v) => v.here_now > 0).length;
+  // The busiest live venue leads the list as the hero; the rest follow in rank.
+  const hero = (venues.data ?? []).reduce<NearbyVenue | null>(
+    (best, venue) => (venue.here_now > (best?.here_now ?? 0) ? venue : best),
+    null,
+  );
+  const ranked = (venues.data ?? []).filter((venue) => venue !== hero);
   const sheetExpandable = (venues.data?.length ?? 0) > 0;
 
   function toggleSport(id: number) {
@@ -125,8 +133,19 @@ export function NearbyScreen() {
 
   const listContent = (
     <FlatList
-      data={venues.data ?? []}
+      data={ranked}
       keyExtractor={(venue) => venue.venue_id}
+      ListHeaderComponent={
+        hero ? (
+          <LiveHero
+            venue={hero}
+            onOpen={() => router.push(`/venue/${hero.venue_id}`)}
+            onCheckIn={() =>
+              router.push({ pathname: '/check-in/[venueId]', params: { venueId: hero.venue_id } })
+            }
+          />
+        ) : null
+      }
       contentContainerStyle={[styles.list, { paddingBottom: insets.bottom + space.md }]}
       showsVerticalScrollIndicator={false}
       // The sheet translates over the map; native clipping can briefly hide

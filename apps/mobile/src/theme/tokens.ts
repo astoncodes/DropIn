@@ -39,6 +39,11 @@ export type Palette = {
   textMuted: string;
   textFaint: string;
   textInverse: string;
+  /** Secondary text on an ink surface. */
+  textInverseMuted: string;
+  /** Quiet fills and outlines on an ink surface: avatars, tracks, outlined buttons. */
+  inkSoft: string;
+  inkBorder: string;
 
   live: string;
   liveSoft: string;
@@ -68,6 +73,9 @@ export const palettes: Record<ThemeName, Palette> = {
     textMuted: '#525D58',
     textFaint: '#5E6964',
     textInverse: '#FFFFFF',
+    textInverseMuted: 'rgba(255,255,255,0.66)',
+    inkSoft: 'rgba(255,255,255,0.14)',
+    inkBorder: 'rgba(255,255,255,0.55)',
 
     live: brand.courtGreen,
     liveSoft: '#D9EFE3',
@@ -126,7 +134,7 @@ export const fonts = {
 
 export const typeScale = {
   /** Screen titles. */
-  display: { fontFamily: fonts.display, fontSize: 40, lineHeight: 40 },
+  display: { fontFamily: fonts.display, fontSize: 44, lineHeight: 44 },
   /** The subject of a detail screen, and dialog-sized headings. */
   title: { fontFamily: fonts.display, fontSize: 32, lineHeight: 34 },
   /** Row titles and section headings. */
@@ -146,6 +154,8 @@ export const typeScale = {
   micro: { fontSize: 12, lineHeight: 16, fontWeight: '500' as const },
   /** Live counts and times read like a scoreboard, not like body copy. */
   score: { fontFamily: fonts.display, fontSize: 44, lineHeight: 42 },
+  /** The one figure a screen is about: the hero's live count. */
+  hero: { fontFamily: fonts.display, fontSize: 72, lineHeight: 66 },
 } as const;
 
 /**
