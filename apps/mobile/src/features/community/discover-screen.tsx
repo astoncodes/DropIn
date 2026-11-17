@@ -1,12 +1,10 @@
 import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { ScrollView, View, RefreshControl } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-
+import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { EmptyState, LoadError, Skeleton } from '../../components/ui/activity';
 import { Button, Chip, IconButton, sportIcon } from '../../components/ui/primitives';
 import { Notice } from '../../components/ui/notice';
-import { ScreenHeader } from '../../components/ui/screen-header';
+import { HeroHeader } from '../../components/ui/hero-header';
 import { SegmentedControl } from '../../components/ui/segmented-control';
 import { TextField } from '../../components/ui/text-field';
 import { useSession } from '../../providers/auth-context';
@@ -21,7 +19,6 @@ import { loadPhase } from '../../lib/load-phase';
 
 export function DiscoverScreen() {
   const colors = usePalette();
-  const insets = useSafeAreaInsets();
   const router = useRouter();
   const { session } = useSession();
   const [tab, setTab] = useState<'sessions' | 'moments'>('sessions');
@@ -70,40 +67,31 @@ export function DiscoverScreen() {
   }
 
   return (
-    <View
-      style={{ flex: 1, backgroundColor: colors.background, paddingTop: insets.top + space.md }}
-    >
-      <View
-        style={{
-          paddingHorizontal: space.lg,
-          gap: space.md,
-          width: '100%',
-          maxWidth: 760,
-          alignSelf: 'center',
-        }}
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
+      <HeroHeader
+        title="Discover"
+        actions={
+          <>
+            <IconButton
+              icon={showSearch ? 'close' : 'magnify'}
+              label={showSearch ? 'Hide search' : 'Search sessions'}
+              inverse
+              onPress={() => {
+                setShowSearch(!showSearch);
+                setTab('sessions');
+                setSearch('');
+              }}
+            />
+            <IconButton
+              icon="plus"
+              label="Create session"
+              filled
+              inverse
+              onPress={() => router.push('/run/new')}
+            />
+          </>
+        }
       >
-        <ScreenHeader
-          title="Discover"
-          actions={
-            <>
-              <IconButton
-                icon={showSearch ? 'close' : 'magnify'}
-                label={showSearch ? 'Hide search' : 'Search sessions'}
-                onPress={() => {
-                  setShowSearch(!showSearch);
-                  setTab('sessions');
-                  setSearch('');
-                }}
-              />
-              <IconButton
-                icon="plus"
-                label="Create session"
-                filled
-                onPress={() => router.push('/run/new')}
-              />
-            </>
-          }
-        />
         <SegmentedControl
           segments={[
             { value: 'sessions', label: 'Sessions' },
@@ -112,8 +100,11 @@ export function DiscoverScreen() {
           value={tab}
           onChange={setTab}
           accessibilityLabel="Discover sections"
+          inverse
         />
-        {showSearch && (
+      </HeroHeader>
+      {showSearch && (
+        <View style={styles.search}>
           <TextField
             autoFocus
             label="Search sessions"
@@ -123,8 +114,8 @@ export function DiscoverScreen() {
             placeholder="Search a sport, session, or venue"
             returnKeyType="search"
           />
-        )}
-      </View>
+        </View>
+      )}
       {tab === 'moments' ? (
         <MomentsFeed />
       ) : (
@@ -251,3 +242,13 @@ export function DiscoverScreen() {
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  search: {
+    paddingHorizontal: space.lg,
+    paddingTop: space.md,
+    width: '100%',
+    maxWidth: 760,
+    alignSelf: 'center',
+  },
+});

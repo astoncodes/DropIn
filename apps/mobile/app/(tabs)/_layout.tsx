@@ -16,9 +16,10 @@ import { useSession } from '../../src/providers/auth-context';
  * triangle when `tabBarIcon` is omitted, which renders as a broken-looking ▼ in
  * every tab — worse than having no icon at all.
  *
- * Outline when inactive, solid ink when focused: the platform convention, and
- * a second signal beyond colour. The active tab is ink rather than green
- * because green is reserved for live activity.
+ * The bar is ink, like the headers above the lists, so the scoreboard sits
+ * between two dark rails. Outline when inactive, solid when focused: the
+ * platform convention, and a second signal beyond colour. The active tab is
+ * white rather than green because green is reserved for live activity.
  */
 export default function TabsLayout() {
   const colors = usePalette();
@@ -34,11 +35,11 @@ export default function TabsLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: colors.text,
-        tabBarInactiveTintColor: colors.textFaint,
+        tabBarActiveTintColor: colors.textInverse,
+        tabBarInactiveTintColor: colors.textInverseMuted,
         tabBarStyle: {
-          backgroundColor: colors.surface,
-          borderTopColor: colors.border,
+          backgroundColor: colors.surfaceInverse,
+          borderTopWidth: 0,
           height: 64 + insets.bottom,
           paddingTop: 6,
           paddingHorizontal: Math.max(0, (width - 900) / 2),

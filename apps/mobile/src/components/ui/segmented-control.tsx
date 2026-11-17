@@ -23,11 +23,14 @@ export function SegmentedControl<T extends string>({
   value,
   onChange,
   accessibilityLabel,
+  inverse = false,
 }: {
   segments: readonly Segment<T>[];
   value: T;
   onChange: (value: T) => void;
   accessibilityLabel: string;
+  /** On an ink surface: a translucent track with the same white thumb. */
+  inverse?: boolean;
 }) {
   const colors = usePalette();
   const reduceMotion = useReduceMotion();
@@ -57,7 +60,7 @@ export function SegmentedControl<T extends string>({
       accessibilityRole="tablist"
       accessibilityLabel={accessibilityLabel}
       onLayout={(event: LayoutChangeEvent) => setTrackWidth(event.nativeEvent.layout.width)}
-      style={[styles.track, { backgroundColor: colors.surfaceMuted }]}
+      style={[styles.track, { backgroundColor: inverse ? colors.inkSoft : colors.surfaceMuted }]}
     >
       {segmentWidth > 0 && (
         <Animated.View
@@ -91,7 +94,13 @@ export function SegmentedControl<T extends string>({
                 style={[
                   typeScale.heading,
                   styles.label,
-                  { color: selected ? colors.text : colors.textMuted },
+                  {
+                    color: selected
+                      ? colors.text
+                      : inverse
+                        ? colors.textInverseMuted
+                        : colors.textMuted,
+                  },
                 ]}
               >
                 {segment.label}

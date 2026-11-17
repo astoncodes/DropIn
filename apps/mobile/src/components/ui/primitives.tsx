@@ -34,7 +34,8 @@ export function sportIcon(slug: string | null | undefined): IconName {
 // ---------------------------------------------------------------------------
 
 type TypeVariant = keyof typeof typeScale;
-type TextTone = 'default' | 'muted' | 'faint' | 'inverse' | 'live' | 'soon' | 'alert';
+type TextTone =
+  'default' | 'muted' | 'faint' | 'inverse' | 'inverseMuted' | 'live' | 'soon' | 'alert';
 
 export function AppText({
   children,
@@ -60,6 +61,7 @@ export function AppText({
     muted: colors.textMuted,
     faint: colors.textFaint,
     inverse: colors.textInverse,
+    inverseMuted: colors.textInverseMuted,
     live: colors.liveText,
     soon: colors.soonText,
     alert: colors.alert,
@@ -189,11 +191,14 @@ export function Button({
   loading,
   style,
   accessibilityHint,
+  inverse = false,
 }: {
   label: string;
   onPress?: () => void;
   icon?: IconName;
   tone?: ButtonTone;
+  /** For a neutral button on an ink surface: white where it would be ink. */
+  inverse?: boolean;
   /**
    * `solid` for the screen's primary action, `outline` for the alternative
    * beside it, `soft` for quiet actions inside content, and `ghost` for the
@@ -220,18 +225,28 @@ export function Button({
   // button that cannot be pressed is redrawn as a muted block instead. A
   // loading one keeps its colour: it is busy, not unavailable.
   const unavailable = variant === 'solid' && disabled && !loading;
+  const onInk = inverse && tone === 'neutral';
   const background = unavailable
     ? colors.surfaceMuted
     : variant === 'solid'
-      ? fill
+      ? onInk
+        ? colors.textInverse
+        : fill
       : variant === 'soft'
-        ? softFill
+        ? onInk
+          ? colors.inkSoft
+          : softFill
         : 'transparent';
   const foreground = unavailable
     ? colors.textFaint
     : variant === 'solid'
-      ? colors.textInverse
-      : ink;
+      ? onInk
+        ? colors.text
+        : colors.textInverse
+      : onInk
+        ? colors.textInverse
+        : ink;
+  const outline = onInk ? colors.inkBorder : tone === 'neutral' ? colors.text : ink;
 
   return (
     <PressableSurface
@@ -250,7 +265,7 @@ export function Button({
             minHeight: BUTTON_HEIGHT[size],
             backgroundColor: background,
             borderWidth: variant === 'outline' ? 1.5 : 0,
-            borderColor: tone === 'neutral' ? colors.text : ink,
+            borderColor: outline,
             paddingHorizontal: variant === 'ghost' ? space.sm : size === 'sm' ? space.lg : space.xl,
           },
         ]}
@@ -277,6 +292,7 @@ export function IconButton({
   filled = false,
   style,
   disabled,
+  inverse = false,
 }: {
   icon: IconName;
   onPress?: () => void;
@@ -285,6 +301,8 @@ export function IconButton({
   filled?: boolean;
   style?: StyleProp<ViewStyle>;
   disabled?: boolean;
+  /** On an ink surface: a quiet white fill, or white-filled when `filled`. */
+  inverse?: boolean;
 }) {
   const colors = usePalette();
   const unavailable = filled && disabled;
@@ -303,15 +321,21 @@ export function IconButton({
             backgroundColor: unavailable
               ? colors.surfaceMuted
               : filled
-                ? colors.surfaceInverse
-                : 'transparent',
+                ? inverse
+                  ? colors.textInverse
+                  : colors.surfaceInverse
+                : inverse
+                  ? colors.inkSoft
+                  : 'transparent',
           },
         ]}
       >
         <MaterialCommunityIcons
           name={icon}
           size={22}
-          color={unavailable ? colors.textFaint : filled ? colors.textInverse : colors.text}
+          color={
+            unavailable ? colors.textFaint : filled !== inverse ? colors.textInverse : colors.text
+          }
         />
       </View>
     </PressableSurface>

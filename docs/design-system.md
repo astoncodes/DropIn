@@ -26,11 +26,17 @@ matters.
   There is no colour per sport, because colour is taken.
 - **Two voices.** Barlow Condensed carries titles, numbers, small-capital
   labels and buttons. The platform's own font carries sentences.
-- **White on grey.** The page is a cool light grey and everything on it sits
-  on a white, rounded surface: a venue or session is a card, a run of settings
-  is one card of rows divided by inset rules, a scoreboard is a card of figures.
-  Cards cast a faint shadow; solid buttons a little more; only sheets, dialogs
-  and panels over the map cast a real one.
+- **White on grey, between two ink rails.** Each tab opens with its title on
+  an ink `HeroHeader` and closes with the ink tab bar; between them the page is
+  a cool light grey and everything on it sits on a white, rounded surface: a
+  venue or session is a card, a run of settings is one card of rows divided by
+  inset rules, a scoreboard is a card of figures. Cards cast a faint shadow;
+  solid buttons a little more; only sheets, dialogs, the hero header and panels
+  over the map cast a real one.
+- **One hero per screen.** The heaviest element on a screen is the one thing
+  it is about: the busiest live venue on the Live list (`LiveHero`, a green
+  figure on ink, drawn only when somebody is there), the player's own figures
+  on Profile, the ink date tile of a session happening today.
 - **One primary action per screen.** Detail screens pin it at the bottom in an
   `ActionBar`. A row carries at most one control. Two solid buttons side by side
   means one of them should be outlined.
@@ -50,41 +56,43 @@ matters.
 
 ## Tokens
 
-| Token       | Values                                                                                              | Use                                                                                                  |
-| ----------- | --------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| `palettes`  | white `background` and `surface`, grey `surfaceMuted`, ink `text`, `live`, `soon`, `alert`          | Colour by meaning; text on a tint uses the matching `…Text`                                          |
-| `space`     | 2, 4, 8, 12, 16, 24, 32, 48                                                                         | All padding, gaps and margins; the page gutter is 16                                                 |
-| `radius`    | xs 6, sm 10, md 14, lg 20, xl 24, xxl 32, pill                                                      | Tags xs; inputs and badges md; cards and groups lg; sheets xxl; buttons, chips and icon buttons pill |
-| `fonts`     | `display` (Barlow Condensed Bold), `displayMedium` (SemiBold)                                       | Loaded in the root layout; never combined with `fontWeight`                                          |
-| `typeScale` | display 40, title 32, heading 22, label 13 caps, button 19, body 16, caption 14, micro 12, score 44 | `display` for tab titles, `title` for a detail screen's subject                                      |
-| `motion`    | 120–260 ms, `easeOut`, `easeInOut`, press scale 0.97                                                | Every animation                                                                                      |
-| `elevation` | `card`, `raised`, `floating`                                                                        | Cards and groups; solid buttons; dialogs, sheets, toasts and map panels                              |
+| Token       | Values                                                                                                       | Use                                                                                                          |
+| ----------- | ------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------ |
+| `palettes`  | white `background` and `surface`, grey `surfaceMuted`, ink `text`, `live`, `soon`, `alert`                   | Colour by meaning; text on a tint uses the matching `…Text`                                                  |
+| `space`     | 2, 4, 8, 12, 16, 24, 32, 48                                                                                  | All padding, gaps and margins; the page gutter is 16                                                         |
+| `radius`    | xs 6, sm 10, md 14, lg 20, xl 24, xxl 32, pill                                                               | Tags xs; inputs and badges md; cards and groups lg; sheets xxl; buttons, chips and icon buttons pill         |
+| `fonts`     | `display` (Barlow Condensed Bold), `displayMedium` (SemiBold)                                                | Loaded in the root layout; never combined with `fontWeight`                                                  |
+| `typeScale` | display 44, title 32, heading 22, label 13 caps, button 19, body 16, caption 14, micro 12, score 44, hero 72 | `display` for tab titles, `title` for a detail screen's subject, `hero` for the one figure a screen is about |
+| `motion`    | 120–260 ms, `easeOut`, `easeInOut`, press scale 0.97                                                         | Every animation                                                                                              |
+| `elevation` | `card`, `raised`, `floating`                                                                                 | Cards and groups; solid buttons; dialogs, sheets, toasts and map panels                                      |
 
 ## Components
 
-| Component                             | Use it for                                                                                                                    |
-| ------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| `AppText`                             | All text. `variant` from the type scale, `tone` for meaning                                                                   |
-| `Button`                              | Actions. Ink by default; `tone="live"` for check-in and going; `outline` for the alternative, `ghost` for the least important |
-| `IconButton`                          | Icon-only actions; always pass `label`. `filled` for the one primary action in a header                                       |
-| `Chip`                                | One choice among several: sport filters, durations, repeats. Selected is ink                                                  |
-| `Tag`                                 | A state in small capitals: GOING, HOSTING, CANCELLED. Never tappable                                                          |
-| `SegmentedControl`                    | Switching sections of one page (Upcoming/Past, Details/Chat/Photos): a pill track with a sliding white thumb                  |
-| `TextField`                           | Every text input: visible label, hint, error, optional character count                                                        |
-| `ListSection`, `ListRow`              | One white card of rows divided by inset rules, with optional icon, subtitle, trailing control and chevron                     |
-| `Stat`                                | One scoreboard figure: a large number or time over a small-capitals label                                                     |
-| `ActionBar`                           | The primary action of a detail screen, pinned above the home indicator                                                        |
-| `Card`                                | A white panel for a single object, such as the profile summary or a scoreboard                                                |
-| `Notice`                              | Inline errors, warnings, confirmations and information on the current screen                                                  |
-| `ConfirmDialog`, `Dialog`             | Decisions with consequences, such as leaving a session or deleting an account                                                 |
-| `Sheet`                               | Choices tied to something on screen, such as the report and block flow                                                        |
-| `useToast()`                          | Brief confirmation that something happened ("Report sent")                                                                    |
-| `ScreenHeader`                        | The title and actions at the top of a tab                                                                                     |
-| `Avatar`                              | A player's initials                                                                                                           |
-| `EmptyState`, `Skeleton`, `LoadError` | Empty, loading and could-not-load states, shaped like the content they stand in for                                           |
-| `LivePulse`, `ConditionChip`          | The live marker, which renders only when something is live, and a venue condition                                             |
-| `ResultsSheet`                        | The draggable results panel over the map                                                                                      |
-| `BrandMark`, `SportBadge`             | The wordmark and a sport's glyph                                                                                              |
+| Component                             | Use it for                                                                                                                                                        |
+| ------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `AppText`                             | All text. `variant` from the type scale, `tone` for meaning                                                                                                       |
+| `inverse` props                       | `Button`, `IconButton`, `Chip`, `Avatar`, `BrandMark` and `SegmentedControl` redraw in white for an ink surface; `AppText` has `inverse` and `inverseMuted` tones |
+| `Button`                              | Actions. Ink by default; `tone="live"` for check-in and going; `outline` for the alternative, `ghost` for the least important                                     |
+| `IconButton`                          | Icon-only actions; always pass `label`. `filled` for the one primary action in a header                                                                           |
+| `Chip`                                | One choice among several: sport filters, durations, repeats. Selected is ink                                                                                      |
+| `Tag`                                 | A state in small capitals: GOING, HOSTING, CANCELLED. Never tappable                                                                                              |
+| `SegmentedControl`                    | Switching sections of one page (Upcoming/Past, Details/Chat/Photos): a pill track with a sliding white thumb                                                      |
+| `TextField`                           | Every text input: visible label, hint, error, optional character count                                                                                            |
+| `ListSection`, `ListRow`              | One white card of rows divided by inset rules, with optional icon, subtitle, trailing control and chevron                                                         |
+| `Stat`                                | One scoreboard figure: a large number or time over a small-capitals label                                                                                         |
+| `ActionBar`                           | The primary action of a detail screen, pinned above the home indicator                                                                                            |
+| `Card`                                | A white panel for a single object, such as the profile summary or a scoreboard                                                                                    |
+| `Notice`                              | Inline errors, warnings, confirmations and information on the current screen                                                                                      |
+| `ConfirmDialog`, `Dialog`             | Decisions with consequences, such as leaving a session or deleting an account                                                                                     |
+| `Sheet`                               | Choices tied to something on screen, such as the report and block flow                                                                                            |
+| `useToast()`                          | Brief confirmation that something happened ("Report sent")                                                                                                        |
+| `HeroHeader`                          | The ink block at the top of a tab: title, inverse icon buttons and the screen's own controls, such as an inverse `SegmentedControl`                               |
+| `ScreenHeader`                        | A plain title and actions, for screens that do not open with a hero                                                                                               |
+| `Avatar`                              | A player's initials                                                                                                                                               |
+| `EmptyState`, `Skeleton`, `LoadError` | Empty, loading and could-not-load states, shaped like the content they stand in for                                                                               |
+| `LivePulse`, `ConditionChip`          | The live marker, which renders only when something is live, and a venue condition                                                                                 |
+| `ResultsSheet`                        | The draggable results panel over the map                                                                                                                          |
+| `BrandMark`, `SportBadge`             | The wordmark and a sport's glyph                                                                                                                                  |
 
 Feature components built from these and reused across screens: `VenueRow`
 (`features/venues`), `SessionRow` (`features/community`) and `SessionTimeFields`

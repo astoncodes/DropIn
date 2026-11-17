@@ -3,13 +3,12 @@ import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { EmptyState, LoadError, Skeleton } from '../../components/ui/activity';
 import { SportBadge } from '../../components/ui/brand';
 import { Notice } from '../../components/ui/notice';
 import { AppText, Button, IconButton, PressableSurface, Tag } from '../../components/ui/primitives';
-import { ScreenHeader } from '../../components/ui/screen-header';
+import { HeroHeader } from '../../components/ui/hero-header';
 import { SegmentedControl } from '../../components/ui/segmented-control';
 import { dayLabel, timeOfDay } from '../../lib/format';
 import { combineLoadPhases, loadPhase } from '../../lib/load-phase';
@@ -23,7 +22,6 @@ import { SessionRow } from './session-row';
 /** Only hosted, Going and Maybe sessions belong in the player's schedule. */
 export function ScheduledScreen() {
   const colors = usePalette();
-  const insets = useSafeAreaInsets();
   const router = useRouter();
   const { session, isLoading } = useSession();
   const [tab, setTab] = useState<'upcoming' | 'past'>('upcoming');
@@ -86,21 +84,19 @@ export function ScheduledScreen() {
     }
   }
   return (
-    <View
-      style={{ flex: 1, backgroundColor: colors.background, paddingTop: insets.top + space.md }}
-    >
-      <View style={styles.top}>
-        <ScreenHeader
-          title="Scheduled"
-          actions={
-            <IconButton
-              icon="plus"
-              filled
-              label="Create session"
-              onPress={() => router.push('/run/new')}
-            />
-          }
-        />
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
+      <HeroHeader
+        title="Scheduled"
+        actions={
+          <IconButton
+            icon="plus"
+            filled
+            inverse
+            label="Create session"
+            onPress={() => router.push('/run/new')}
+          />
+        }
+      >
         <SegmentedControl
           segments={[
             { value: 'upcoming', label: 'Upcoming' },
@@ -109,8 +105,9 @@ export function ScheduledScreen() {
           value={tab}
           onChange={setTab}
           accessibilityLabel="Schedule views"
+          inverse
         />
-      </View>
+      </HeroHeader>
       <ScrollView
         refreshControl={
           session ? (
@@ -217,13 +214,6 @@ export function ScheduledScreen() {
 }
 
 const styles = StyleSheet.create({
-  top: {
-    paddingHorizontal: space.lg,
-    gap: space.md,
-    width: '100%',
-    maxWidth: 760,
-    alignSelf: 'center',
-  },
   content: {
     paddingHorizontal: space.lg,
     paddingBottom: space.xxl,

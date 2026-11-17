@@ -8,11 +8,16 @@ import { AppText, sportIcon } from './primitives';
  * The wordmark. The full stop is the only green in it: the same green that
  * marks a live venue, so the name carries the product's one idea.
  */
-export function BrandMark({ size = 32 }: { size?: number }) {
+export function BrandMark({ size = 32, inverse = false }: { size?: number; inverse?: boolean }) {
   const colors = usePalette();
   return (
     <AppText
-      style={{ fontFamily: fonts.display, fontSize: size, lineHeight: Math.round(size * 1.05) }}
+      style={{
+        fontFamily: fonts.display,
+        fontSize: size,
+        lineHeight: Math.round(size * 1.05),
+        color: inverse ? colors.textInverse : colors.text,
+      }}
     >
       Drop In
       <AppText style={{ fontFamily: fonts.display, fontSize: size, color: colors.live }}>.</AppText>
