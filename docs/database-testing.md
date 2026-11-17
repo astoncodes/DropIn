@@ -141,6 +141,12 @@ After configuring these, run **Hosted database checks** from GitHub Actions. It
 runs the tests and checks generated types against the app schema; it does not
 apply migrations or fixtures. Database tests do not yet run automatically on PRs.
 
+`.github/workflows/keep-alive.yml` reads one row from each project every day so
+the free-plan projects do not pause. It uses four repository variables, all
+publishable values: `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`,
+`SUPABASE_TEST_URL` and `SUPABASE_TEST_PUBLISHABLE_KEY`. GitHub stops scheduled
+workflows in a repository that has had no commits for 60 days.
+
 ## Troubleshooting
 
 | Symptom                         | What to check                                                                                                         |

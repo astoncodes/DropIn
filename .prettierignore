@@ -25,3 +25,6 @@ assets/
 release-assets/app-store-screenshots/
 release-assets/exports/
 .next/
+
+# Local design notes and build ledgers; never committed.
+.superpowers/
